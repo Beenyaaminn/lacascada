@@ -16,11 +16,11 @@ function buildQuery(strings: TemplateStringsArray, values: any[]): { query: stri
   return { query, params };
 }
 
-const neonSql = neon(DATABASE_URL);
+const neonQueryFn = neon(DATABASE_URL);
 
 export async function sql(strings: TemplateStringsArray, ...values: any[]): Promise<any[]> {
   const { query, params } = buildQuery(strings, values);
-  return (await neonSql(query, params)) as any[];
+  return (neonQueryFn as any).query(query, params) as Promise<any[]>;
 }
 
 sql.begin = async function <T>(fn: (tx: typeof sql) => Promise<T>): Promise<T> {
