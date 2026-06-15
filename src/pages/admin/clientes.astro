@@ -1,0 +1,21 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSessionFromCookie } from '../../lib/auth';
+
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = getSessionFromCookie(cookieHeader);
+
+if (!session || session.rol !== 'admin') {
+  return Astro.redirect('/login');
+}
+---
+<AdminLayout title="Créditos - La Cascada" currentPage="/admin/clientes">
+  <div id="clientes-app" class="h-full"></div>
+</AdminLayout>
+
+<script>
+  import { mount } from 'svelte';
+  import ClientesAdmin from '../../components/ClientesAdmin.svelte';
+  const el = document.getElementById('clientes-app');
+  if (el) mount(ClientesAdmin, { target: el });
+</script>

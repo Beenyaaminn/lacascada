@@ -1,0 +1,66 @@
+services:
+  app:
+    build: .
+    container_name: lacascada-app
+    ports:
+      - "${PORT:-4321}:4321"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://lacascada:${POSTGRES_PASSWORD:-lacascada_dev}@db:5432/lacascada
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-cambiar-en-produccion}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - backups:/app/backups
+    stop_grace_period: 10s
+
+  db:
+    image: postgres:16-alpine
+    container_name: lacascada-db
+    environment:
+      - POSTGRES_USER=lacascada
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-lacascada_dev}
+      - POSTGRES_DB=lacascada
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lacascada -d lacascada"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backup:
+    image: postgres:16-alpine
+    container_name: lacascada-backup
+    depends_on:
+      - db
+    environment:
+      - PGPASSWORD=${POSTGRES_PASSWORD:-lacascada_dev}
+    volumes:
+      - backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          HOUR=$$(date +%H)
+          if [ "$$HOUR" = "03" ]; then
+            FILENAME="lacascada-backup-$$(date +%Y-%m-%d-%H%M).sql.gz"
+            echo "[BACKUP] $$(date): Iniciando $$FILENAME"
+            pg_dump -h db -U lacascada -d lacascada --no-owner --no-acl | gzip > "/backups/$$FILENAME"
+            echo "[BACKUP] $$(date): Completado $$FILENAME"
+            find /backups -name "lacascada-backup-*.sql.gz" -mtime +7 -delete
+            echo "[BACKUP] $$(date): Limpieza de backups > 7 dias"
+          fi
+          sleep 3600
+        done
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  backups:

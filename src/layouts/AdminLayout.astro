@@ -1,0 +1,190 @@
+---
+import '../styles/global.css';
+import { getSessionFromCookie } from '../lib/auth';
+import { sql } from '../lib/db';
+
+export interface Props {
+  title?: string;
+  currentPage?: string;
+}
+
+const { title = 'La Cascada - Admin', currentPage = '' } = Astro.props;
+
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = getSessionFromCookie(cookieHeader);
+
+let hayTurnoAbierto = false;
+if (session) {
+  try {
+    const activos = await sql`SELECT id FROM turnos WHERE estado = 'abierto' LIMIT 1`;
+    hayTurnoAbierto = activos.length > 0;
+  } catch { /* si falla, asume que no hay */ }
+}
+
+interface MenuSection {
+  label: string;
+  icon: string;
+  items: MenuItem[];
+}
+
+interface MenuItem {
+  label: string;
+  href: string;
+  icon: string;
+}
+
+const operacionesItems: MenuItem[] = hayTurnoAbierto
+  ? [
+      { label: 'Abrir Caja', href: '/admin/caja?accion=abrir', icon: '🔓' },
+      { label: 'Cerrar Caja', href: '/admin/caja?accion=cerrar', icon: '🔒' },
+      { label: 'Cerrar Turno', href: '/admin/turno?cerrar=1', icon: '🛑' },
+      { label: 'Registro Contable', href: '/admin/stock?tab=contabilidad', icon: '📒' },
+    ]
+  : [
+      { label: 'Abrir Turno', href: '/admin/turno', icon: '🔓' },
+      { label: 'Reabrir Turno', href: '/admin/turno?reabrir=1', icon: '🔁' },
+    ];
+
+const menuSections: MenuSection[] = [
+  {
+    label: 'Restaurante',
+    icon: '🍽️',
+    items: [
+      { label: 'Toma de Pedidos', href: '/admin/mesas', icon: '🍽️' },
+      { label: 'Reservas', href: '/admin/reservas', icon: '📅' },
+      { label: 'Pedidos', href: '/admin/pedidos', icon: '📦' },
+      { label: 'Créditos', href: '/admin/clientes', icon: '👥' },
+      { label: 'Productos', href: '/admin/productos', icon: '📋' },
+    ],
+  },
+  {
+    label: 'Operaciones',
+    icon: '🔧',
+    items: operacionesItems,
+  },
+  {
+    label: 'Reportes',
+    icon: '📊',
+    items: [
+      { label: 'Historial de Clientes', href: '/admin/reportes?tab=clientes', icon: '👤' },
+      { label: 'Resumen de ventas', href: '/admin/reportes?tab=ventas', icon: '💰' },
+      { label: 'Indicadores', href: '/admin/reportes?tab=indicadores', icon: '📈' },
+      { label: 'Venta Jerarquías', href: '/admin/reportes?tab=jerarquias', icon: '🏢' },
+      { label: 'Reportes delivery', href: '/admin/reportes?tab=delivery', icon: '🛵' },
+    ],
+  },
+  {
+    label: 'Stock Control',
+    icon: '📦',
+    items: [
+      { label: 'Proveedores', href: '/admin/stock', icon: '🏭' },
+      { label: 'Jerarquía de bodegas', href: '/admin/stock?tab=bodegas', icon: '🏗️' },
+      { label: 'Contabilidad', href: '/admin/stock?tab=contabilidad', icon: '📒' },
+    ],
+  },
+];
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="description" content="Panel de Administración - La Cascada" />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen bg-gray-50 flex">
+    <!-- Mobile overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden" onclick="document.getElementById('sidebar').classList.add('-translate-x-full'); this.classList.add('hidden')"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-slate-900 text-white flex flex-col shrink-0 min-h-screen overflow-y-auto fixed lg:relative z-40 inset-y-0 left-0 transition-transform duration-300 -translate-x-full lg:translate-x-0">
+      <!-- Mobile close -->
+      <button class="lg:hidden absolute top-3 right-3 text-slate-400 hover:text-white text-xl p-1" onclick="document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('sidebar-overlay').classList.add('hidden')">&times;</button>
+      <!-- Brand -->
+      <div class="px-5 py-5 border-b border-slate-700">
+        <a href="/admin" class="block">
+          <h1 class="text-lg font-bold tracking-tight">La Cascada</h1>
+          <p class="text-xs text-slate-400 mt-0.5">Panel de Administración</p>
+        </a>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        {menuSections.map((section) => {
+          const isExpanded = section.items.some(item => currentPage.startsWith(item.href));
+          return (
+            <div class="mb-1">
+              <button
+                class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors text-left"
+                onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-90')"
+              >
+                <span>{section.icon}</span>
+                <span class="flex-1">{section.label}</span>
+                {section.items.length > 0 && (
+                  <svg class={`chevron w-4 h-4 text-slate-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                )}
+              </button>
+              {section.items.length > 0 && (
+                <div class={`mt-0.5 space-y-0.5 ${isExpanded ? '' : 'hidden'}`}>
+                  {section.items.map((item) => {
+                    const isActive = currentPage === item.href;
+                    return (
+                      <a
+                        href={item.href}
+                        class={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ml-4 transition-colors ${
+                          isActive
+                            ? 'bg-brand-600 text-white font-medium'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        }`}
+                      >
+                        <span>{item.icon}</span>
+                        <span>{item.label}</span>
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </nav>
+
+      <!-- User + Logout -->
+      {session && (
+        <div class="px-4 py-3 border-t border-slate-700">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-7 h-7 rounded-full bg-brand-600 flex items-center justify-center text-xs font-bold">
+              {session.nombre.charAt(0).toUpperCase()}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium truncate">{session.nombre}</p>
+              <p class="text-xs text-slate-400 capitalize">{session.rol}</p>
+            </div>
+          </div>
+          <form action="/api/auth/logout" method="POST" class="mt-2">
+            <button type="submit" class="w-full text-xs text-slate-400 hover:text-red-400 transition-colors text-left py-1">
+              Cerrar Sesión
+            </button>
+          </form>
+        </div>
+      )}
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto w-full lg:w-auto">
+      <!-- Mobile hamburger -->
+      <button class="lg:hidden fixed top-3 left-3 z-20 bg-slate-900 text-white p-2 rounded-lg shadow-lg" onclick="document.getElementById('sidebar').classList.remove('-translate-x-full'); document.getElementById('sidebar-overlay').classList.remove('hidden')">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style>
+  .rotate-90 { transform: rotate(90deg); }
+</style>

@@ -1,0 +1,21 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSessionFromCookie } from '../../lib/auth';
+
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = getSessionFromCookie(cookieHeader);
+
+if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
+  return Astro.redirect('/login');
+}
+---
+<AdminLayout title="Reportes - La Cascada" currentPage="/admin/reportes">
+  <div id="reportes-app" class="h-full"></div>
+</AdminLayout>
+
+<script>
+  import { mount } from 'svelte';
+  import ReportesAdmin from '../../components/ReportesAdmin.svelte';
+  const el = document.getElementById('reportes-app');
+  if (el) mount(ReportesAdmin, { target: el });
+</script>

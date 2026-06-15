@@ -1,0 +1,23 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSessionFromCookie } from '../../lib/auth';
+
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = getSessionFromCookie(cookieHeader);
+
+if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
+  return Astro.redirect('/login');
+}
+---
+<AdminLayout title="Toma de Pedidos - La Cascada" currentPage="/admin/mesas">
+  <div id="mesas-app" class="h-full"></div>
+</AdminLayout>
+
+<script>
+  import { mount } from 'svelte';
+  import MesasAdmin from '../../components/MesasAdmin.svelte';
+  const el = document.getElementById('mesas-app');
+  if (el) {
+    mount(MesasAdmin, { target: el });
+  }
+</script>

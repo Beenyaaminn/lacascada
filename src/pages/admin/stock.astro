@@ -1,0 +1,21 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSessionFromCookie } from '../../lib/auth';
+
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = getSessionFromCookie(cookieHeader);
+
+if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
+  return Astro.redirect('/login');
+}
+---
+<AdminLayout title="Stock Control - La Cascada" currentPage="/admin/stock">
+  <div id="stock-app" class="h-full"></div>
+</AdminLayout>
+
+<script>
+  import { mount } from 'svelte';
+  import StockControl from '../../components/StockControl.svelte';
+  const el = document.getElementById('stock-app');
+  if (el) mount(StockControl, { target: el });
+</script>

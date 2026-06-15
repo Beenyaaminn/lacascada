@@ -1,0 +1,21 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSessionFromCookie } from '../../lib/auth';
+
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = getSessionFromCookie(cookieHeader);
+
+if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
+  return Astro.redirect('/login');
+}
+---
+<AdminLayout title="Caja - La Cascada" currentPage="/admin/caja">
+  <div id="caja-app" class="h-full"></div>
+</AdminLayout>
+
+<script>
+  import { mount } from 'svelte';
+  import CajaAdmin from '../../components/CajaAdmin.svelte';
+  const el = document.getElementById('caja-app');
+  if (el) mount(CajaAdmin, { target: el, props: { usuario: '{session.nombre}' } });
+</script>

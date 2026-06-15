@@ -1,0 +1,21 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSessionFromCookie } from '../../lib/auth';
+
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = getSessionFromCookie(cookieHeader);
+
+if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
+  return Astro.redirect('/login');
+}
+---
+<AdminLayout title="Pedidos - La Cascada" currentPage="/admin/pedidos">
+  <div id="pedidos-app" class="h-full"></div>
+</AdminLayout>
+
+<script>
+  import { mount } from 'svelte';
+  import PedidosAdmin from '../../components/PedidosAdmin.svelte';
+  const el = document.getElementById('pedidos-app');
+  if (el) mount(PedidosAdmin, { target: el });
+</script>

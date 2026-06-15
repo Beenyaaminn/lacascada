@@ -1,0 +1,97 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSessionFromCookie } from '../../lib/auth';
+
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = getSessionFromCookie(cookieHeader);
+
+if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
+  return Astro.redirect('/login');
+}
+
+const pedidoId = Astro.url.searchParams.get('pedido_id') || '---';
+const fecha = Astro.url.searchParams.get('fecha') || new Date().toLocaleString('es-CL');
+const mesaInfo = Astro.url.searchParams.get('mesa') || '---';
+const metodoPago = Astro.url.searchParams.get('metodo_pago') || '---';
+const total = Astro.url.searchParams.get('total') || '0';
+const vuelto = Astro.url.searchParams.get('vuelto') || '0';
+const detallesRaw = Astro.url.searchParams.get('detalles') || '[]';
+
+let detalles: any[] = [];
+try {
+  detalles = JSON.parse(detallesRaw);
+} catch { detalles = []; }
+---
+<AdminLayout title="Voucher #{pedidoId} - La Cascada">
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div class="bg-white shadow-lg rounded-lg p-6 max-w-[72mm] w-full font-mono text-xs" id="voucher-print">
+      <div class="text-center mb-3">
+        <p class="font-bold text-sm">LA CASCADA</p>
+        <p class="text-xs text-gray-500">Restaurant &bull; Punto de Venta</p>
+      </div>
+
+      <div class="border-t border-dashed border-gray-300 my-2"></div>
+
+      <div class="space-y-1 mb-2 text-xs">
+        <p><span class="font-semibold">RUT:</span> 77.777.777-7</p>
+        <p><span class="font-semibold">TEL:</span> +56 9 1234 5678</p>
+        <p><span class="font-semibold">DIR:</span> Av. Principal 1234</p>
+      </div>
+
+      <div class="border-t border-dashed border-gray-300 my-2"></div>
+
+      <div class="space-y-1 mb-2">
+        <p><span class="font-semibold">FECHA:</span> {fecha}</p>
+        <p><span class="font-semibold">PEDIDO:</span> #{pedidoId}</p>
+        <p><span class="font-semibold">UBICACIÓN:</span> {mesaInfo}</p>
+      </div>
+
+      <div class="border-t border-dashed border-gray-300 my-2"></div>
+
+      <p class="text-xs font-semibold mb-1">DETALLE:</p>
+      <div class="space-y-1 mb-3">
+        {detalles.map((d: any) => (
+          <div>
+            <p>{d.cantidad}x {d.nombre} <span class="float-right">${parseInt(d.subtotal).toLocaleString('es-CL')}</span></p>
+            {d.acompanamiento && <p class="text-gray-500 ml-4">[{d.acompanamiento}]</p>}
+          </div>
+        ))}
+      </div>
+
+      <div class="border-t border-dashed border-gray-300 my-2"></div>
+
+      <div class="space-y-1">
+        <p><span class="font-semibold">SUBTOTAL:</span> <span class="float-right">${parseInt(total).toLocaleString('es-CL')}</span></p>
+        <p><span class="font-semibold">FORMA DE PAGO:</span> {metodoPago.toUpperCase().replace('_', ' ')}</p>
+      </div>
+
+      <div class="border-t border-dashed border-gray-300 my-2"></div>
+
+      <p class="text-center font-bold text-sm">TOTAL: ${parseInt(total).toLocaleString('es-CL')}</p>
+      {parseInt(vuelto) > 0 && <p class="text-center text-xs mt-1">VUELTO: ${parseInt(vuelto).toLocaleString('es-CL')}</p>}
+
+      <div class="border-t border-dashed border-gray-300 my-2"></div>
+
+      <p class="text-center text-xs text-gray-500">¡Gracias por su visita!</p>
+      <p class="text-center text-xs text-gray-400">* COMPROBANTE DE USO INTERNO *</p>
+    </div>
+  </div>
+
+  <div class="text-center pb-8">
+    <button onclick="window.print()" class="btn-primary">
+      Imprimir Voucher
+    </button>
+    <a href="/admin/pedidos" class="btn-secondary ml-2 inline-block no-underline">
+      Volver a Pedidos
+    </a>
+  </div>
+</AdminLayout>
+
+<style>
+  @page { size: 80mm auto; margin: 0; }
+  @media print {
+    body * { visibility: hidden; }
+    #voucher-print, #voucher-print * { visibility: visible; }
+    #voucher-print { position: absolute; left: 0; top: 0; width: 72mm; font-size: 11px; padding: 4px 6px; }
+  }
+</style>
