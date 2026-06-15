@@ -1,15 +1,29 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { sql } from '../../lib/db';
 
 const piso = Astro.url.searchParams.get('piso') || '1';
 const mesa = Astro.url.searchParams.get('mesa') || '1';
 const mesaInfo = `Piso ${piso} - Mesa ${mesa}`;
+
+const categorias = await sql`SELECT * FROM categorias ORDER BY orden ASC`;
+const productos = await sql`
+  SELECT p.*, c.nombre as categoria_nombre
+  FROM productos p
+  JOIN categorias c ON c.id = p.categoria_id
+  WHERE p.disponible_dia = TRUE
+    AND (p.maneja_stock = FALSE OR p.stock_actual > 0)
+  ORDER BY c.orden ASC, p.nombre ASC
+`;
+const acompanamientos = await sql`SELECT * FROM acompanamientos ORDER BY es_extra ASC, nombre ASC`;
+const productosAcomp = await sql`SELECT * FROM productos_acompanamientos`;
 ---
 <Layout title={`Menú Digital - ${mesaInfo}`} description="Carta digital de La Cascada. Realiza tu pedido desde la mesa.">
   <main
     id="menu-app"
     data-piso={piso}
     data-mesa={mesa}
+    data-menu={JSON.stringify({ categorias, productos, acompanamientos, productos_acompanamientos: productosAcomp }).replace(/"/g, '&quot;')}
     class="min-h-screen bg-gray-50"
   ></main>
 
@@ -19,11 +33,13 @@ const mesaInfo = `Piso ${piso} - Mesa ${mesa}`;
 
     const el = document.getElementById('menu-app');
     if (el) {
+      const menuData = JSON.parse(el?.dataset?.menu?.replace(/&quot;/g, '"') || 'null');
       mount(MenuApp, {
         target: el,
         props: {
           piso: parseInt(el.dataset.piso || '1'),
           mesa: parseInt(el.dataset.mesa || '1'),
+          menuData,
         },
       });
     }

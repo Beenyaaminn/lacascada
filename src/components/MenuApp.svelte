@@ -14,15 +14,15 @@
     });
   }
 
-  let { piso = 1, mesa = 1 } = $props<{ piso?: number; mesa?: number }>();
+  let { piso = 1, mesa = 1, menuData = null } = $props<{ piso?: number; mesa?: number; menuData?: any }>();
 
-  let categorias: Categoria[] = $state([]);
-  let productos: Producto[] = $state([]);
-  let acompanamientos: Acompanamiento[] = $state([]);
-  let productosAcomp: ProductoAcompanamiento[] = $state([]);
+  let categorias: Categoria[] = $state(menuData?.categorias || []);
+  let productos: Producto[] = $state(menuData?.productos || []);
+  let acompanamientos: Acompanamiento[] = $state(menuData?.acompanamientos || []);
+  let productosAcomp: ProductoAcompanamiento[] = $state(menuData?.productos_acompanamientos || []);
 
   let activeCategoria: number | null = $state(null);
-  let loading: boolean = $state(true);
+  let loading: boolean = $state(!menuData);
   let showCart: boolean = $state(false);
   let cartItems: CartItem[] = $state([]);
   let showAcompModal: boolean = $state(false);
@@ -42,6 +42,13 @@
   }
 
   onMount(async () => {
+    if (menuData) {
+      if (categorias.length > 0) {
+        activeCategoria = categorias[0].id;
+      }
+      loading = false;
+      return;
+    }
     try {
       const res = await fetch('/api/menu');
       const data = await res.json();
