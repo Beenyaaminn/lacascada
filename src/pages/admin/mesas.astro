@@ -11,13 +11,12 @@ if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
 ---
 <AdminLayout title="Toma de Pedidos - La Cascada" currentPage="/admin/mesas">
   <div id="mesas-app" class="h-full"></div>
+  <script>
+    import { mount } from 'svelte';
+    import MesasAdmin from '../../components/MesasAdmin.svelte';
+    const el = document.getElementById('mesas-app');
+    if (el) {
+      mount(MesasAdmin, { target: el });
+    }
+  </script>
 </AdminLayout>
-
-<script>
-  import { mount } from 'svelte';
-  import MesasAdmin from '../../components/MesasAdmin.svelte';
-  const el = document.getElementById('mesas-app');
-  if (el) {
-    mount(MesasAdmin, { target: el });
-  }
-</script>

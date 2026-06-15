@@ -11,11 +11,10 @@ if (!session || session.rol !== 'admin') {
 ---
 <AdminLayout title="Créditos - La Cascada" currentPage="/admin/clientes">
   <div id="clientes-app" class="h-full"></div>
+  <script>
+    import { mount } from 'svelte';
+    import ClientesAdmin from '../../components/ClientesAdmin.svelte';
+    const el = document.getElementById('clientes-app');
+    if (el) mount(ClientesAdmin, { target: el });
+  </script>
 </AdminLayout>
-
-<script>
-  import { mount } from 'svelte';
-  import ClientesAdmin from '../../components/ClientesAdmin.svelte';
-  const el = document.getElementById('clientes-app');
-  if (el) mount(ClientesAdmin, { target: el });
-</script>

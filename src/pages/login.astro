@@ -100,60 +100,60 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
   </main>
-</Layout>
 
-<script>
-  const form = document.getElementById('login-form') as HTMLFormElement;
-  const errorDiv = document.getElementById('error-message') as HTMLDivElement;
-  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
-  const btnText = document.getElementById('btn-text') as HTMLSpanElement;
-  const btnLoading = document.getElementById('btn-loading') as HTMLSpanElement;
+  <script>
+    const form = document.getElementById('login-form') as HTMLFormElement;
+    const errorDiv = document.getElementById('error-message') as HTMLDivElement;
+    const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+    const btnText = document.getElementById('btn-text') as HTMLSpanElement;
+    const btnLoading = document.getElementById('btn-loading') as HTMLSpanElement;
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    errorDiv.classList.add('hidden');
-    submitBtn.disabled = true;
-    btnText.classList.add('hidden');
-    btnLoading.classList.remove('hidden');
-    btnLoading.classList.add('inline-flex');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorDiv.classList.add('hidden');
+      submitBtn.disabled = true;
+      btnText.classList.add('hidden');
+      btnLoading.classList.remove('hidden');
+      btnLoading.classList.add('inline-flex');
 
-    const formData = new FormData(form);
-    const data = {
-      email: formData.get('email') as string,
-      password: formData.get('password') as string,
-    };
+      const formData = new FormData(form);
+      const data = {
+        email: formData.get('email') as string,
+        password: formData.get('password') as string,
+      };
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const json = await res.json();
 
-      if (!res.ok) {
-        errorDiv.textContent = json.error || 'Error al iniciar sesión';
+        if (!res.ok) {
+          errorDiv.textContent = json.error || 'Error al iniciar sesión';
+          errorDiv.classList.remove('hidden');
+          errorDiv.classList.add('animate-shake');
+          setTimeout(() => errorDiv.classList.remove('animate-shake'), 500);
+          submitBtn.disabled = false;
+          btnText.classList.remove('hidden');
+          btnLoading.classList.add('hidden');
+          btnLoading.classList.remove('inline-flex');
+          return;
+        }
+
+        window.location.href = json.redirect || '/admin';
+      } catch {
+        errorDiv.textContent = 'Error de conexión. Intenta de nuevo.';
         errorDiv.classList.remove('hidden');
-        errorDiv.classList.add('animate-shake');
-        setTimeout(() => errorDiv.classList.remove('animate-shake'), 500);
         submitBtn.disabled = false;
         btnText.classList.remove('hidden');
         btnLoading.classList.add('hidden');
         btnLoading.classList.remove('inline-flex');
-        return;
       }
-
-      window.location.href = json.redirect || '/admin';
-    } catch {
-      errorDiv.textContent = 'Error de conexión. Intenta de nuevo.';
-      errorDiv.classList.remove('hidden');
-      submitBtn.disabled = false;
-      btnText.classList.remove('hidden');
-      btnLoading.classList.add('hidden');
-      btnLoading.classList.remove('inline-flex');
-    }
-  });
-</script>
+    });
+  </script>
+</Layout>
 
 <style is:global>
   @keyframes gradient-shift {

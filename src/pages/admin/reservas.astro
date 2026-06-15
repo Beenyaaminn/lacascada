@@ -11,11 +11,10 @@ if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
 ---
 <AdminLayout title="Reservas - La Cascada" currentPage="/admin/reservas">
   <div id="reservas-app" class="h-full"></div>
+  <script>
+    import { mount } from 'svelte';
+    import ReservasAdmin from '../../components/ReservasAdmin.svelte';
+    const el = document.getElementById('reservas-app');
+    if (el) mount(ReservasAdmin, { target: el });
+  </script>
 </AdminLayout>
-
-<script>
-  import { mount } from 'svelte';
-  import ReservasAdmin from '../../components/ReservasAdmin.svelte';
-  const el = document.getElementById('reservas-app');
-  if (el) mount(ReservasAdmin, { target: el });
-</script>
