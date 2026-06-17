@@ -15,12 +15,14 @@ export const GET: APIRoute = async ({ request }) => {
     const mes = url.searchParams.get('mes');
     const detalles = url.searchParams.get('detalles');
     const filtroPago = url.searchParams.get('metodo_pago') || '';
+    const tipoPedido = url.searchParams.get('tipo') || '';
 
     if (detalles === '1') {
       let detallePagos;
       if (mes && filtroPago) {
         detallePagos = await sql`
           SELECT p.id as pedido_id, p.fecha_hora, p.total, p.descuento, p.propina, p.metodo_pago,
+            p.tipo_pedido, p.nombre_cliente, p.direccion, p.telefono,
             m.numero_mesa, m.piso as mesa_piso, c.id as caja_id, c.nombre as caja_nombre
           FROM pedidos p
           LEFT JOIN mesas m ON m.id = p.mesa_id
@@ -34,6 +36,7 @@ export const GET: APIRoute = async ({ request }) => {
       } else if (mes) {
         detallePagos = await sql`
           SELECT p.id as pedido_id, p.fecha_hora, p.total, p.descuento, p.propina, p.metodo_pago,
+            p.tipo_pedido, p.nombre_cliente, p.direccion, p.telefono,
             m.numero_mesa, m.piso as mesa_piso, c.id as caja_id, c.nombre as caja_nombre
           FROM pedidos p
           LEFT JOIN mesas m ON m.id = p.mesa_id
@@ -46,6 +49,7 @@ export const GET: APIRoute = async ({ request }) => {
       } else if (filtroPago) {
         detallePagos = await sql`
           SELECT p.id as pedido_id, p.fecha_hora, p.total, p.descuento, p.propina, p.metodo_pago,
+            p.tipo_pedido, p.nombre_cliente, p.direccion, p.telefono,
             m.numero_mesa, m.piso as mesa_piso, c.id as caja_id, c.nombre as caja_nombre
           FROM pedidos p
           LEFT JOIN mesas m ON m.id = p.mesa_id
@@ -56,6 +60,7 @@ export const GET: APIRoute = async ({ request }) => {
       } else {
         detallePagos = await sql`
           SELECT p.id as pedido_id, p.fecha_hora, p.total, p.descuento, p.propina, p.metodo_pago,
+            p.tipo_pedido, p.nombre_cliente, p.direccion, p.telefono,
             m.numero_mesa, m.piso as mesa_piso, c.id as caja_id, c.nombre as caja_nombre
           FROM pedidos p
           LEFT JOIN mesas m ON m.id = p.mesa_id
@@ -64,12 +69,16 @@ export const GET: APIRoute = async ({ request }) => {
           ORDER BY p.fecha_hora DESC
         `;
       }
+      if (tipoPedido) {
+        detallePagos = detallePagos.filter((p: any) => p.tipo_pedido === tipoPedido);
+      }
       return new Response(JSON.stringify({ detallePagos }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const hoy = await sql`
+    let hoy = await sql`
       SELECT
         DATE(p.fecha_hora) as fecha,
+        p.tipo_pedido,
         COUNT(*)::int as cantidad_pedidos,
         COALESCE(SUM(p.total), 0)::int as total_ventas,
         COALESCE(SUM(p.propina), 0)::int as total_propinas,
@@ -84,12 +93,13 @@ export const GET: APIRoute = async ({ request }) => {
         COALESCE(SUM(CASE WHEN p.metodo_pago = 'a_credito' THEN p.propina ELSE 0 END), 0)::int as prop_a_credito
       FROM pedidos p
       WHERE p.estado = 'pagado' AND DATE(p.fecha_hora) = CURRENT_DATE
-      GROUP BY DATE(p.fecha_hora)
+      GROUP BY DATE(p.fecha_hora), p.tipo_pedido
     `;
 
-    const ultimos7dias = await sql`
+    let ultimos7dias = await sql`
       SELECT
         DATE(p.fecha_hora) as fecha,
+        p.tipo_pedido,
         COUNT(*)::int as cantidad_pedidos,
         COALESCE(SUM(p.total), 0)::int as total_ventas,
         COALESCE(SUM(p.propina), 0)::int as total_propinas,
@@ -104,15 +114,21 @@ export const GET: APIRoute = async ({ request }) => {
         COALESCE(SUM(CASE WHEN p.metodo_pago = 'a_credito' THEN p.propina ELSE 0 END), 0)::int as prop_a_credito
       FROM pedidos p
       WHERE p.estado = 'pagado' AND p.fecha_hora >= CURRENT_DATE - INTERVAL '7 days'
-      GROUP BY DATE(p.fecha_hora)
+      GROUP BY DATE(p.fecha_hora), p.tipo_pedido
       ORDER BY fecha DESC
     `;
+
+    if (tipoPedido) {
+      hoy = hoy.filter((r: any) => r.tipo_pedido === tipoPedido);
+      ultimos7dias = ultimos7dias.filter((r: any) => r.tipo_pedido === tipoPedido);
+    }
 
     let mensual: any[] = [];
     if (mes) {
       mensual = await sql`
         SELECT
           DATE(p.fecha_hora) as fecha,
+          p.tipo_pedido,
           COUNT(*)::int as cantidad_pedidos,
           COALESCE(SUM(p.total), 0)::int as total_ventas,
           COALESCE(SUM(p.propina), 0)::int as total_propinas,
@@ -131,14 +147,18 @@ export const GET: APIRoute = async ({ request }) => {
         WHERE p.estado = 'pagado'
           AND p.fecha_hora >= ${mes + '-01'}::date
           AND p.fecha_hora < (${mes + '-01'}::date + INTERVAL '1 month')
-        GROUP BY DATE(p.fecha_hora)
+        GROUP BY DATE(p.fecha_hora), p.tipo_pedido
         ORDER BY fecha DESC
       `;
+      if (tipoPedido) {
+        mensual = mensual.filter((r: any) => r.tipo_pedido === tipoPedido);
+      }
     }
 
-    const topProductos = await sql`
+    let topProductos = await sql`
       SELECT
         pr.nombre,
+        p.tipo_pedido,
         SUM(dp.cantidad)::int as total_cantidad,
         SUM(dp.subtotal)::int as total_recaudado
       FROM detalle_pedidos dp
@@ -146,10 +166,15 @@ export const GET: APIRoute = async ({ request }) => {
       JOIN productos pr ON pr.id = dp.producto_id
       WHERE p.estado = 'pagado'
         AND p.fecha_hora >= CURRENT_DATE - INTERVAL '30 days'
-      GROUP BY pr.nombre
+      GROUP BY pr.nombre, p.tipo_pedido
       ORDER BY total_cantidad DESC
-      LIMIT 8
+      LIMIT 20
     `;
+    if (tipoPedido) {
+      topProductos = topProductos.filter((r: any) => r.tipo_pedido === tipoPedido).slice(0, 8);
+    } else {
+      topProductos = topProductos.slice(0, 8);
+    }
 
     return new Response(JSON.stringify({ hoy, ultimos7dias, mensual, topProductos }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {

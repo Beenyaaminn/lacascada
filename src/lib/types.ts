@@ -71,12 +71,19 @@ export interface Pedido {
   estado: EstadoPedido;
   metodo_pago: MetodoPago | null;
   total: number;
+  descuento: number;
+  propina: number;
   fecha_hora: string;
   created_at: string;
   updated_at: string;
   mesa_numero?: number;
   mesa_piso?: number;
+  tomada_por?: string | null;
   detalles?: DetallePedido[];
+  nombre_cliente?: string | null;
+  direccion?: string | null;
+  telefono?: string | null;
+  efectivo_con_cuanto?: number;
 }
 
 export interface DetallePedido {
@@ -146,4 +153,9 @@ export interface VoucherData {
   subtotal: number;
   metodo_pago: MetodoPago;
   total: number;
+  vuelto?: number;
+  nombre_cliente?: string | null;
+  direccion?: string | null;
+  telefono?: string | null;
+  efectivo_con_cuanto?: number;
 }

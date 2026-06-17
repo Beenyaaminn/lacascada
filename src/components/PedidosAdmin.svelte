@@ -9,6 +9,7 @@
   let selectedPedido: (Pedido & { detalles?: DetallePedido[] }) | null = $state(null);
   let showPaymentModal: boolean = $state(false);
   let metodoPago: string = $state('efectivo');
+  let efectivoConCuanto: number = $state(0);
   let turnoActivo: any | null = $state(null);
   let cajaActiva: any | null = $state(null);
   let totalHoy: number = $state(0);
@@ -86,6 +87,8 @@
   }
 
   function openPayment(pedido: Pedido) {
+    metodoPago = 'efectivo';
+    efectivoConCuanto = pedido.total || 0;
     cargarDetalles(pedido).then(() => { showPaymentModal = true; });
   }
 
@@ -95,7 +98,7 @@
       const res = await fetch('/api/pagos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pedido_id: selectedPedido.id, metodo_pago: metodoPago }),
+        body: JSON.stringify({ pedido_id: selectedPedido.id, metodo_pago: metodoPago, efectivo_con_cuanto: metodoPago === 'efectivo' ? efectivoConCuanto : 0 }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -108,6 +111,11 @@
             mesa: v.mesa_info,
             metodo_pago: v.metodo_pago,
             total: String(v.total),
+            vuelto: String(v.vuelto || 0),
+            efectivo_con_cuanto: String(v.efectivo_con_cuanto || 0),
+            nombre_cliente: v.nombre_cliente || '',
+            direccion: v.direccion || '',
+            telefono: v.telefono || '',
             detalles: JSON.stringify(v.detalles),
           });
           window.open(`/admin/voucher?${params.toString()}`, '_blank');
@@ -165,6 +173,13 @@
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
               <div class="flex items-center gap-2">
+                {#if pedido.tipo_pedido === 'delivery'}
+                  <span class="text-lg" title="Delivery">🛵</span>
+                {:else if pedido.tipo_pedido === 'retiro'}
+                  <span class="text-lg" title="Retiro">📦</span>
+                {:else}
+                  <span class="text-lg" title="Mesa">🍽️</span>
+                {/if}
                 <span class="font-bold text-gray-900">#{pedido.id}</span>
                 <span class="px-2 py-0.5 rounded-full text-xs font-medium {getEstadoBadge(pedido.estado)}">{pedido.estado.replace(/_/g, ' ')}</span>
                 {#if pedido.metodo_pago}
@@ -172,7 +187,26 @@
                 {/if}
               </div>
               <p class="text-sm text-gray-500 mt-1">
-                {pedido.tipo_pedido === 'mesa' && pedido.mesa_numero ? `Piso ${pedido.mesa_piso} - Mesa ${pedido.mesa_numero}` : pedido.tipo_pedido}
+                {#if pedido.tipo_pedido === 'mesa' && pedido.mesa_numero}
+                  Piso {pedido.mesa_piso} - Mesa {pedido.mesa_numero}
+                  {#if pedido.tomada_por}
+                    <span class="text-purple-600 font-medium"> · 👤 {pedido.tomada_por}</span>
+                  {:else if pedido.nombre_cliente}
+                    <span class="text-emerald-600"> · 🙋 {pedido.nombre_cliente}</span>
+                  {:else}
+                    <span class="text-emerald-600"> · 🍽️ Autoservicio</span>
+                  {/if}
+                {:else if pedido.tipo_pedido === 'delivery'}
+                  🛵 Delivery - {pedido.nombre_cliente || 'Cliente'}
+                  {#if pedido.direccion}
+                    <span class="block text-xs text-gray-400">📍 {pedido.direccion}</span>
+                  {/if}
+                  {#if pedido.telefono}
+                    <span class="block text-xs text-gray-400">📞 {pedido.telefono}</span>
+                  {/if}
+                {:else}
+                  {pedido.tipo_pedido}
+                {/if}
                 <span class="mx-2">|</span>
                 {new Date(pedido.fecha_hora).toLocaleString('es-CL')}
               </p>
@@ -203,8 +237,16 @@
       <div class="bg-gray-50 rounded-lg p-3 mb-4">
         <p class="text-sm text-gray-600">Total a cobrar:</p>
         <p class="text-2xl font-bold text-brand-700">{formatCLP(selectedPedido.total)}</p>
-        {#if selectedPedido.mesa_numero}
-          <p class="text-xs text-gray-500 mt-1">Piso {selectedPedido.mesa_piso} - Mesa {selectedPedido.mesa_numero}</p>
+        {#if selectedPedido.tipo_pedido === 'delivery'}
+          <p class="text-xs text-gray-500 mt-1">🛵 Delivery - {selectedPedido.nombre_cliente || 'Cliente'}</p>
+          {#if selectedPedido.direccion}
+            <p class="text-xs text-gray-400">📍 {selectedPedido.direccion}</p>
+          {/if}
+          {#if selectedPedido.telefono}
+            <p class="text-xs text-gray-400">📞 {selectedPedido.telefono}</p>
+          {/if}
+        {:else if selectedPedido.mesa_numero}
+          <p class="text-xs text-gray-500 mt-1">🍽️ Piso {selectedPedido.mesa_piso} - Mesa {selectedPedido.mesa_numero}</p>
         {/if}
       </div>
       <div class="mb-4">
@@ -218,6 +260,15 @@
           {/each}
         </div>
       </div>
+      {#if metodoPago === 'efectivo'}
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Con cuánto paga</label>
+          <input type="number" bind:value={efectivoConCuanto} min={selectedPedido.total} class="input-field w-full" />
+          {#if efectivoConCuanto > selectedPedido.total}
+            <p class="text-sm text-green-600 mt-1">Vuelto: {formatCLP(efectivoConCuanto - selectedPedido.total)}</p>
+          {/if}
+        </div>
+      {/if}
       <div class="flex gap-3">
         <button class="btn-secondary flex-1" onclick={() => { showPaymentModal = false }}>Cancelar</button>
         <button class="btn-primary flex-1" onclick={procesarPago}>Cobrar {formatCLP(selectedPedido.total)}</button>

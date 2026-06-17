@@ -95,18 +95,22 @@ CREATE TABLE productos_acompanamientos (
 -- TABLA: pedidos
 -- ============================================================
 CREATE TABLE pedidos (
-  id           SERIAL PRIMARY KEY,
-  mesa_id      INTEGER REFERENCES mesas(id) ON DELETE SET NULL,
-  usuario_id   INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
-  tipo_pedido  tipo_pedido NOT NULL DEFAULT 'mesa',
-  estado       estado_pedido NOT NULL DEFAULT 'pendiente',
-  metodo_pago  metodo_pago,
-  total        INTEGER NOT NULL DEFAULT 0 CHECK (total >= 0),
-  descuento    INTEGER NOT NULL DEFAULT 0,
-  propina      INTEGER NOT NULL DEFAULT 0,
-  fecha_hora   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id                SERIAL PRIMARY KEY,
+  mesa_id           INTEGER REFERENCES mesas(id) ON DELETE SET NULL,
+  usuario_id        INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  tipo_pedido       tipo_pedido NOT NULL DEFAULT 'mesa',
+  estado            estado_pedido NOT NULL DEFAULT 'pendiente',
+  metodo_pago       metodo_pago,
+  total             INTEGER NOT NULL DEFAULT 0 CHECK (total >= 0),
+  descuento         INTEGER NOT NULL DEFAULT 0,
+  propina           INTEGER NOT NULL DEFAULT 0,
+  nombre_cliente    VARCHAR(200),
+  direccion         TEXT,
+  telefono          VARCHAR(50),
+  efectivo_con_cuanto INTEGER DEFAULT 0,
+  fecha_hora        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ============================================================
@@ -256,6 +260,8 @@ CREATE INDEX idx_productos_disponible ON productos(disponible_dia, maneja_stock)
 CREATE INDEX idx_pedidos_mesa ON pedidos(mesa_id);
 CREATE INDEX idx_pedidos_estado ON pedidos(estado);
 CREATE INDEX idx_pedidos_fecha ON pedidos(fecha_hora DESC);
+CREATE INDEX idx_pedidos_tipo ON pedidos(tipo_pedido);
+CREATE INDEX idx_pedidos_telefono ON pedidos(telefono);
 CREATE INDEX idx_detalle_pedidos_pedido ON detalle_pedidos(pedido_id);
 CREATE INDEX idx_clientes_credito_rut ON clientes_credito(rut_o_telefono);
 CREATE INDEX idx_abonos_cliente ON abonos(cliente_credito_id);

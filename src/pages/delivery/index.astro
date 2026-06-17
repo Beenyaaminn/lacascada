@@ -2,10 +2,6 @@
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '../../lib/db';
 
-const piso = Astro.url.searchParams.get('piso') || '0';
-const mesa = Astro.url.searchParams.get('mesa') || '0';
-const mesaInfo = piso !== '0' ? `Piso ${piso} - Mesa ${mesa}` : 'Selecciona tu mesa';
-
 const categorias = await sql`SELECT * FROM categorias ORDER BY orden ASC`;
 const productos = await sql`
   SELECT p.*, c.nombre as categoria_nombre
@@ -18,29 +14,22 @@ const productos = await sql`
 const acompanamientos = await sql`SELECT * FROM acompanamientos ORDER BY es_extra ASC, nombre ASC`;
 const productosAcomp = await sql`SELECT * FROM productos_acompanamientos`;
 ---
-<Layout title={`Menú Digital - ${mesaInfo}`} description="Carta digital de La Cascada. Realiza tu pedido desde la mesa.">
+<Layout title="Delivery - La Cascada" description="Realiza tu pedido para delivery desde La Cascada.">
   <main
-    id="menu-app"
-    data-piso={piso}
-    data-mesa={mesa}
+    id="delivery-app"
     data-menu={JSON.stringify({ categorias, productos, acompanamientos, productos_acompanamientos: productosAcomp }).replace(/"/g, '&quot;')}
-    class="min-h-screen bg-gray-50"
   ></main>
 
   <script>
     import { mount } from 'svelte';
-    import MenuApp from '../../components/MenuApp.svelte';
+    import DeliveryForm from '../../components/DeliveryForm.svelte';
 
-    const el = document.getElementById('menu-app');
+    const el = document.getElementById('delivery-app');
     if (el) {
       const menuData = JSON.parse(el?.dataset?.menu?.replace(/&quot;/g, '"') || 'null');
-      mount(MenuApp, {
+      mount(DeliveryForm, {
         target: el,
-        props: {
-          piso: parseInt(el.dataset.piso || '0'),
-          mesa: parseInt(el.dataset.mesa || '0'),
-          menuData,
-        },
+        props: { menuData },
       });
     }
   </script>

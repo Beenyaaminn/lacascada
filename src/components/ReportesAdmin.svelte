@@ -14,6 +14,11 @@
   let filtroPagoMetodo: string = $state('');
   let loadingDetalles: boolean = $state(false);
 
+  let deliveryHoy: any[] = $state([]);
+  let delivery7dias: any[] = $state([]);
+  let deliveryTop: any[] = $state([]);
+  let loadingDelivery: boolean = $state(false);
+
   const tabs = [
     { id: 'ventas', label: 'Resumen de ventas', icon: '💰' },
     { id: 'detalles', label: 'Detalles de pago', icon: '🧾' },
@@ -65,6 +70,12 @@
   }
 
   function formatCLP(n: number): string { return '$' + n.toLocaleString('es-CL'); }
+
+  function deliveryTicketPromedio(): string {
+    const td = delivery7dias.reduce((s, d) => s + d.total_ventas, 0);
+    const cd = delivery7dias.reduce((s, d) => s + d.cantidad_pedidos, 0);
+    return cd > 0 ? formatCLP(Math.round(td / cd)) : '$0';
+  }
   function formatFecha(f: string): string {
     return new Date(f + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
   }
@@ -88,6 +99,18 @@
       detallePagos = data.detallePagos || [];
     } catch (e) { console.error(e); }
     finally { loadingDetalles = false; }
+  }
+
+  async function loadDeliveryData() {
+    loadingDelivery = true;
+    try {
+      const res = await fetch(`/api/admin/reportes?tipo=delivery&mes=${mesSeleccionado}`);
+      const data = await res.json();
+      deliveryHoy = data.hoy || [];
+      delivery7dias = data.ultimos7dias || [];
+      deliveryTop = data.topProductos || [];
+    } catch (e) { console.error(e); }
+    finally { loadingDelivery = false; }
   }
 
   function groupByDate(list: any[]): Map<string, any[]> {
@@ -115,6 +138,7 @@
 
   $effect(() => {
     if (activeTab === 'detalles') loadDetalles();
+    if (activeTab === 'delivery') loadDeliveryData();
   });
 
   let chartSegments: { offset: number; dash: number; color: string }[] = $state([]);
@@ -429,7 +453,62 @@ ${totalesMes ? `
   {:else if activeTab === 'jerarquias'}
     <div class="text-center py-16 text-gray-400"><p class="text-lg font-medium">Venta Jerarquías</p><p class="text-sm mt-1">Próximamente</p></div>
   {:else if activeTab === 'delivery'}
-    <div class="text-center py-16 text-gray-400"><p class="text-lg font-medium">Reportes Delivery</p><p class="text-sm mt-1">Próximamente</p></div>
+    {#if loadingDelivery}
+      <div class="text-center py-12 text-gray-500">Cargando reportes delivery...</div>
+    {:else}
+      <div class="space-y-6">
+        <h3 class="text-lg font-bold text-gray-900">🛵 Reportes Delivery</h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="card p-4 text-center">
+            <p class="text-sm text-gray-500">Ventas hoy</p>
+            <p class="text-2xl font-bold text-brand-700">{formatCLP(deliveryHoy.reduce((s: number, d: any) => s + d.total_ventas, 0))}</p>
+            <p class="text-xs text-gray-400">{deliveryHoy.reduce((s: number, d: any) => s + d.cantidad_pedidos, 0)} pedidos</p>
+          </div>
+          <div class="card p-4 text-center">
+            <p class="text-sm text-gray-500">7 días</p>
+            <p class="text-2xl font-bold text-brand-700">{formatCLP(delivery7dias.reduce((s: number, d: any) => s + d.total_ventas, 0))}</p>
+            <p class="text-xs text-gray-400">{delivery7dias.reduce((s: number, d: any) => s + d.cantidad_pedidos, 0)} pedidos</p>
+          </div>
+          <div class="card p-4 text-center">
+            <p class="text-sm text-gray-500">Ticket promedio</p>
+            <p class="text-2xl font-bold text-brand-700">{deliveryTicketPromedio()}</p>
+          </div>
+        </div>
+
+        {#if delivery7dias.length > 0}
+          <div class="card p-4">
+            <h4 class="font-semibold text-gray-900 mb-3">Últimos 7 días</h4>
+            <div class="space-y-2">
+              {#each delivery7dias as d}
+                <div class="flex justify-between items-center text-sm">
+                  <span class="text-gray-600">{formatFecha(d.fecha)}</span>
+                  <span class="text-gray-500">{d.cantidad_pedidos} pedidos</span>
+                  <span class="font-semibold text-brand-700">{formatCLP(d.total_ventas)}</span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {:else}
+          <div class="text-center py-8 text-gray-400">Sin datos de delivery en los últimos 7 días</div>
+        {/if}
+
+        {#if deliveryTop.length > 0}
+          <div class="card p-4">
+            <h4 class="font-semibold text-gray-900 mb-3">Top productos delivery (30 días)</h4>
+            <div class="space-y-2">
+              {#each deliveryTop as p, i}
+                <div class="flex justify-between items-center text-sm">
+                  <span class="text-gray-600">#{i + 1} {p.nombre}</span>
+                  <span class="text-gray-500">{p.total_cantidad} unid.</span>
+                  <span class="font-semibold text-brand-700">{formatCLP(p.total_recaudado)}</span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/if}
   {/if}
 </div>
 

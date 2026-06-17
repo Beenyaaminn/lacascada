@@ -8,7 +8,16 @@ export const POST: APIRoute = async ({ request }) => {
   const ip = request.headers.get('x-forwarded-for') || '';
 
   try {
-    const { piso, mesa: mesaNumero, items, total, nombre_cliente } = await request.json();
+    const {
+      nombre, direccion, telefono, metodo_pago,
+      efectivo_con_cuanto, items, total
+    } = await request.json();
+
+    if (!nombre || !direccion || !telefono) {
+      return new Response(JSON.stringify({ error: 'Nombre, dirección y teléfono son obligatorios' }), {
+        status: 400, headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return new Response(JSON.stringify({ error: 'El pedido debe tener al menos un producto' }), {
@@ -16,14 +25,17 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const mesaResult = await sql`
-      SELECT id, estado FROM mesas WHERE numero_mesa = ${mesaNumero} AND piso = ${piso} LIMIT 1
-    `;
-    if (mesaResult.length === 0) {
-      return new Response(JSON.stringify({ error: 'Mesa no encontrada' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+    if (!metodo_pago || !['efectivo', 'debito', 'credito'].includes(metodo_pago)) {
+      return new Response(JSON.stringify({ error: 'Método de pago inválido' }), {
+        status: 400, headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    const mesaId = mesaResult[0].id;
+    if (metodo_pago === 'efectivo' && (!efectivo_con_cuanto || efectivo_con_cuanto < total)) {
+      return new Response(JSON.stringify({ error: `El monto en efectivo ($${efectivo_con_cuanto || 0}) debe cubrir el total ($${total})` }), {
+        status: 400, headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     for (const item of items) {
       const prod = await sql`SELECT id, nombre, maneja_stock, stock_actual FROM productos WHERE id = ${item.producto_id} LIMIT 1`;
@@ -39,13 +51,12 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    const result = await sql.begin(async (tx) => {
-      const mesaInfo = await tx`SELECT estado FROM mesas WHERE id = ${mesaId} LIMIT 1`;
-      const estabaVacia = mesaInfo.length > 0 && mesaInfo[0].estado === 'libre';
+    const efConCuanto = metodo_pago === 'efectivo' ? (efectivo_con_cuanto || 0) : 0;
 
+    const result = await sql.begin(async (tx) => {
       const pedido = await tx`
-        INSERT INTO pedidos (mesa_id, tipo_pedido, estado, total, nombre_cliente)
-        VALUES (${mesaId}, 'mesa', 'pendiente', ${total}, ${nombre_cliente || null})
+        INSERT INTO pedidos (tipo_pedido, estado, total, nombre_cliente, direccion, telefono, efectivo_con_cuanto)
+        VALUES ('delivery', 'pendiente', ${total}, ${nombre}, ${direccion}, ${telefono}, ${efConCuanto})
         RETURNING id, fecha_hora
       `;
       const pedidoId = pedido[0].id;
@@ -57,31 +68,24 @@ export const POST: APIRoute = async ({ request }) => {
         `;
       }
 
-      if (estabaVacia) {
-        await tx`
-          UPDATE pedidos SET estado = 'cancelado'
-          WHERE mesa_id = ${mesaId}
-            AND estado NOT IN ('pagado', 'cancelado')
-            AND id != ${pedidoId}
-        `;
-        await tx`
-          UPDATE mesas SET estado = 'ocupada', tomada_desde = NOW() WHERE id = ${mesaId}
-        `;
-      }
-
       return pedidoId;
     });
 
     const pedidoId = result;
 
-    await registrarAuditoria('PEDIDO_CREADO', 'pedidos', pedidoId, 'cliente',
-      `Mesa #${mesaId} | ${items.length} items | Total: $${total}`, ip);
+    await registrarAuditoria('PEDIDO_DELIVERY_CREADO', 'pedidos', pedidoId, nombre,
+      `Delivery | ${items.length} items | Total: $${total} | Dir: ${direccion}`, ip);
 
-    return new Response(JSON.stringify({ success: true, pedido_id: pedidoId, fecha_hora: new Date().toISOString() }), {
+    return new Response(JSON.stringify({
+      success: true,
+      pedido_id: pedidoId,
+      fecha_hora: new Date().toISOString(),
+      vuelto: metodo_pago === 'efectivo' ? (efectivo_con_cuanto || 0) - total : 0,
+    }), {
       status: 201, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error creando pedido:', error);
+    console.error('Error creando pedido delivery:', error);
     return new Response(JSON.stringify({ error: 'Error al crear el pedido' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 };

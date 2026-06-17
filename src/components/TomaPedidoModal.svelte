@@ -36,6 +36,7 @@
   let montoPagado: number = $state(0);
   let pedidosInfo: PedidoInfo[] = $state([]);
   let pagoComensalIdx: number = $state(-1);
+  let itemsOriginalesIds: Set<string> = new Set();
 
   interface OrdenItem {
     id: string;
@@ -70,7 +71,7 @@
       const [gRes, mRes, pRes] = await Promise.all([
         fetch('/api/admin/garzones'),
         fetch('/api/menu'),
-        fetch(`/api/admin/pedidos?estado=pendiente&estado=en_preparacion`),
+        fetch(`/api/admin/pedidos?estado=pendiente&estado=en_preparacion&estado=entregado`),
       ]);
       const gData = await gRes.json();
       const mData = await mRes.json();
@@ -81,51 +82,57 @@
 
       if (mesa.estado !== 'libre') {
         const pedidosMesa = (pData.pedidos || []).filter((p: any) =>
-          p.numero_mesa === mesa.numero_mesa &&
-          p.mesa_piso === mesa.piso &&
+          p.mesa_id === mesa.id &&
+          p.tipo_pedido === 'mesa' &&
           p.estado !== 'pagado' &&
           p.estado !== 'cancelado'
         );
-        const pedidoReciente = pedidosMesa.length > 0 ? [pedidosMesa[pedidosMesa.length - 1]] : [];
 
-        if (pedidoReciente.length > 0) {
-          const detallesPromises = pedidoReciente.map((p: any) =>
+        if (pedidosMesa.length > 0) {
+          const detallesPromises = pedidosMesa.map((p: any) =>
             fetch(`/api/admin/pedidos/${p.id}/detalles`).then(r => r.json())
           );
           const detallesResults = await Promise.all(detallesPromises);
 
-          comensalesList = pedidoReciente.map((p: any, i: number) => {
-            const items = (detallesResults[i]?.detalles || []).map((d: any) => ({
-              id: generateId(),
-              producto: {
-                id: d.producto_id,
-                nombre: d.producto_nombre,
-                precio: d.producto_precio,
-                categoria_id: 0,
-                descripcion: null,
-                ingredientes: null,
-                maneja_stock: false,
-                stock_actual: 0,
-                disponible_dia: true,
-                imagen_url: null,
-                created_at: '',
-                updated_at: '',
-              } as any,
-              cantidad: d.cantidad,
-            }));
+          comensalesList = pedidosMesa.map((p: any, i: number) => {
+            const items = (detallesResults[i]?.detalles || []).map((d: any) => {
+              const uid = generateId();
+              itemsOriginalesIds.add(uid);
+              return {
+                id: uid,
+                producto: {
+                  id: d.producto_id,
+                  nombre: d.producto_nombre,
+                  precio: d.producto_precio,
+                  categoria_id: 0,
+                  descripcion: null,
+                  ingredientes: null,
+                  maneja_stock: false,
+                  stock_actual: 0,
+                  disponible_dia: true,
+                  imagen_url: null,
+                  created_at: '',
+                  updated_at: '',
+                } as any,
+                cantidad: d.cantidad,
+              };
+            });
             return { id: i + 1, label: `Pedido #${p.id}`, items };
           });
 
-          pedidosInfo = pedidoReciente.map((p: any, i: number) => ({
+          pedidosInfo = pedidosMesa.map((p: any, i: number) => ({
             comensalIdx: i,
             pedidoId: p.id,
             pagado: p.estado === 'pagado',
           }));
           step = 'orden';
+        } else {
+          step = 'abrir';
         }
       }
     } catch (e) {
       console.error('Error cargando datos:', e);
+      step = 'abrir';
     } finally {
       loading = false;
     }
@@ -277,50 +284,55 @@
         body: JSON.stringify({ id: mesa.id, estado: 'ocupada', tomada_por: garzonNombre }),
       });
 
-      const oldRes = await fetch(`/api/admin/pedidos?estado=pendiente&estado=en_preparacion`);
-      const oldData = await oldRes.json();
-      const oldPedidos = (oldData.pedidos || []).filter((p: any) =>
-        p.numero_mesa === mesa.numero_mesa && p.mesa_piso === mesa.piso
-      );
-      for (const op of oldPedidos) {
-        await fetch('/api/admin/pedidos', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: op.id, estado: 'cancelado' }),
-        });
+      const comensalesConItemsNuevos = comensalesList
+        .map((c, idx) => ({
+          c,
+          idx,
+          itemsNuevos: c.items.filter(i => !itemsOriginalesIds.has(i.id)),
+        }))
+        .filter(({ itemsNuevos }) => itemsNuevos.length > 0);
+
+      if (comensalesConItemsNuevos.length === 0) {
+        alert('No hay items nuevos para enviar a cocina.');
+        saving = false;
+        return;
       }
 
-      const comensalesConItems = comensalesList
-        .map((c, idx) => ({ c, idx }))
-        .filter(({ c }) => c.items.length > 0);
-
       const resultados = await Promise.all(
-        comensalesConItems.map(({ c, idx }) =>
+        comensalesConItemsNuevos.map(({ itemsNuevos, idx }) =>
           fetch('/api/pedidos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               piso: mesa.piso,
               mesa: mesa.numero_mesa,
-              items: c.items.map(i => ({
+              items: itemsNuevos.map(i => ({
                 producto_id: i.producto.id,
                 cantidad: i.cantidad,
                 acompanamiento: null,
                 subtotal: i.producto.precio * i.cantidad,
               })),
-              total: getComensalTotal(idx),
+              total: itemsNuevos.reduce((s, i) => s + i.producto.precio * i.cantidad, 0),
             }),
           }).then(r => r.json())
         )
       );
 
-      pedidosInfo = resultados
+      const nuevosIds = resultados
         .map((r, i) => ({
-          comensalIdx: comensalesConItems[i].idx,
+          comensalIdx: comensalesConItemsNuevos[i].idx,
           pedidoId: r.pedido_id,
           pagado: false,
         }))
         .filter(p => p.pedidoId);
+
+      pedidosInfo = [...pedidosInfo, ...nuevosIds];
+
+      for (const { itemsNuevos } of comensalesConItemsNuevos) {
+        for (const item of itemsNuevos) {
+          itemsOriginalesIds.add(item.id);
+        }
+      }
 
       pagoComensalIdx = -1;
     } catch (e) {

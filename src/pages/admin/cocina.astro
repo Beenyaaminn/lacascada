@@ -1,0 +1,24 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSessionFromCookie } from '../../lib/auth';
+
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = getSessionFromCookie(cookieHeader);
+
+if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
+  return Astro.redirect('/login');
+}
+---
+<AdminLayout title="Cocina - La Cascada">
+  <div id="cocina-app"></div>
+
+  <script>
+    import { mount } from 'svelte';
+    import CocinaDisplay from '../../components/CocinaDisplay.svelte';
+
+    const el = document.getElementById('cocina-app');
+    if (el) {
+      mount(CocinaDisplay, { target: el });
+    }
+  </script>
+</AdminLayout>

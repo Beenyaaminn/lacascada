@@ -5,6 +5,7 @@
 
   let mesas: Mesa[] = $state([]);
   let reservas: any[] = $state([]);
+  let deliveryOrders: any[] = $state([]);
   let activePiso: number = $state(1);
   let activeTab: string = $state('mesas');
   let loading: boolean = $state(true);
@@ -18,6 +19,12 @@
   let showModal: boolean = $state(false);
   let modalMesa: Mesa | null = $state(null);
   let clockOffset: number = $state(0);
+
+  let showCobroDelivery: boolean = $state(false);
+  let cobroDeliveryPedido: any | null = $state(null);
+  let metodoPagoDelivery: string = $state('efectivo');
+  let efectivoConCuantoDelivery: number = $state(0);
+  let cobrandoDelivery: boolean = $state(false);
 
   onMount(() => {
     loadData();
@@ -38,9 +45,10 @@
     operationInFlight = true;
     updating = true;
     try {
-      const [mesasRes, reservasRes] = await Promise.all([
+      const [mesasRes, reservasRes, deliveryRes] = await Promise.all([
         fetch('/api/admin/mesas?_t=' + Date.now(), { cache: 'no-store' }),
         fetch('/api/admin/reservas?_t=' + Date.now(), { cache: 'no-store' }),
+        fetch('/api/admin/pedidos?tipo=delivery&_t=' + Date.now(), { cache: 'no-store' }),
       ]);
       const mesasData = await mesasRes.json();
       mesas = mesasData.mesas || [];
@@ -61,6 +69,8 @@
       }
       const reservasData = await reservasRes.json();
       reservas = reservasData.reservas || [];
+      const deliveryData = await deliveryRes.json();
+      deliveryOrders = deliveryData.pedidos || [];
       lastUpdate = new Date();
     } catch (e) {
       console.error('Error cargando datos:', e);
@@ -168,6 +178,28 @@
     return `Mesa ${String(num).padStart(2, '0')}`;
   }
 
+  async function cambiarEstadoDelivery(pedidoId: number, estado: string) {
+    try {
+      const res = await fetch('/api/admin/pedidos', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: pedidoId, estado }),
+      });
+      if (res.ok) loadData(true);
+    } catch (e) { console.error('Error:', e); }
+  }
+
+  function getEstadoBadge(estado: string): string {
+    switch (estado) {
+      case 'pendiente': return 'bg-yellow-100 text-yellow-700';
+      case 'en_preparacion': return 'bg-blue-100 text-blue-700';
+      case 'entregado': return 'bg-green-100 text-green-700';
+      case 'pagado': return 'bg-gray-100 text-gray-700';
+      case 'cancelado': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  }
+
   async function abrirModal(mesa: Mesa) {
     try {
       const res = await fetch('/api/admin/mesas/bloquear', {
@@ -194,6 +226,55 @@
     showModal = false;
     modalMesa = null;
     loadData(true);
+  }
+
+  function cobrarDelivery(pedido: any) {
+    cobroDeliveryPedido = pedido;
+    metodoPagoDelivery = 'efectivo';
+    efectivoConCuantoDelivery = pedido.total || 0;
+    showCobroDelivery = true;
+  }
+
+  async function procesarCobroDelivery() {
+    if (!cobroDeliveryPedido) return;
+    cobrandoDelivery = true;
+    try {
+      const res = await fetch('/api/pagos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pedido_id: cobroDeliveryPedido.id,
+          metodo_pago: metodoPagoDelivery,
+          efectivo_con_cuanto: metodoPagoDelivery === 'efectivo' ? efectivoConCuantoDelivery : 0,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showCobroDelivery = false;
+        if (data.voucher) {
+          const v = data.voucher;
+          const params = new URLSearchParams({
+            pedido_id: String(v.pedido_id),
+            fecha: new Date(v.fecha_hora).toLocaleString('es-CL'),
+            mesa: v.mesa_info,
+            metodo_pago: v.metodo_pago,
+            total: String(v.total),
+            vuelto: String(v.vuelto || 0),
+            efectivo_con_cuanto: String(v.efectivo_con_cuanto || 0),
+            nombre_cliente: v.nombre_cliente || '',
+            direccion: v.direccion || '',
+            telefono: v.telefono || '',
+            detalles: JSON.stringify(v.detalles),
+          });
+          window.open(`/admin/voucher?${params.toString()}`, '_blank');
+        }
+        loadData(true);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Error al procesar pago');
+      }
+    } catch (e) { alert('Error de conexión'); }
+    finally { cobrandoDelivery = false; }
   }
 
   const tabs = [
@@ -372,18 +453,101 @@
 
     <!-- ===== DELIVERY ===== -->
     {:else if activeTab === 'delivery'}
-      <div class="text-center py-16 text-gray-400">
-        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-        </svg>
-        <p class="text-lg font-medium">Delivery</p>
-        <p class="text-sm mt-1">Pedidos con delivery próximamente</p>
-      </div>
+      {#if deliveryOrders.length === 0}
+        <div class="text-center py-16 text-gray-400">
+          <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+          </svg>
+          <p class="text-lg font-medium">Sin pedidos delivery</p>
+          <p class="text-sm mt-1">No hay pedidos delivery activos por el momento</p>
+        </div>
+      {:else}
+        <div class="space-y-3">
+          {#each deliveryOrders as pedido (pedido.id)}
+            <div class="card p-4 border-l-4 {pedido.estado === 'pendiente' ? 'border-yellow-400' : pedido.estado === 'en_preparacion' ? 'border-blue-400' : pedido.estado === 'entregado' ? 'border-green-400' : 'border-gray-300'}">
+              <div class="flex items-start justify-between flex-wrap gap-3">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-2xl">🛵</span>
+                    <span class="font-bold text-gray-900">#{pedido.id}</span>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium {getEstadoBadge(pedido.estado)}">{pedido.estado.replace(/_/g, ' ')}</span>
+                    {#if pedido.metodo_pago}
+                      <span class="text-xs text-gray-500 capitalize">{pedido.metodo_pago.replace('_', ' ')}</span>
+                    {/if}
+                  </div>
+                  <p class="font-semibold text-gray-800">{pedido.nombre_cliente || 'Cliente'}</p>
+                  {#if pedido.telefono}
+                    <p class="text-sm text-gray-500">📞 {pedido.telefono}</p>
+                  {/if}
+                  {#if pedido.direccion}
+                    <p class="text-sm text-gray-500">📍 {pedido.direccion}</p>
+                  {/if}
+                  <p class="text-xs text-gray-400 mt-1">{new Date(pedido.fecha_hora).toLocaleString('es-CL')}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-brand-700 text-lg">${pedido.total.toLocaleString('es-CL')}</span>
+                  {#if pedido.estado === 'pendiente'}
+                    <button class="btn-primary text-xs px-3 py-1.5" onclick={() => cambiarEstadoDelivery(pedido.id, 'en_preparacion')}>Preparar</button>
+                  {:else if pedido.estado === 'en_preparacion'}
+                    <button class="btn-primary text-xs px-3 py-1.5" onclick={() => cambiarEstadoDelivery(pedido.id, 'entregado')}>Entregar</button>
+                  {:else if pedido.estado === 'entregado' && !pedido.metodo_pago}
+                    <button class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-1 px-3 rounded-lg text-xs" onclick={() => cobrarDelivery(pedido)}>Cobrar</button>
+                  {/if}
+                </div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
     {/if}
   {/if}
 
   <!-- Toma de Pedido Modal -->
   {#if showModal && modalMesa}
     <TomaPedidoModal mesa={modalMesa} onclose={cerrarModal} />
+  {/if}
+
+  <!-- Cobro Delivery Modal -->
+  {#if showCobroDelivery && cobroDeliveryPedido}
+    <div class="fixed inset-0 z-50 flex items-center justify-center" role="dialog">
+      <div class="absolute inset-0 bg-black/50" onclick={() => { showCobroDelivery = false }}></div>
+      <div class="relative bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 z-10">
+        <h3 class="text-lg font-bold mb-4">Cobrar Delivery #{cobroDeliveryPedido.id}</h3>
+        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+          <p class="text-sm text-gray-600">Total a cobrar:</p>
+          <p class="text-2xl font-bold text-brand-700">${cobroDeliveryPedido.total.toLocaleString('es-CL')}</p>
+          <p class="text-xs text-gray-500 mt-1">🛵 {cobroDeliveryPedido.nombre_cliente || 'Delivery'}</p>
+          {#if cobroDeliveryPedido.direccion}
+            <p class="text-xs text-gray-400">📍 {cobroDeliveryPedido.direccion}</p>
+          {/if}
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Método de pago</label>
+          <div class="grid grid-cols-2 gap-2">
+            {#each ['efectivo', 'debito', 'credito'] as metodo}
+              <label class="flex items-center gap-2 p-2 rounded-lg border cursor-pointer {metodoPagoDelivery === metodo ? 'border-brand-500 bg-brand-50' : 'border-gray-200'}">
+                <input type="radio" bind:group={metodoPagoDelivery} value={metodo} class="text-brand-600" />
+                <span class="text-sm capitalize">{metodo === 'efectivo' ? 'Efectivo' : metodo}</span>
+              </label>
+            {/each}
+          </div>
+        </div>
+        {#if metodoPagoDelivery === 'efectivo'}
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Con cuánto paga</label>
+            <input type="number" bind:value={efectivoConCuantoDelivery} min={cobroDeliveryPedido.total} class="input-field w-full" />
+            {#if efectivoConCuantoDelivery > cobroDeliveryPedido.total}
+              <p class="text-sm text-green-600 mt-1">Vuelto: ${(efectivoConCuantoDelivery - cobroDeliveryPedido.total).toLocaleString('es-CL')}</p>
+            {/if}
+          </div>
+        {/if}
+        <div class="flex gap-3">
+          <button class="btn-secondary flex-1" onclick={() => { showCobroDelivery = false }}>Cancelar</button>
+          <button class="btn-primary flex-1" onclick={procesarCobroDelivery} disabled={cobrandoDelivery}>
+            {cobrandoDelivery ? 'Procesando...' : `Cobrar $${cobroDeliveryPedido.total.toLocaleString('es-CL')}`}
+          </button>
+        </div>
+      </div>
+    </div>
   {/if}
 </div>

@@ -43,7 +43,7 @@ export const PUT: APIRoute = async ({ request }) => {
         UPDATE mesas
         SET estado = ${estado}::estado_mesa,
             tomada_por = ${garzonNombre},
-            tomada_desde = NOW()
+            tomada_desde = COALESCE(tomada_desde, NOW())
         WHERE id = ${id}
         RETURNING *
       `;

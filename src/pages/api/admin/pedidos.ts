@@ -21,27 +21,54 @@ export const GET: APIRoute = async ({ request }) => {
     const url = new URL(request.url);
     const estados = url.searchParams.getAll('estado');
     const desde = url.searchParams.get('desde');
+    const tipoPedido = url.searchParams.get('tipo');
 
     let pedidos;
-    if (estados.length > 0) {
+    if (estados.length > 0 && tipoPedido) {
       pedidos = await sql`
-        SELECT p.*, m.numero_mesa, m.piso as mesa_piso
+        SELECT p.*, m.numero_mesa as mesa_numero, m.piso as mesa_piso, m.tomada_por
+        FROM pedidos p
+        LEFT JOIN mesas m ON m.id = p.mesa_id
+        WHERE p.estado = ANY(${estados}::estado_pedido[])
+          AND p.tipo_pedido = ${tipoPedido}
+        ORDER BY p.fecha_hora DESC
+      `;
+    } else if (estados.length > 0) {
+      pedidos = await sql`
+        SELECT p.*, m.numero_mesa as mesa_numero, m.piso as mesa_piso, m.tomada_por
         FROM pedidos p
         LEFT JOIN mesas m ON m.id = p.mesa_id
         WHERE p.estado = ANY(${estados}::estado_pedido[])
         ORDER BY p.fecha_hora DESC
       `;
+    } else if (desde && tipoPedido) {
+      pedidos = await sql`
+        SELECT p.*, m.numero_mesa as mesa_numero, m.piso as mesa_piso, m.tomada_por
+        FROM pedidos p
+        LEFT JOIN mesas m ON m.id = p.mesa_id
+        WHERE p.fecha_hora >= ${desde}::date
+          AND p.tipo_pedido = ${tipoPedido}
+        ORDER BY p.fecha_hora DESC
+      `;
     } else if (desde) {
       pedidos = await sql`
-        SELECT p.*, m.numero_mesa, m.piso as mesa_piso
+        SELECT p.*, m.numero_mesa as mesa_numero, m.piso as mesa_piso, m.tomada_por
         FROM pedidos p
         LEFT JOIN mesas m ON m.id = p.mesa_id
         WHERE p.fecha_hora >= ${desde}::date
         ORDER BY p.fecha_hora DESC
       `;
+    } else if (tipoPedido) {
+      pedidos = await sql`
+        SELECT p.*, m.numero_mesa as mesa_numero, m.piso as mesa_piso, m.tomada_por
+        FROM pedidos p
+        LEFT JOIN mesas m ON m.id = p.mesa_id
+        WHERE p.tipo_pedido = ${tipoPedido}
+        ORDER BY p.fecha_hora DESC
+      `;
     } else {
       pedidos = await sql`
-        SELECT p.*, m.numero_mesa, m.piso as mesa_piso
+        SELECT p.*, m.numero_mesa as mesa_numero, m.piso as mesa_piso, m.tomada_por
         FROM pedidos p
         LEFT JOIN mesas m ON m.id = p.mesa_id
         ORDER BY p.fecha_hora DESC

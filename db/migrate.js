@@ -122,10 +122,32 @@ async function migrate() {
     total INTEGER NOT NULL DEFAULT 0 CHECK (total >= 0),
     descuento INTEGER NOT NULL DEFAULT 0,
     propina INTEGER NOT NULL DEFAULT 0,
+    nombre_cliente VARCHAR(200),
+    direccion TEXT,
+    telefono VARCHAR(50),
+    efectivo_con_cuanto INTEGER DEFAULT 0,
     fecha_hora TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
+  
+  // Agregar columnas de delivery si la tabla ya existía
+  await sql`DO $$ BEGIN
+    ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS nombre_cliente VARCHAR(200);
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END $$`;
+  await sql`DO $$ BEGIN
+    ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS direccion TEXT;
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END $$`;
+  await sql`DO $$ BEGIN
+    ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS telefono VARCHAR(50);
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END $$`;
+  await sql`DO $$ BEGIN
+    ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS efectivo_con_cuanto INTEGER DEFAULT 0;
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END $$`;
 
   await sql`CREATE TABLE IF NOT EXISTS detalle_pedidos (
     id SERIAL PRIMARY KEY,
@@ -245,6 +267,8 @@ async function migrate() {
   await sql`CREATE INDEX IF NOT EXISTS idx_pedidos_mesa ON pedidos(mesa_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_pedidos_estado ON pedidos(estado)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_pedidos_fecha ON pedidos(fecha_hora DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_pedidos_tipo ON pedidos(tipo_pedido)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_pedidos_telefono ON pedidos(telefono)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_detalle_pedidos_pedido ON detalle_pedidos(pedido_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_clientes_credito_rut ON clientes_credito(rut_o_telefono)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_abonos_cliente ON abonos(cliente_credito_id)`;

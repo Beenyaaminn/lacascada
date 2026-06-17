@@ -23,6 +23,10 @@ export async function sql(strings: TemplateStringsArray, ...values: any[]): Prom
   return (neonQueryFn as any).query(query, params) as Promise<any[]>;
 }
 
+sql.unsafe = async function (query: string, params: any[] = []): Promise<any[]> {
+  return (neonQueryFn as any).query(query, params) as Promise<any[]>;
+};
+
 sql.begin = async function <T>(fn: (tx: typeof sql) => Promise<T>): Promise<T> {
   return await fn(sql);
 };

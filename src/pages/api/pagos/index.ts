@@ -22,7 +22,7 @@ export const POST: APIRoute = async ({ request }) => {
   const ip = request.headers.get('x-forwarded-for') || '';
 
   try {
-    const { pedido_id, metodo_pago, propina, descuento } = await request.json();
+    const { pedido_id, metodo_pago, propina, descuento, efectivo_con_cuanto } = await request.json();
     const validMethods = ['efectivo', 'debito', 'credito', 'a_credito'];
 
     if (!pedido_id || !validMethods.includes(metodo_pago)) {
@@ -57,7 +57,8 @@ export const POST: APIRoute = async ({ request }) => {
           metodo_pago = ${metodo_pago}::metodo_pago,
           estado = 'pagado'::estado_pedido,
           propina = ${propina || 0},
-          descuento = ${descuento || 0}
+          descuento = ${descuento || 0},
+          efectivo_con_cuanto = ${efectivo_con_cuanto || 0}
         WHERE id = ${pedido_id} AND estado != 'pagado'
         RETURNING *
       `;
@@ -111,10 +112,21 @@ async function generarVoucher(pedidoId: number, metodoPago: string) {
     WHERE dp.pedido_id = ${pedidoId}
   `;
   const p = pedido[0];
-  const mesaInfo = p.numero_mesa ? `Piso ${p.piso} - Mesa ${p.numero_mesa}` : p.tipo_pedido;
+  let mesaInfo;
+  if (p.tipo_pedido === 'delivery') {
+    mesaInfo = `🛵 Delivery - ${p.nombre_cliente || 'Cliente'}`;
+  } else if (p.numero_mesa) {
+    mesaInfo = `Piso ${p.piso} - Mesa ${p.numero_mesa}`;
+  } else {
+    mesaInfo = p.tipo_pedido;
+  }
+  const efConCuanto = p.efectivo_con_cuanto || 0;
+  const vuelto = metodoPago === 'efectivo' && efConCuanto > p.total ? efConCuanto - p.total : 0;
   return {
     pedido_id: p.id, fecha_hora: p.fecha_hora, mesa_info: mesaInfo,
     detalles: detalles.map((d: any) => ({ nombre: d.producto_nombre, acompanamiento: d.acompanamiento, cantidad: d.cantidad, subtotal: d.subtotal })),
     subtotal: p.total, metodo_pago: metodoPago, total: p.total,
+    vuelto, nombre_cliente: p.nombre_cliente, direccion: p.direccion, telefono: p.telefono,
+    efectivo_con_cuanto: efConCuanto,
   };
 }
