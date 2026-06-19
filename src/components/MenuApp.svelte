@@ -175,41 +175,36 @@
 
 <!-- ============ SELECCIÓN DE MESA ============ -->
 {#if step === 'mesa' || step === 'verificando'}
-  <div class="min-h-screen flex items-center justify-center p-4" style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2416 40%, #1a1a1a 100%);">
-    <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04]">
-      <div class="absolute top-20 left-10 text-8xl font-display text-white">✦</div>
-      <div class="absolute top-40 right-16 text-6xl font-display text-white" style="animation-delay:1s">✦</div>
-      <div class="absolute bottom-32 left-20 text-5xl font-display text-white">✦</div>
-    </div>
+  <div class="min-h-screen flex items-center justify-center p-4" style="background-color: #faf6f0;">
 
     <div class="relative z-10 w-full max-w-lg animate-fade-in">
       <div class="text-center mb-8">
-        <h1 class="font-display text-5xl md:text-6xl text-white font-bold mb-2 tracking-tight">La Cascada</h1>
-        <p class="text-white/50 text-sm tracking-widest uppercase">Menú Digital</p>
+        <h1 class="font-display text-5xl md:text-6xl font-bold mb-2 tracking-tight" style="color: #1a1410;">La Cascada</h1>
+        <p class="text-[#6b5d4f] text-sm tracking-widest uppercase">Menú Digital</p>
       </div>
 
       {#if step === 'verificando'}
-        <div class="flex flex-col items-center py-12 gap-4"><div class="w-10 h-10 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin"></div><p class="text-white/40 text-sm">Verificando mesa...</p></div>
+        <div class="flex flex-col items-center py-12 gap-4"><div class="w-10 h-10 border-2 border-[#c9a22733] border-t-[#c9a227] rounded-full animate-spin"></div><p class="text-[#6b5d4f] text-sm">Verificando mesa...</p></div>
       {:else}
-        {#if mesaError}<div class="bg-red-500/10 border border-red-400/30 text-red-300 rounded-xl p-4 text-sm mb-6 text-center">{mesaError}</div>{/if}
+        {#if mesaError}<div class="bg-red-500/10 border border-red-400/30 rounded-xl p-4 text-sm mb-6 text-center" style="color: #a63d3d;">{mesaError}</div>{/if}
 
-        <p class="text-white/60 text-sm text-center mb-2 tracking-wide uppercase">Seleccioná tu mesa</p>
+        <p class="text-sm text-center mb-2 tracking-wide uppercase" style="color: #6b5d4f;">Seleccioná tu mesa</p>
         <div class="flex gap-3 mb-6">
           {#each [1, 2] as p}
-            <button class="flex-1 py-3 rounded-xl font-medium text-sm tracking-wide transition-all border {piso === p ? 'bg-amber-500/20 border-amber-400/50 text-amber-300' : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'}" onclick={() => { piso = p; cargarMesasDisponibles(p); }}>Piso {p}</button>
+            <button class="flex-1 py-3 rounded-xl font-medium text-sm tracking-wide transition-all border {piso === p ? 'bg-[#c9a227]/20 border-[#c9a227]/50 text-[#c9a227]' : 'border-[#e8e0d0] text-[#6b5d4f] hover:border-[#c9a227] hover:text-[#1a1410]'}" onclick={() => { piso = p; cargarMesasDisponibles(p); }}>Piso {p}</button>
           {/each}
         </div>
 
         {#if cargandoMesas}
-          <div class="flex justify-center py-8"><div class="w-6 h-6 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin"></div></div>
+          <div class="flex justify-center py-8"><div class="w-6 h-6 border-2 border-[#c9a22733] border-t-[#c9a227] rounded-full animate-spin"></div></div>
         {:else if mesasDisponibles.length === 0}
-          <div class="text-center py-8"><p class="text-white/30 text-lg">Sin mesas disponibles</p><p class="text-white/15 text-sm mt-2">Todas las mesas del Piso {piso} están ocupadas</p></div>
+          <div class="text-center py-8"><p class="text-lg" style="color: #9b8a78;">Sin mesas disponibles</p><p class="text-sm mt-2" style="color: #b9a690;">Todas las mesas del Piso {piso} están ocupadas</p></div>
         {:else}
           <div class="grid grid-cols-4 sm:grid-cols-5 gap-3">
             {#each mesasDisponibles as m (m.id)}
-              <button class="aspect-square rounded-xl border border-white/10 hover:border-amber-400/50 hover:bg-amber-400/10 transition-all flex flex-col items-center justify-center gap-1 group" onclick={() => seleccionarMesa(m)}>
+              <button class="aspect-square rounded-xl border border-[#e8e0d0] hover:border-[#c9a227]/50 hover:bg-[#c9a227]/10 transition-all flex flex-col items-center justify-center gap-1 group" onclick={() => seleccionarMesa(m)}>
                 <span class="text-lg opacity-30 group-hover:opacity-60 transition-opacity">🍽️</span>
-                <span class="text-white/70 group-hover:text-amber-300 font-semibold text-sm transition-colors">M{m.numero_mesa}</span>
+                <span class="group-hover:text-[#c9a227] font-semibold text-sm transition-colors" style="color: #2d2418;">M{m.numero_mesa}</span>
               </button>
             {/each}
           </div>
@@ -220,16 +215,16 @@
 
 <!-- ============ MENÚ ============ -->
 {:else}
-<div class="min-h-screen" style="background-color: #faf8f5; color: #2d2d2d;">
+<div class="min-h-screen" style="background-color: #faf6f0; color: #2d2418;">
 
   <!-- Header -->
-  <header class="sticky top-0 z-30 border-b" style="background-color: rgba(250,248,245,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-color: #e0dcd4;">
+  <header class="sticky top-0 z-30 border-b" style="background-color: rgba(250,246,240,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-color: #e8e0d0;">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 flex-wrap">
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background-color: #c9a227;">LC</div>
         <div>
-          <h1 class="font-display text-base text-[#1a1a1a] font-semibold leading-none">La Cascada</h1>
-          <p class="text-[11px] text-[#6b6b6b] mt-0.5">Piso {piso} · Mesa {mesa}</p>
+          <h1 class="font-display text-base text-[#1a1410] font-semibold leading-none">La Cascada</h1>
+          <p class="text-[11px] text-[#6b5d4f] mt-0.5">Piso {piso} · Mesa {mesa}</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -239,9 +234,9 @@
           placeholder="Tu nombre"
           maxlength="20"
           class="w-28 sm:w-36 px-3 py-1.5 rounded-full text-xs border outline-none transition-all"
-          style="border-color:#e0dcd4; background-color:#fff;"
+          style="border-color:#e8e0d0; background-color:#fff;"
           onfocus={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#c9a227'; }}
-          onblur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#e0dcd4'; }}
+          onblur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#e8e0d0'; }}
         />
         <button
           class="relative px-4 py-2 rounded-full text-xs font-semibold text-white transition-all shadow-md flex items-center gap-1.5 shrink-0"
@@ -249,7 +244,7 @@
           onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#b8922a'; }}
           onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#c9a227'; }}
           onclick={() => { showCart = !showCart; showSuccess = false }}
-        >🛒 {#if cartItems.length > 0}<span class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#1a1a1a] text-white text-[10px] flex items-center justify-center font-bold">{cartItems.length}</span>{/if}</button>
+        >🛒 {#if cartItems.length > 0}<span class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#1a1410] text-white text-[10px] flex items-center justify-center font-bold">{cartItems.length}</span>{/if}</button>
       </div>
     </div>
   </header>
@@ -262,21 +257,21 @@
 
   <div class="max-w-5xl mx-auto px-4 sm:px-6 pb-32">
     {#if loading}
-      <div class="flex flex-col items-center justify-center py-32 gap-3"><div class="w-10 h-10 border-2 border-[#c9a227]/30 border-t-[#c9a227] rounded-full animate-spin"></div><p class="text-[#6b6b6b] text-sm">Cargando menú...</p></div>
+      <div class="flex flex-col items-center justify-center py-32 gap-3"><div class="w-10 h-10 border-2 border-[#c9a227]/30 border-t-[#c9a227] rounded-full animate-spin"></div><p class="text-[#6b5d4f] text-sm">Cargando menú...</p></div>
     {:else}
       <!-- Hero -->
       <div class="pt-8 pb-6">
-        <p class="text-[#6b6b6b] text-xs tracking-[0.2em] uppercase mb-2">Carta Digital</p>
-        <h2 class="font-display text-3xl md:text-4xl text-[#1a1a1a] font-bold leading-tight">Nuestro Menú</h2>
-        <p class="text-[#6b6b6b] text-sm mt-2 max-w-lg leading-relaxed">Descubrí nuestros platos preparados con ingredientes frescos. Seleccioná una categoría y armá tu pedido.</p>
+        <p class="text-[#6b5d4f] text-xs tracking-[0.2em] uppercase mb-2">Carta Digital</p>
+        <h2 class="font-display text-3xl md:text-4xl text-[#1a1410] font-bold leading-tight">Nuestro Menú</h2>
+        <p class="text-[#6b5d4f] text-sm mt-2 max-w-lg leading-relaxed">Descubrí nuestros platos preparados con ingredientes frescos. Seleccioná una categoría y armá tu pedido.</p>
       </div>
 
       <!-- Categorías -->
-      <nav class="flex gap-2 overflow-x-auto pb-1 mb-8 sticky top-[57px] z-20 pt-2" style="background: linear-gradient(to bottom, #faf8f5 60%, transparent);">
+      <nav class="flex gap-2 overflow-x-auto pb-1 mb-8 sticky top-[57px] z-20 pt-2" style="background: linear-gradient(to bottom, #faf6f0 60%, transparent);">
         {#each categorias as cat (cat.id)}
           <button
             class="shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border"
-            style="{activeCategoria === cat.id ? 'background-color:#1a1a1a; color:#fff; border-color:#1a1a1a;' : 'background-color:#fff; color:#6b6b6b; border-color:#e0dcd4;'}"
+            style="{activeCategoria === cat.id ? 'background-color:#1a1410; color:#fff; border-color:#1a1410;' : 'background-color:#fff; color:#6b5d4f; border-color:#e8e0d0;'}"
             onclick={() => { activeCategoria = cat.id }}
           ><span class="mr-1">{catIcon(cat.nombre)}</span> {cat.nombre}</button>
         {/each}
@@ -287,22 +282,22 @@
         {#each filteredProductos as producto (producto.id)}
           <button
             class="text-left rounded-xl p-5 transition-all duration-300 w-full group border"
-            style="background-color:#fff; border-color:#e0dcd4;"
+            style="background-color:#fff; border-color:#e8e0d0;"
             onmouseenter={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#c9a227'; el.style.boxShadow = '0 4px 24px rgba(201,162,39,0.1)'; }}
-            onmouseleave={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#e0dcd4'; el.style.boxShadow = 'none'; }}
+            onmouseleave={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#e8e0d0'; el.style.boxShadow = 'none'; }}
             onclick={() => handleProductClick(producto)}
           >
             <div class="flex justify-between items-start gap-4">
               <div class="flex-1 min-w-0">
-                <h3 class="font-semibold text-[#1a1a1a] text-base group-hover:text-[#c9a227] transition-colors leading-snug">{producto.nombre}</h3>
+                <h3 class="font-semibold text-[#1a1410] text-base group-hover:text-[#c9a227] transition-colors leading-snug">{producto.nombre}</h3>
                 {#if producto.ingredientes}
-                  <p class="text-[#6b6b6b] text-xs leading-relaxed mt-1 line-clamp-2">{producto.ingredientes}</p>
+                  <p class="text-[#6b5d4f] text-xs leading-relaxed mt-1 line-clamp-2">{producto.ingredientes}</p>
                 {/if}
               </div>
               <div class="text-right shrink-0">
-                <span class="font-bold text-[#1a1a1a] text-base">{formatCLP(producto.precio)}</span>
+                <span class="font-bold text-[#1a1410] text-base">{formatCLP(producto.precio)}</span>
                 {#if producto.maneja_stock}
-                  <p class="text-[10px] text-[#6b6b6b] mt-0.5">{producto.stock_actual} disp.</p>
+                  <p class="text-[10px] text-[#6b5d4f] mt-0.5">{producto.stock_actual} disp.</p>
                 {/if}
               </div>
             </div>
@@ -311,17 +306,17 @@
       </div>
 
       {#if filteredProductos.length === 0}
-        <div class="text-center py-20"><p class="text-4xl mb-3 opacity-30">🍽️</p><p class="text-[#6b6b6b]">No hay productos en esta categoría</p></div>
+        <div class="text-center py-20"><p class="text-4xl mb-3 opacity-30">🍽️</p><p class="text-[#6b5d4f]">No hay productos en esta categoría</p></div>
       {/if}
     {/if}
   </div>
 
   <!-- Footer -->
-  <footer class="border-t py-10 px-4 mt-8" style="border-color:#e0dcd4; background-color:#fff;">
+  <footer class="border-t py-10 px-4 mt-8" style="border-color:#e8e0d0; background-color:#fff;">
     <div class="max-w-5xl mx-auto text-center">
       <p class="font-display text-xl text-[#c9a227] font-bold">La Cascada</p>
-      <p class="text-[#6b6b6b] text-xs mt-1">Restaurant &bull; Av. Principal 1234</p>
-      <p class="text-[#6b6b6b] text-xs">+56 9 1234 5678</p>
+      <p class="text-[#6b5d4f] text-xs mt-1">Restaurant &bull; Av. Principal 1234</p>
+      <p class="text-[#6b5d4f] text-xs">+56 9 1234 5678</p>
     </div>
   </footer>
 </div>
@@ -340,18 +335,18 @@
       <div class="flex items-center gap-4 mb-5">
         <span class="text-3xl">{catIcon(selectedProduct.categoria_nombre || '')}</span>
         <div>
-          <h3 class="font-semibold text-lg text-[#1a1a1a]">{selectedProduct.nombre}</h3>
+          <h3 class="font-semibold text-lg text-[#1a1410]">{selectedProduct.nombre}</h3>
           <p class="text-[#c9a227] font-bold">{formatCLP(selectedProduct.precio)}</p>
         </div>
       </div>
 
       {#if getBaseAcomp(selectedProduct.id).length > 0}
         <div class="mb-4">
-          <p class="text-xs font-semibold text-[#6b6b6b] uppercase tracking-wider mb-2">Acompañamiento</p>
+          <p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Acompañamiento</p>
           <div class="space-y-2">
             {#each getBaseAcomp(selectedProduct.id) as acomp (acomp.id)}
-              <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedBaseAcomp === acomp.id ? 'border-[#c9a227] bg-[#faf8f5]' : 'border-[#e0dcd4] hover:border-[#c9a227]/50'}">
-                <input type="radio" name="baseAcomp" value={acomp.id} checked={selectedBaseAcomp === acomp.id} onchange={() => { selectedBaseAcomp = acomp.id }} style="accent-color: #c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2d2d]">{acomp.nombre}</span></label>
+              <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedBaseAcomp === acomp.id ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'}">
+                <input type="radio" name="baseAcomp" value={acomp.id} checked={selectedBaseAcomp === acomp.id} onchange={() => { selectedBaseAcomp = acomp.id }} style="accent-color: #c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">{acomp.nombre}</span></label>
             {/each}
           </div>
         </div>
@@ -359,11 +354,11 @@
 
       {#if getExtraAcomp(selectedProduct.id).length > 0}
         <div class="mb-4">
-          <p class="text-xs font-semibold text-[#6b6b6b] uppercase tracking-wider mb-2">Extras</p>
+          <p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Extras</p>
           <div class="space-y-2">
             {#each getExtraAcomp(selectedProduct.id) as extra (extra.id)}
-              <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedExtras.includes(extra.id) ? 'border-[#c9a227] bg-[#faf8f5]' : 'border-[#e0dcd4] hover:border-[#c9a227]/50'}">
-                <input type="checkbox" checked={selectedExtras.includes(extra.id)} onchange={(e) => { if (e.target.checked) selectedExtras = [...selectedExtras, extra.id]; else selectedExtras = selectedExtras.filter(id => id !== extra.id); }} style="accent-color: #c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2d2d]">{extra.nombre}</span><span class="text-sm text-[#c9a227] font-bold">+{formatCLP(extra.recargo)}</span></label>
+              <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedExtras.includes(extra.id) ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'}">
+                <input type="checkbox" checked={selectedExtras.includes(extra.id)} onchange={(e) => { if (e.target.checked) selectedExtras = [...selectedExtras, extra.id]; else selectedExtras = selectedExtras.filter(id => id !== extra.id); }} style="accent-color: #c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">{extra.nombre}</span><span class="text-sm text-[#c9a227] font-bold">+{formatCLP(extra.recargo)}</span></label>
             {/each}
           </div>
         </div>
@@ -381,7 +376,7 @@
 <!-- Success -->
 {#if showSuccess}
   <div class="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-50 animate-slide-up">
-    <div class="rounded-2xl p-5 shadow-2xl flex items-center gap-3 text-white" style="background-color:#1a1a1a;">
+    <div class="rounded-2xl p-5 shadow-2xl flex items-center gap-3 text-white" style="background-color:#1a1410;">
       <span class="text-2xl">✅</span>
       <div><p class="font-bold">¡Pedido enviado!</p><p class="text-xs text-white/50">Piso {piso} · Mesa {mesa} — Ya lo están preparando</p></div>
     </div>
