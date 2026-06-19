@@ -66,7 +66,7 @@
         <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background-color: #c9a227;">LC</div>
         <div>
           <h1 class="font-display text-lg font-semibold leading-none" style="color: #1a1410;">La Cascada</h1>
-          <p class="text-[10px] tracking-wider uppercase" style="color: #6b5d4f;">Delivery</p>
+          <p class="text-[11px] tracking-wider uppercase" style="color: #6b5d4f;">Delivery</p>
         </div>
       </div>
       {#if step === 'menu' && cart.length > 0}
@@ -84,7 +84,7 @@
         <p class="text-[#6b5d4f] text-sm mt-2 max-w-lg leading-relaxed">Elegí tus platos favoritos y te los llevamos. Llená tus datos al finalizar.</p>
       </div>
 
-      <nav class="flex gap-2 overflow-x-auto pb-1 mb-8 sticky top-[57px] z-20 pt-2" style="background: linear-gradient(to bottom, #faf6f0 60%, transparent);">
+      <nav class="flex gap-2 overflow-x-auto pb-1 mb-4 sm:mb-8 sticky top-[57px] z-20 pt-2 scrollbar-hide" style="background: linear-gradient(to bottom, #faf6f0 60%, transparent);">
         {#each categorias as cat (cat.id)}
           <button class="shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border" style="{activeCategoria === cat.id ? 'background-color:#1a1410; color:#fff; border-color:#1a1410;' : 'background-color:#fff; color:#6b5d4f; border-color:#e8e0d0;'}" onclick={() => { activeCategoria = cat.id }}><span class="mr-1">{catIcon(cat.nombre)}</span> {cat.nombre}</button>
         {/each}
@@ -95,7 +95,7 @@
           <button class="text-left rounded-xl p-5 transition-all duration-300 w-full group border" style="background-color:#fff; border-color:#e8e0d0;" onmouseenter={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#c9a227'; el.style.boxShadow = '0 4px 24px rgba(201,162,39,0.1)'; }} onmouseleave={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#e8e0d0'; el.style.boxShadow = 'none'; }} onclick={() => clickProducto(producto)}>
             <div class="flex justify-between items-start gap-4">
               <div class="flex-1 min-w-0"><h3 class="font-semibold text-[#1a1410] text-base group-hover:text-[#c9a227] transition-colors leading-snug">{producto.nombre}</h3>{#if producto.ingredientes}<p class="text-[#6b5d4f] text-xs leading-relaxed mt-1 line-clamp-2">{producto.ingredientes}</p>{/if}</div>
-              <div class="text-right shrink-0"><span class="font-bold text-[#1a1410] text-base">{formatCLP(producto.precio)}</span>{#if producto.maneja_stock}<p class="text-[10px] text-[#6b5d4f] mt-0.5">{producto.stock_actual} disp.</p>{/if}</div>
+              <div class="text-right shrink-0"><span class="font-bold text-[#1a1410] text-base">{formatCLP(producto.precio)}</span>{#if producto.maneja_stock}<p class="text-[11px] text-[#6b5d4f] mt-0.5">{producto.stock_actual} disp.</p>{/if}</div>
             </div>
           </button>
         {/each}
@@ -197,4 +197,6 @@
   .animate-slide-up { animation: slide-up 0.4s ease-out forwards; }
   .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .font-display { font-family: 'Playfair Display', Georgia, serif; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 </style>

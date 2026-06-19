@@ -179,7 +179,7 @@
 
     <div class="relative z-10 w-full max-w-lg animate-fade-in">
       <div class="text-center mb-8">
-        <h1 class="font-display text-5xl md:text-6xl font-bold mb-2 tracking-tight" style="color: #1a1410;">La Cascada</h1>
+        <h1 class="font-display text-4xl sm:text-5xl md:text-6xl font-bold mb-2 tracking-tight" style="color: #1a1410;">La Cascada</h1>
         <p class="text-[#6b5d4f] text-sm tracking-widest uppercase">Menú Digital</p>
       </div>
 
@@ -244,7 +244,7 @@
           onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#b8922a'; }}
           onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#c9a227'; }}
           onclick={() => { showCart = !showCart; showSuccess = false }}
-        >🛒 {#if cartItems.length > 0}<span class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#1a1410] text-white text-[10px] flex items-center justify-center font-bold">{cartItems.length}</span>{/if}</button>
+        >🛒 {#if cartItems.length > 0}<span class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#1a1410] text-white text-[11px] flex items-center justify-center font-bold">{cartItems.length}</span>{/if}</button>
       </div>
     </div>
   </header>
@@ -267,7 +267,7 @@
       </div>
 
       <!-- Categorías -->
-      <nav class="flex gap-2 overflow-x-auto pb-1 mb-8 sticky top-[57px] z-20 pt-2" style="background: linear-gradient(to bottom, #faf6f0 60%, transparent);">
+      <nav class="flex gap-2 overflow-x-auto pb-1 mb-4 sm:mb-8 sticky top-[57px] z-20 pt-2 scrollbar-hide" style="background: linear-gradient(to bottom, #faf6f0 60%, transparent);">
         {#each categorias as cat (cat.id)}
           <button
             class="shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border"
@@ -297,7 +297,7 @@
               <div class="text-right shrink-0">
                 <span class="font-bold text-[#1a1410] text-base">{formatCLP(producto.precio)}</span>
                 {#if producto.maneja_stock}
-                  <p class="text-[10px] text-[#6b5d4f] mt-0.5">{producto.stock_actual} disp.</p>
+                  <p class="text-[11px] text-[#6b5d4f] mt-0.5">{producto.stock_actual} disp.</p>
                 {/if}
               </div>
             </div>
@@ -390,4 +390,6 @@
   .animate-slide-up { animation: slide-up 0.4s ease-out forwards; }
   .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .font-display { font-family: 'Playfair Display', Georgia, serif; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 </style>

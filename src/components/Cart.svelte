@@ -28,10 +28,10 @@
     <div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
       <h2 class="text-lg font-bold text-gray-900">Tu Pedido</h2>
       <button
-        class="text-gray-400 hover:text-gray-600 text-xl"
+        class="text-gray-400 hover:text-gray-600 text-2xl p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
         on:click={() => dispatch('close')}
       >
-        ✕
+        ×
       </button>
     </div>
 
@@ -61,7 +61,7 @@
                 </div>
               </div>
               <button
-                class="mt-2 text-xs text-red-500 hover:text-red-700"
+                class="mt-2 text-xs text-red-500 hover:text-red-700 px-2 py-1 min-w-[44px]"
                 on:click={() => dispatch('remove', item.id)}
               >
                 Eliminar
