@@ -24,7 +24,7 @@ const productosAcomp = await sql`SELECT * FROM productos_acompanamientos`;
     data-piso={piso}
     data-mesa={mesa}
     data-menu={JSON.stringify({ categorias, productos, acompanamientos, productos_acompanamientos: productosAcomp }).replace(/"/g, '&quot;')}
-    class="min-h-screen bg-gray-50"
+    style="min-height: 100vh; background-color: var(--color-background);"
   ></main>
 
   <script>

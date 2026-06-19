@@ -6,7 +6,7 @@ export interface Props {
   description?: string;
 }
 
-const { title = 'La Cascada', description = 'Restaurante La Cascada - Menú Digital y Pedidos' } = Astro.props;
+const { title = 'La Cascada', description = 'Restaurante La Cascada — Cocina honesta, sabores que quedan. Est. 2014.' } = Astro.props;
 ---
 <!doctype html>
 <html lang="es">
@@ -19,9 +19,28 @@ const { title = 'La Cascada', description = 'Restaurante La Cascada - Menú Digi
     <title>{title}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet" />
   </head>
   <body class="min-h-screen flex flex-col">
-    <slot />
+    <!-- Public header (subtle) -->
+    <header class="w-full px-6 py-4 flex items-center justify-between" style="background-color: var(--color-background); border-bottom: 1px solid var(--color-border-light);">
+      <a href="/" class="flex items-center gap-3 no-underline group">
+        <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105" style="background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%); box-shadow: 0 2px 8px rgba(201, 162, 39, 0.3);">
+          <span class="font-display text-white font-bold text-sm">LC</span>
+        </div>
+        <div>
+          <span class="font-display text-base font-semibold" style="color: var(--color-primary);">La Cascada</span>
+          <span class="text-[10px] tracking-[0.2em] uppercase ml-2 hidden sm:inline" style="color: var(--color-text-light);">Est. 2014</span>
+        </div>
+      </a>
+      <nav class="flex items-center gap-1 sm:gap-2">
+        <a href="/menu" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors" style="color: var(--color-text-muted);" onmouseover="this.style.color='var(--color-primary)';this.style.backgroundColor='var(--color-surface-dark)'" onmouseout="this.style.color='var(--color-text-muted)';this.style.backgroundColor='transparent'">Carta</a>
+        <a href="/delivery" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors" style="color: var(--color-text-muted);" onmouseover="this.style.color='var(--color-primary)';this.style.backgroundColor='var(--color-surface-dark)'" onmouseout="this.style.color='var(--color-text-muted)';this.style.backgroundColor='transparent'">Delivery</a>
+        <a href="/login" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors" style="color: var(--color-text-muted);" onmouseover="this.style.color='var(--color-primary)';this.style.backgroundColor='var(--color-surface-dark)'" onmouseout="this.style.color='var(--color-text-muted)';this.style.backgroundColor='transparent'">Personal</a>
+      </nav>
+    </header>
+    <div class="flex-1 flex flex-col">
+      <slot />
+    </div>
   </body>
 </html>

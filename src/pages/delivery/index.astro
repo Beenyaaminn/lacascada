@@ -17,6 +17,7 @@ const productosAcomp = await sql`SELECT * FROM productos_acompanamientos`;
 <Layout title="Delivery - La Cascada" description="Realiza tu pedido para delivery desde La Cascada.">
   <main
     id="delivery-app"
+    style="min-height: 100vh; background-color: var(--color-background);"
     data-menu={JSON.stringify({ categorias, productos, acompanamientos, productos_acompanamientos: productosAcomp }).replace(/"/g, '&quot;')}
   ></main>
 
