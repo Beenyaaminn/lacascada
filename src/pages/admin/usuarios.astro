@@ -1,0 +1,22 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSessionFromCookie } from '../../lib/auth';
+
+const cookieHeader = Astro.request.headers.get('cookie');
+const session = getSessionFromCookie(cookieHeader);
+
+if (!session || session.rol !== 'admin') {
+  return Astro.redirect('/login');
+}
+---
+<AdminLayout title="Usuarios - La Cascada" currentPage="/admin/usuarios">
+  <div id="usuarios-app"></div>
+
+  <script>
+    import { mount } from 'svelte';
+    import UsuariosAdmin from '../../components/UsuariosAdmin.svelte';
+
+    const el = document.getElementById('usuarios-app');
+    if (el) mount(UsuariosAdmin, { target: el });
+  </script>
+</AdminLayout>

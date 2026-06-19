@@ -282,6 +282,13 @@
     { id: 'reservas', label: 'Reservas', icon: '📅' },
     { id: 'delivery', label: 'Delivery', icon: '🛵' },
   ];
+
+  function tabCount(id: string): number {
+    if (id === 'mesas') return mesas.filter(m => m.estado !== 'libre').length;
+    if (id === 'reservas') return reservas.filter((r: any) => r.estado === 'pendiente').length;
+    if (id === 'delivery') return deliveryOrders.filter((d: any) => d.estado !== 'pagado' && d.estado !== 'cancelado').length;
+    return 0;
+  }
 </script>
 
 <div class="max-w-5xl mx-auto px-4 py-6">
@@ -314,13 +321,16 @@
     <nav class="flex gap-1 mb-6 border-b border-gray-200">
       {#each tabs as tab}
         <button
-          class="px-5 py-3 text-sm font-semibold rounded-t-lg transition-colors border-b-2 -mb-[1px]
+          class="relative px-5 py-3 text-sm font-semibold rounded-t-lg transition-colors border-b-2 -mb-[1px]
             {activeTab === tab.id
               ? 'border-brand-600 text-brand-700 bg-brand-50'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
           onclick={() => { activeTab = tab.id }}
         >
           <span class="mr-1.5">{tab.icon}</span>{tab.label}
+          {#if tabCount(tab.id) > 0 && activeTab !== tab.id}
+            <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1">{tabCount(tab.id)}</span>
+          {/if}
         </button>
       {/each}
     </nav>
