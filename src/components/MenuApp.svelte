@@ -315,8 +315,8 @@
   <footer class="border-t py-10 px-4 mt-8" style="border-color:#e8e0d0; background-color:#fff;">
     <div class="max-w-5xl mx-auto text-center">
       <p class="font-display text-xl text-[#c9a227] font-bold">La Cascada</p>
-      <p class="text-[#6b5d4f] text-xs mt-1">Restaurant &bull; Av. Principal 1234</p>
-      <p class="text-[#6b5d4f] text-xs">+56 9 1234 5678</p>
+      <p class="text-[#6b5d4f] text-xs mt-1">Restaurant &bull; Rioseco #267, Lebu</p>
+      <p class="text-[#6b5d4f] text-xs">+569 66937327</p>
     </div>
   </footer>
 </div>

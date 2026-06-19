@@ -449,9 +449,9 @@
   <div class="center bold" style="font-size:12px">LA CASCADA</div>
   <div class="center" style="font-size:9px">Restaurant &bull; Punto de Venta</div>
   <div class="divider"></div>
-  <div class="line"><span>RUT:</span><span>77.777.777-7</span></div>
-  <div class="line"><span>Tel:</span><span>+56 9 1234 5678</span></div>
-  <div class="line"><span>Dir:</span><span>Av. Principal 1234</span></div>
+  <div class="line"><span>RUT:</span><span>13.384.575-5</span></div>
+  <div class="line"><span>Tel:</span><span>+569 66937327</span></div>
+  <div class="line"><span>Dir:</span><span>Rioseco #267, Lebu</span></div>
   <div class="divider"></div>
   <div class="line"><span>Fecha:</span><span>${fecha}</span></div>
   <div class="line"><span>Mesa:</span><span>Mesa ${String(mesa.numero_mesa).padStart(2, '0')} - Piso ${mesa.piso}</span></div>
