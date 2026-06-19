@@ -115,7 +115,7 @@
   <header class="bg-gray-900 border-b border-gray-800 px-4 py-3">
     <div class="flex items-center justify-between flex-wrap gap-3">
       <div class="flex items-center gap-4">
-        <h1 class="text-2xl font-extrabold tracking-tight">👨‍🍳 COCINA</h1>
+        <h1 class="text-2xl font-extrabold tracking-tight text-white">👨‍🍳 COCINA</h1>
         <div class="flex items-center gap-2 text-xs text-gray-400">
           <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
           {now.toLocaleTimeString('es-CL')}
