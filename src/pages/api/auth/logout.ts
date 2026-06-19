@@ -2,11 +2,7 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 
-export const POST: APIRoute = async ({ cookies }) => {
+export const POST: APIRoute = async ({ cookies, redirect }) => {
   cookies.delete('lacascada_token', { path: '/' });
-
-  return new Response(JSON.stringify({ success: true }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return redirect('/login', 302);
 };

@@ -1,68 +1,102 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { getSessionFromCookie } from '../../lib/auth';
+import { sql } from '../../lib/db';
 
 const cookieHeader = Astro.request.headers.get('cookie');
 const session = getSessionFromCookie(cookieHeader);
 
-if (!session) {
-  return Astro.redirect('/login');
-}
+if (!session) return Astro.redirect('/login');
+if (session.rol !== 'admin' && session.rol !== 'garzon') return Astro.redirect('/menu');
 
-if (session.rol !== 'admin' && session.rol !== 'garzon') {
-  return Astro.redirect('/menu');
-}
+const isAdmin = session.rol === 'admin';
+
+let totalHoy = 0;
+let mesasOcupadas = 0;
+try {
+  const hoy = new Date().toISOString().split('T')[0];
+  const ventas = await sql`SELECT COALESCE(SUM(total), 0)::int as total FROM pedidos WHERE estado = 'pagado' AND fecha_hora >= ${hoy}::date`;
+  totalHoy = ventas[0]?.total || 0;
+  const mesas = await sql`SELECT COUNT(*)::int as cnt FROM mesas WHERE estado != 'libre'`;
+  mesasOcupadas = mesas[0]?.cnt || 0;
+} catch { /* */ }
+
+function formatCLP(n: number) { return '$' + n.toLocaleString('es-CL'); }
 ---
-<AdminLayout title="Panel de Administración - La Cascada" currentPage="/admin">
-  <div class="p-6 sm:p-8 flex flex-col items-center justify-center min-h-[70vh]">
-    <a href="/admin/mesas" class="text-center group mb-8">
-      <h1 class="text-5xl md:text-6xl font-extrabold text-brand-700 group-hover:text-brand-800 transition-colors">La Cascada</h1>
-      <p class="text-gray-400 mt-2 text-lg">Sistema de Punto de Venta</p>
-    </a>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-3xl">
-      <a href="/admin/mesas" class="card hover:shadow-md transition-shadow group">
-        <div class="flex items-center gap-3 mb-2">
-          <span class="text-2xl">🍽️</span>
-          <h3 class="text-lg font-semibold text-gray-900 group-hover:text-brand-600">Toma de Pedidos</h3>
-        </div>
-        <p class="text-gray-500 text-sm">Mesas, reservas y delivery</p>
+<AdminLayout title="Panel - La Cascada" currentPage="/admin">
+  <div class="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
+    <!-- Welcome -->
+    <div class="mb-8">
+      <p class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Panel de Control</p>
+      <h1 class="font-display text-3xl md:text-4xl text-[#1a1a1a] font-bold mt-1">La Cascada</h1>
+      <p class="text-[#6b6b6b] text-sm mt-2">Bienvenido, <span class="font-semibold text-[#1a1a1a]">{session.nombre}</span> · <span class="capitalize">{session.rol}</span></p>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div class="rounded-2xl p-5 border" style="background-color:#fff; border-color:#e0dcd4;">
+        <p class="text-xs text-[#6b6b6b] uppercase tracking-wider font-semibold">Ventas Hoy</p>
+        <p class="text-3xl font-extrabold mt-1" style="color:#c9a227;">{formatCLP(totalHoy)}</p>
+      </div>
+      <div class="rounded-2xl p-5 border" style="background-color:#fff; border-color:#e0dcd4;">
+        <p class="text-xs text-[#6b6b6b] uppercase tracking-wider font-semibold">Mesas Ocupadas</p>
+        <p class="text-3xl font-extrabold mt-1 text-[#1a1a1a]">{mesasOcupadas}</p>
+      </div>
+      <div class="rounded-2xl p-5 border" style="background-color:#fff; border-color:#e0dcd4;">
+        <p class="text-xs text-[#6b6b6b] uppercase tracking-wider font-semibold">Rol</p>
+        <p class="text-xl font-bold mt-1 text-[#1a1a1a] capitalize">{session.rol}</p>
+      </div>
+    </div>
+
+    <!-- Navigation Cards -->
+    <p class="text-xs text-[#6b6b6b] uppercase tracking-widest font-semibold mb-4">Accesos Rápidos</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <a href="/admin/mesas" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
+        <span class="text-3xl shrink-0">🍽️</span>
+        <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Toma de Pedidos</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Mesas, reservas y delivery</p></div>
       </a>
-      <a href="/admin/pedidos" class="card hover:shadow-md transition-shadow group">
-        <div class="flex items-center gap-3 mb-2">
-          <span class="text-2xl">📦</span>
-          <h3 class="text-lg font-semibold text-gray-900 group-hover:text-brand-600">Pedidos</h3>
-        </div>
-        <p class="text-gray-500 text-sm">Gestión de pedidos activos</p>
+      <a href="/admin/cocina" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
+        <span class="text-3xl shrink-0">👨‍🍳</span>
+        <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Cocina</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Vista de tickets y pedidos activos</p></div>
       </a>
-      <a href="/admin/clientes" class="card hover:shadow-md transition-shadow group">
-        <div class="flex items-center gap-3 mb-2">
-          <span class="text-2xl">👥</span>
-          <h3 class="text-lg font-semibold text-gray-900 group-hover:text-brand-600">Créditos</h3>
-        </div>
-        <p class="text-gray-500 text-sm">Clientes con cuenta corriente</p>
+      <a href="/admin/pedidos" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
+        <span class="text-3xl shrink-0">📦</span>
+        <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Pedidos</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Gestión de pedidos activos</p></div>
       </a>
-      <a href="/admin/productos" class="card hover:shadow-md transition-shadow group">
-        <div class="flex items-center gap-3 mb-2">
-          <span class="text-2xl">📋</span>
-          <h3 class="text-lg font-semibold text-gray-900 group-hover:text-brand-600">Productos</h3>
-        </div>
-        <p class="text-gray-500 text-sm">CRUD de productos, precios y stock</p>
+      <a href="/admin/productos" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
+        <span class="text-3xl shrink-0">📋</span>
+        <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Productos</h3><p class="text-[#6b6b6b] text-xs mt-0.5">CRUD de productos, precios y stock</p></div>
       </a>
-      <a href="/admin/reservas" class="card hover:shadow-md transition-shadow group">
-        <div class="flex items-center gap-3 mb-2">
-          <span class="text-2xl">📅</span>
-          <h3 class="text-lg font-semibold text-gray-900 group-hover:text-brand-600">Reservas</h3>
-        </div>
-        <p class="text-gray-500 text-sm">Apartado de platos del día</p>
+      <a href="/admin/reservas" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
+        <span class="text-3xl shrink-0">📅</span>
+        <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Reservas</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Apartado de platos del día</p></div>
       </a>
-      <a href="/admin/reportes" class="card hover:shadow-md transition-shadow group">
-        <div class="flex items-center gap-3 mb-2">
-          <span class="text-2xl">📊</span>
-          <h3 class="text-lg font-semibold text-gray-900 group-hover:text-brand-600">Reportes</h3>
-        </div>
-        <p class="text-gray-500 text-sm">Ventas y contabilidad</p>
-      </a>
+
+      {isAdmin && (
+        <>
+          <a href="/admin/clientes" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
+            <span class="text-3xl shrink-0">👥</span>
+            <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Créditos</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Clientes con cuenta corriente</p></div>
+          </a>
+          <a href="/admin/reportes" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
+            <span class="text-3xl shrink-0">📊</span>
+            <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Reportes</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Ventas y contabilidad</p></div>
+          </a>
+          <a href="/admin/usuarios" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
+            <span class="text-3xl shrink-0">🔑</span>
+            <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Usuarios</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Gestionar cuentas y roles</p></div>
+          </a>
+          <a href="/admin/stock" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
+            <span class="text-3xl shrink-0">📦</span>
+            <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Stock</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Proveedores y control de inventario</p></div>
+          </a>
+        </>
+      )}
     </div>
   </div>
 </AdminLayout>
+
+<style is:global>
+  .font-display { font-family: 'Playfair Display', Georgia, serif; }
+</style>
