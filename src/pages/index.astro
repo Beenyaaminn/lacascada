@@ -1,213 +1,103 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout title="La Cascada - Restaurante" description="Bienvenidos a La Cascada. Menú digital, pedidos online y mucho más.">
-  <main class="relative min-h-screen overflow-hidden flex flex-col items-center justify-center">
+<Layout title="La Cascada - Restaurante" description="Cocina honesta, sabores que quedan. La Cascada — restaurante desde 2014.">
+  <main class="relative min-h-screen overflow-hidden" style="background: linear-gradient(180deg, #faf6f0 0%, #f0ebe0 100%);">
 
-    <!-- Fondo animado -->
-    <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-teal-900 to-cyan-800 animate-gradient-shift"></div>
+    <!-- Decorative top accent band -->
+    <div class="absolute top-0 left-0 right-0 h-1 z-10" style="background: linear-gradient(90deg, transparent, #c9a227 20%, #c9a227 80%, transparent);"></div>
 
-    <!-- Overlay de textura -->
-    <div class="absolute inset-0 opacity-10" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+    <!-- Decorative gold glows -->
+    <div class="absolute top-0 right-0 w-[500px] h-[500px] rounded-full opacity-20 pointer-events-none" style="background: radial-gradient(circle, #c9a227 0%, transparent 70%); filter: blur(80px);"></div>
+    <div class="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full opacity-15 pointer-events-none" style="background: radial-gradient(circle, #c9a227 0%, transparent 70%); filter: blur(80px);"></div>
 
-    <!-- Ondas animadas inferiores -->
-    <div class="absolute bottom-0 left-0 w-full overflow-hidden leading-none">
-      <svg class="relative block w-[200%] h-[120px] animate-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120" preserveAspectRatio="none">
-        <path fill="rgba(255,255,255,0.03)" d="M0,60 C240,120 480,0 720,60 C960,120 1200,0 1440,60 L1440,120 L0,120 Z"></path>
-      </svg>
-      <svg class="relative block w-[200%] h-[120px] -mt-[60px] animate-wave-slow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120" preserveAspectRatio="none">
-        <path fill="rgba(255,255,255,0.05)" d="M0,30 C360,90 720,0 1080,60 C1260,90 1380,30 1440,60 L1440,120 L0,120 Z"></path>
-      </svg>
-      <svg class="relative block w-[200%] h-[120px] -mt-[60px] animate-wave-fast" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120" preserveAspectRatio="none">
-        <path fill="rgba(255,255,255,0.08)" d="M0,90 C360,30 720,90 1080,30 C1260,0 1380,60 1440,40 L1440,120 L0,120 Z"></path>
-      </svg>
-    </div>
+    <!-- Subtle grain texture -->
+    <div class="absolute inset-0 opacity-[0.025] pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg width=\'30\' height=\'30\' viewBox=\'0 0 30 30\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%231a1410\' fill-opacity=\'0.8\'%3E%3Ccircle cx=\'15\' cy=\'15\' r=\'0.8\'/%3E%3C/g%3E%3C/svg%3E');"></div>
 
-    <!-- Partículas flotantes -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      {[
-        { size: 'w-2 h-2', left: 'left-[10%]', delay: 'animation-delay-0', dur: 'animate-float-slow' },
-        { size: 'w-3 h-3', left: 'left-[25%]', delay: 'animation-delay-2000', dur: 'animate-float' },
-        { size: 'w-1.5 h-1.5', left: 'left-[40%]', delay: 'animation-delay-4000', dur: 'animate-float-fast' },
-        { size: 'w-2.5 h-2.5', left: 'left-[55%]', delay: 'animation-delay-1000', dur: 'animate-float-slow' },
-        { size: 'w-1.5 h-1.5', left: 'left-[70%]', delay: 'animation-delay-3000', dur: 'animate-float' },
-        { size: 'w-2 h-2', left: 'left-[85%]', delay: 'animation-delay-5000', dur: 'animate-float-fast' },
-        { size: 'w-1 h-1', left: 'left-[15%]', delay: 'animation-delay-1500', dur: 'animate-float' },
-        { size: 'w-2 h-2', left: 'left-[60%]', delay: 'animation-delay-3500', dur: 'animate-float-slow' },
-        { size: 'w-1.5 h-1.5', left: 'left-[35%]', delay: 'animation-delay-2500', dur: 'animate-float-fast' },
-        { size: 'w-1 h-1', left: 'left-[78%]', delay: 'animation-delay-4500', dur: 'animate-float' },
-        { size: 'w-2 h-2', left: 'left-[50%]', delay: 'animation-delay-5500', dur: 'animate-float-slow' },
-        { size: 'w-1.5 h-1.5', left: 'left-[92%]', delay: 'animation-delay-1800', dur: 'animate-float-fast' },
-      ].map((p) => (
-        <div class={`absolute top-full ${p.size} ${p.left} ${p.delay} ${p.dur} rounded-full bg-white/10 backdrop-blur-sm`}></div>
-      ))}
-    </div>
+    <!-- Main content -->
+    <div class="relative z-10 min-h-screen flex flex-col">
 
-    <!-- Contenido principal -->
-    <div class="relative z-10 flex flex-col items-center text-center px-4 animate-fade-in">
-      <!-- Icono / Logo -->
-      <div class="mb-6 animate-float-slow">
-        <svg class="w-20 h-20 text-cyan-300 drop-shadow-[0_0_30px_rgba(103,232,249,0.3)]" fill="none" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 12 C20 12 16 28 24 36 C32 44 32 52 32 56" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-          <path d="M32 8 C32 8 28 24 36 32 C44 40 44 48 44 52" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-          <path d="M44 12 C44 12 40 28 48 36 C56 44 56 52 56 56" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-          <path d="M8 32 L56 32" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
-          <circle cx="41" cy="10" r="2.5" fill="currentColor" opacity="0.7"/>
-          <circle cx="28" cy="7" r="2" fill="currentColor" opacity="0.5"/>
-          <circle cx="52" cy="14" r="1.8" fill="currentColor" opacity="0.4"/>
-        </svg>
-      </div>
+      <!-- Header / Brand mark -->
+      <header class="flex items-center justify-center pt-12 pb-4 animate-fade-in" style="animation-delay:0.1s">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: linear-gradient(135deg, #c9a227 0%, #a8841c 100%); box-shadow: 0 4px 12px rgba(201, 162, 39, 0.3);">
+            <span class="font-display text-white font-bold text-sm">LC</span>
+          </div>
+          <div>
+            <p class="font-display text-base font-bold" style="color: #1a1410;">La Cascada</p>
+            <p class="text-[10px] tracking-[0.25em] uppercase" style="color: #9b8a78;">Restaurante · Est. 2014</p>
+          </div>
+        </div>
+      </header>
 
-      <h1 class="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-extrabold text-white mb-3 tracking-tight px-2">
-        <span class="inline-block animate-slide-up" style="animation-delay:0.2s">La</span>{' '}
-        <span class="inline-block bg-gradient-to-r from-cyan-300 via-teal-200 to-emerald-300 bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(103,232,249,0.4)] animate-slide-up" style="animation-delay:0.4s">Cascada</span>
-      </h1>
+      <!-- Hero section -->
+      <section class="flex-1 flex flex-col items-center justify-center text-center px-6 py-12 max-w-5xl mx-auto">
+        <!-- Ornamental divider -->
+        <div class="flex items-center gap-3 mb-6 animate-fade-in" style="animation-delay:0.2s">
+          <div class="h-px w-12" style="background: linear-gradient(90deg, transparent, #c9a227);"></div>
+          <span class="text-xs tracking-[0.3em] uppercase font-semibold" style="color: #c9a227;">Sabores que quedan</span>
+          <div class="h-px w-12" style="background: linear-gradient(90deg, #c9a227, transparent);"></div>
+        </div>
 
-      <p class="text-lg md:text-2xl text-teal-200/80 mb-12 max-w-xl animate-slide-up" style="animation-delay:0.6s">
-        Sistema de Punto de Venta y Autoatención QR
-      </p>
+        <h1 class="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-none mb-6 animate-fade-in" style="animation-delay:0.3s">
+          <span style="color: #1a1410;">Cocina honesta,</span><br/>
+          <span class="italic" style="color: #c9a227;">momentos que</span>
+          <span style="color: #1a1410;">fluyen.</span>
+        </h1>
 
-      <div class="flex flex-col sm:flex-row gap-5 animate-slide-up" style="animation-delay:0.8s">
-        <a href="/menu" class="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-semibold text-lg shadow-[0_0_30px_rgba(6,182,212,0.4)] hover:shadow-[0_0_50px_rgba(6,182,212,0.6)] transition-all duration-500 hover:-translate-y-1 overflow-hidden">
-          <span class="absolute inset-0 bg-gradient-to-r from-cyan-400 to-teal-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
-          <span class="relative z-10 flex items-center gap-3">
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <p class="text-base sm:text-lg max-w-xl mx-auto leading-relaxed mb-12 animate-fade-in" style="animation-delay:0.5s; color: #6b5d4f;">
+          Comida preparada al momento, con ingredientes frescos y recetas de siempre. Pide desde tu mesa, tu casa o llévatela.
+        </p>
+
+        <!-- CTA buttons -->
+        <div class="flex flex-col sm:flex-row gap-3 mb-8 animate-fade-in" style="animation-delay:0.6s">
+          <a href="/menu" class="group relative inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full font-semibold text-sm transition-all duration-300" style="background: linear-gradient(135deg, #1a1410 0%, #2d2418 100%); color: #faf6f0; box-shadow: 0 4px 16px rgba(26, 20, 16, 0.25);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(26, 20, 16, 0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(26, 20, 16, 0.25)'">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
             Ver Carta Digital
-          </span>
-        </a>
-        <a href="/delivery" class="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold text-lg shadow-[0_0_30px_rgba(249,115,22,0.4)] hover:shadow-[0_0_50px_rgba(249,115,22,0.6)] transition-all duration-500 hover:-translate-y-1 overflow-hidden">
-          <span class="absolute inset-0 bg-gradient-to-r from-orange-400 to-amber-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
-          <span class="relative z-10 flex items-center gap-3">
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          </a>
+          <a href="/delivery" class="group relative inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full font-semibold text-sm transition-all duration-300" style="background-color: #c9a227; color: #1a1410; box-shadow: 0 4px 16px rgba(201, 162, 39, 0.3);" onmouseover="this.style.backgroundColor='#b8922a';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(201, 162, 39, 0.4)'" onmouseout="this.style.backgroundColor='#c9a227';this.style.transform='';this.style.boxShadow='0 4px 16px rgba(201, 162, 39, 0.3)'">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
             </svg>
             Pedir Delivery
-          </span>
-        </a>
-        <a href="/admin" class="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white font-semibold text-lg hover:bg-white/20 hover:border-white/30 transition-all duration-500 hover:-translate-y-1">
-          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          Panel de Administración
-        </a>
-      </div>
-    </div>
+          </a>
+          <a href="/admin" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-semibold text-sm transition-all duration-300" style="background-color: transparent; color: #1a1410; border: 1px solid #e8e0d0;" onmouseover="this.style.backgroundColor='#fffaf2';this.style.borderColor='#c9a227'" onmouseout="this.style.backgroundColor='transparent';this.style.borderColor='#e8e0d0'">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Personal
+          </a>
+        </div>
 
-    <!-- Footer -->
-    <div class="absolute bottom-6 z-10">
-      <p class="text-teal-200/30 text-sm">
-        &copy; {new Date().getFullYear()} Restaurante La Cascada. Todos los derechos reservados.
-      </p>
+        <!-- Feature pills -->
+        <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 animate-fade-in" style="animation-delay:0.7s; color: #6b5d4f;">
+          <span class="text-xs uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full" style="background-color: #c9a227;"></span>
+            Carta QR
+          </span>
+          <span class="text-xs uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full" style="background-color: #c9a227;"></span>
+            Delivery a domicilio
+          </span>
+          <span class="text-xs uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full" style="background-color: #c9a227;"></span>
+            Pedidos al momento
+          </span>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="text-center pb-6 px-6 animate-fade-in" style="animation-delay:0.9s">
+        <div class="h-px w-32 mx-auto mb-4" style="background: linear-gradient(90deg, transparent, #e8e0d0, transparent);"></div>
+        <p class="text-xs" style="color: #9b8a78;">© {new Date().getFullYear()} Restaurante La Cascada · Av. Principal 1234 · +56 9 1234 5678</p>
+      </footer>
     </div>
   </main>
 </Layout>
 
 <style is:global>
-  @keyframes gradient-shift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-  }
-
-  @keyframes wave {
-    0% { transform: translateX(0); }
-    50% { transform: translateX(-25%); }
-    100% { transform: translateX(-50%); }
-  }
-
-  @keyframes wave-slow {
-    0% { transform: translateX(-25%); }
-    50% { transform: translateX(0); }
-    100% { transform: translateX(-25%); }
-  }
-
-  @keyframes wave-fast {
-    0% { transform: translateX(-50%); }
-    50% { transform: translateX(-25%); }
-    100% { transform: translateX(0); }
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0) scale(1); opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { transform: translateY(-100vh) scale(2); opacity: 0; }
-  }
-
-  @keyframes float-slow {
-    0%, 100% { transform: translateY(0) scale(1); opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { transform: translateY(-100vh) scale(1.5); opacity: 0; }
-  }
-
-  @keyframes float-fast {
-    0%, 100% { transform: translateY(0) scale(1); opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { transform: translateY(-100vh) scale(2.5); opacity: 0; }
-  }
-
-  @keyframes fade-in {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
-  }
-
-  @keyframes slide-up {
-    0% { opacity: 0; transform: translateY(30px); }
-    100% { opacity: 1; transform: translateY(0); }
-  }
-
-  .animate-gradient-shift {
-    background-size: 400% 400%;
-    animation: gradient-shift 8s ease infinite;
-  }
-
-  .animate-wave {
-    animation: wave 12s linear infinite;
-  }
-
-  .animate-wave-slow {
-    animation: wave-slow 18s linear infinite;
-  }
-
-  .animate-wave-fast {
-    animation: wave-fast 8s linear infinite;
-  }
-
-  .animate-float {
-    animation: float 8s ease-in-out infinite;
-  }
-
-  .animate-float-slow {
-    animation: float-slow 12s ease-in-out infinite;
-  }
-
-  .animate-float-fast {
-    animation: float-fast 6s ease-in-out infinite;
-  }
-
-  .animate-fade-in {
-    animation: fade-in 1s ease-out forwards;
-  }
-
-  .animate-slide-up {
-    opacity: 0;
-    animation: slide-up 0.8s ease-out forwards;
-  }
-
-  .animation-delay-0 { animation-delay: 0s; }
-  .animation-delay-1000 { animation-delay: 1s; }
-  .animation-delay-1500 { animation-delay: 1.5s; }
-  .animation-delay-1800 { animation-delay: 1.8s; }
-  .animation-delay-2000 { animation-delay: 2s; }
-  .animation-delay-2500 { animation-delay: 2.5s; }
-  .animation-delay-3000 { animation-delay: 3s; }
-  .animation-delay-3500 { animation-delay: 3.5s; }
-  .animation-delay-4000 { animation-delay: 4s; }
-  .animation-delay-4500 { animation-delay: 4.5s; }
-  .animation-delay-5000 { animation-delay: 5s; }
-  .animation-delay-5500 { animation-delay: 5.5s; }
+  @keyframes fade-in { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
+  .animate-fade-in { opacity: 0; animation: fade-in 0.8s ease-out forwards; }
 </style>

@@ -2,79 +2,63 @@
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout title="Iniciar Sesión - La Cascada">
-  <main class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-slate-900">
-    <!-- Fondo animado -->
-    <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-teal-950 to-emerald-950 animate-gradient-shift"></div>
-    <div class="absolute inset-0 opacity-5" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+  <main class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style="background: linear-gradient(135deg, #1a1410 0%, #2d2418 50%, #1a1410 100%);">
 
-    <!-- Ondas inferiores -->
-    <div class="absolute bottom-0 left-0 w-full overflow-hidden leading-none">
-      <svg class="relative block w-[200%] h-[80px] animate-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120" preserveAspectRatio="none">
-        <path fill="rgba(255,255,255,0.02)" d="M0,60 C240,120 480,0 720,60 C960,120 1200,0 1440,60 L1440,120 L0,120 Z"></path>
-      </svg>
-      <svg class="relative block w-[200%] h-[80px] -mt-[40px] animate-wave-slow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120" preserveAspectRatio="none">
-        <path fill="rgba(255,255,255,0.04)" d="M0,30 C360,90 720,0 1080,60 C1260,90 1380,30 1440,60 L1440,120 L0,120 Z"></path>
-      </svg>
-    </div>
+    <!-- Decorative background pattern (warm grain texture) -->
+    <div class="absolute inset-0 opacity-[0.04] pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23c9a227\' fill-opacity=\'0.6\'%3E%3Cpath d=\'M20 18.5L18.5 17L17 18.5L18.5 20L20 18.5ZM22 20L20.5 21.5L22 23L23.5 21.5L22 20ZM20 21.5L18.5 23L20 24.5L21.5 23L20 21.5Z\'/%3E%3C/g%3E%3C/svg%3E');"></div>
 
-    <!-- Partículas flotantes -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      {[
-        { s: 'w-2 h-2', l: 'left-[8%]', d: '' },
-        { s: 'w-3 h-3', l: 'left-[20%]', d: 'animation-delay:1s' },
-        { s: 'w-1.5 h-1.5', l: 'left-[35%]', d: 'animation-delay:2s' },
-        { s: 'w-2.5 h-2.5', l: 'left-[50%]', d: 'animation-delay:0.5s' },
-        { s: 'w-1.5 h-1.5', l: 'left-[65%]', d: 'animation-delay:3s' },
-        { s: 'w-2 h-2', l: 'left-[78%]', d: 'animation-delay:1.5s' },
-        { s: 'w-1 h-1', l: 'left-[90%]', d: 'animation-delay:2.5s' },
-      ].map((p) => (
-        <div class={`absolute top-full ${p.s} ${p.l} rounded-full bg-white/10 backdrop-blur-sm animate-float`} style={p.d}></div>
-      ))}
-    </div>
+    <!-- Decorative gold glows -->
+    <div class="absolute top-0 right-0 w-96 h-96 rounded-full opacity-20 pointer-events-none" style="background: radial-gradient(circle, #c9a227 0%, transparent 70%); filter: blur(60px);"></div>
+    <div class="absolute bottom-0 left-0 w-96 h-96 rounded-full opacity-15 pointer-events-none" style="background: radial-gradient(circle, #c9a227 0%, transparent 70%); filter: blur(60px);"></div>
 
-    <!-- Tarjeta de login -->
+    <!-- Decorative vertical borders -->
+    <div class="absolute top-0 left-0 w-1 h-full pointer-events-none" style="background: linear-gradient(to bottom, transparent, #c9a227 30%, #c9a227 70%, transparent);"></div>
+    <div class="absolute top-0 right-0 w-1 h-full pointer-events-none" style="background: linear-gradient(to bottom, transparent, #c9a227 30%, #c9a227 70%, transparent);"></div>
+
+    <!-- Login Container -->
     <div class="relative z-10 w-full max-w-md animate-fade-in-up">
-      <!-- Logo + Icono -->
-      <div class="text-center mb-8 animate-fade-in" style="animation-delay:0.2s">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-[0_0_40px_rgba(52,211,153,0.3)] mb-4">
-          <svg class="w-9 h-9 text-white" fill="none" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-            <path d="M20 12 C20 12 16 28 24 36 C32 44 32 52 32 56" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-            <path d="M32 8 C32 8 28 24 36 32 C44 40 44 48 44 52" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-            <path d="M44 12 C44 12 40 28 48 36 C56 44 56 52 56 56" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-            <path d="M8 32 L56 32" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
-          </svg>
+      <!-- Brand Mark -->
+      <div class="text-center mb-8">
+        <!-- Decorative emblem -->
+        <div class="inline-flex items-center justify-center mb-5">
+          <div class="w-20 h-20 rounded-full flex items-center justify-center relative" style="background: linear-gradient(135deg, #c9a227 0%, #a8841c 100%); box-shadow: 0 8px 32px rgba(201, 162, 39, 0.3), inset 0 2px 0 rgba(255,255,255,0.2);">
+            <span class="font-display text-3xl text-white font-bold">LC</span>
+            <div class="absolute inset-0 rounded-full pointer-events-none" style="box-shadow: inset 0 0 0 1px rgba(201, 162, 39, 0.4), 0 0 0 4px rgba(26, 20, 16, 1), 0 0 0 5px rgba(201, 162, 39, 0.3);"></div>
+          </div>
         </div>
-        <h1 class="text-3xl font-extrabold text-white tracking-tight">La Cascada</h1>
-        <p class="text-teal-200/70 mt-1.5 text-sm">Sistema de Punto de Venta</p>
+        <h1 class="font-display text-4xl font-bold tracking-tight" style="color: #f5efe4;">La Cascada</h1>
+        <div class="flex items-center justify-center gap-3 mt-2">
+          <div class="h-px w-8" style="background: linear-gradient(90deg, transparent, #c9a227);"></div>
+          <p class="text-xs tracking-[0.3em] uppercase font-semibold" style="color: #c9a227;">Restaurante</p>
+          <div class="h-px w-8" style="background: linear-gradient(90deg, #c9a227, transparent);"></div>
+        </div>
       </div>
 
-      <!-- Card -->
-      <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl animate-fade-in" style="animation-delay:0.4s">
-        <p class="text-white/80 text-sm font-medium mb-6 text-center">Inicia sesión con tu cuenta</p>
+      <!-- Login Card -->
+      <div class="rounded-2xl p-8 sm:p-10 backdrop-blur-xl animate-fade-in" style="background-color: rgba(250, 246, 240, 0.06); border: 1px solid rgba(201, 162, 39, 0.2); box-shadow: 0 25px 60px rgba(0,0,0,0.4);">
+
+        <h2 class="font-display text-2xl text-center mb-2" style="color: #f5efe4;">Bienvenido</h2>
+        <p class="text-center text-sm mb-8" style="color: #b9a690;">Inicia sesión para acceder al panel</p>
 
         <form id="login-form" class="space-y-5">
-          <div class="animate-fade-in" style="animation-delay:0.5s">
-            <label for="email" class="block text-xs font-semibold text-teal-200/70 mb-1.5 uppercase tracking-wider">
-              Usuario o correo
-            </label>
+          <div>
+            <label for="login" class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color: #c9a227;">Usuario o correo</label>
             <div class="relative">
-              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color: #8a7a68;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              <input type="text" id="email" name="login" required class="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/50 focus:ring-2 focus:ring-teal-400/20 transition-all duration-300" placeholder="Tu nombre o correo" autocomplete="username" />
+              <input type="text" id="login" name="login" required class="w-full pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition-all duration-300" style="background-color: rgba(255, 255, 255, 0.06); border: 1px solid rgba(201, 162, 39, 0.25); color: #f5efe4;" placeholder="Tu nombre o correo" autocomplete="username" onfocus="this.style.borderColor='#c9a227';this.style.boxShadow='0 0 0 3px rgba(201,162,39,0.15)'" onblur="this.style.borderColor='rgba(201, 162, 39, 0.25)';this.style.boxShadow='none'" />
             </div>
           </div>
 
-          <div class="animate-fade-in" style="animation-delay:0.6s">
-            <label for="password" class="block text-xs font-semibold text-teal-200/70 mb-1.5 uppercase tracking-wider">
-              Contraseña
-            </label>
+          <div>
+            <label for="password" class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color: #c9a227;">Contraseña</label>
             <div class="relative">
-              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color: #8a7a68;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
-              <input type="password" id="password" name="password" required class="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/50 focus:ring-2 focus:ring-teal-400/20 transition-all duration-300" placeholder="••••••••" autocomplete="current-password" />
-              <button type="button" onclick="const p = document.getElementById('password'); const t = p.type; p.type = t === 'password' ? 'text' : 'password'; this.querySelector('svg').style.opacity = t === 'password' ? '0.7' : '0.3'" class="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+              <input type="password" id="password" name="password" required class="w-full pl-10 pr-12 py-3 rounded-xl text-sm outline-none transition-all duration-300" style="background-color: rgba(255, 255, 255, 0.06); border: 1px solid rgba(201, 162, 39, 0.25); color: #f5efe4;" placeholder="••••••••" autocomplete="current-password" onfocus="this.style.borderColor='#c9a227';this.style.boxShadow='0 0 0 3px rgba(201,162,39,0.15)'" onblur="this.style.borderColor='rgba(201, 162, 39, 0.25)';this.style.boxShadow='none'" />
+              <button type="button" onclick="const p = document.getElementById('password'); const t = p.type; p.type = t === 'password' ? 'text' : 'password'; this.querySelector('svg').style.opacity = t === 'password' ? '0.7' : '0.3'" class="absolute right-3 top-1/2 -translate-y-1/2 transition-colors" style="color: #8a7a68;">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -83,9 +67,9 @@ import Layout from '../layouts/Layout.astro';
             </div>
           </div>
 
-          <div id="error-message" class="text-red-400 text-sm text-center hidden bg-red-500/10 rounded-lg py-2 px-4 animate-fade-in"></div>
+          <div id="error-message" class="hidden text-sm text-center rounded-lg py-2 px-4" style="background-color: rgba(166, 61, 61, 0.15); color: #f5b5b5;"></div>
 
-          <button type="submit" id="submit-btn" class="animate-fade-in w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold text-base shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-wait disabled:hover:translate-y-0" style="animation-delay:0.7s">
+          <button type="submit" id="submit-btn" class="w-full py-3.5 rounded-xl text-white font-bold text-base shadow-lg transition-all duration-300 disabled:opacity-70 disabled:cursor-wait" style="background: linear-gradient(135deg, #c9a227 0%, #a8841c 100%); box-shadow: 0 4px 20px rgba(201, 162, 39, 0.3);" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 24px rgba(201, 162, 39, 0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(201, 162, 39, 0.3)'">
             <span id="btn-text">Iniciar Sesión</span>
             <span id="btn-loading" class="hidden items-center justify-center gap-2">
               <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -93,11 +77,14 @@ import Layout from '../layouts/Layout.astro';
             </span>
           </button>
 
-          <p class="text-center text-white/20 text-xs mt-4 animate-fade-in" style="animation-delay:0.8s">
-            admin@lacascada.cl &bull; garzon@lacascada.cl
-          </p>
+          <div class="text-center pt-4">
+            <p class="text-xs" style="color: #6b5d4f;">admin@lacascada.cl · garzon@lacascada.cl</p>
+          </div>
         </form>
       </div>
+
+      <!-- Footer -->
+      <p class="text-center text-xs mt-6" style="color: #6b5d4f;">© {new Date().getFullYear()} La Cascada · Est. 2014</p>
     </div>
   </main>
 
@@ -133,8 +120,6 @@ import Layout from '../layouts/Layout.astro';
         if (!res.ok) {
           errorDiv.textContent = json.error || 'Error al iniciar sesión';
           errorDiv.classList.remove('hidden');
-          errorDiv.classList.add('animate-shake');
-          setTimeout(() => errorDiv.classList.remove('animate-shake'), 500);
           submitBtn.disabled = false;
           btnText.classList.remove('hidden');
           btnLoading.classList.add('hidden');
@@ -156,50 +141,8 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <style is:global>
-  @keyframes gradient-shift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-  }
-  @keyframes wave {
-    0% { transform: translateX(0); }
-    50% { transform: translateX(-25%); }
-    100% { transform: translateX(-50%); }
-  }
-  @keyframes wave-slow {
-    0% { transform: translateX(-25%); }
-    50% { transform: translateX(0); }
-    100% { transform: translateX(-25%); }
-  }
-  @keyframes float {
-    0% { transform: translateY(0) scale(1); opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { transform: translateY(-100vh) scale(2); opacity: 0; }
-  }
-  @keyframes fade-in {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
-  }
-  @keyframes fade-in-up {
-    0% { opacity: 0; transform: translateY(20px); }
-    100% { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-6px); }
-    40% { transform: translateX(6px); }
-    60% { transform: translateX(-4px); }
-    80% { transform: translateX(4px); }
-  }
-
-  .animate-gradient-shift {
-    background-size: 400% 400%;
-    animation: gradient-shift 12s ease infinite;
-  }
-  .animate-wave { animation: wave 12s linear infinite; }
-  .animate-wave-slow { animation: wave-slow 18s linear infinite; }
-  .animate-float { animation: float 8s ease-in-out infinite; }
-  .animate-fade-in { opacity: 0; animation: fade-in 1s ease-out forwards; }
+  @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+  @keyframes fade-in-up { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+  .animate-fade-in { opacity: 0; animation: fade-in 0.8s ease-out forwards; }
   .animate-fade-in-up { opacity: 0; animation: fade-in-up 0.8s ease-out forwards; }
-  .animate-shake { animation: shake 0.4s ease; }
 </style>

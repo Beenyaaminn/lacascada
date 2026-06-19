@@ -4,36 +4,172 @@
 
 @layer base {
   :root {
-    --color-brand: #16a34a;
+    /* Cascada - Warm Restaurant Palette */
+    --color-primary: #1a1410;       /* Deep espresso/charcoal */
+    --color-secondary: #2d2418;     /* Warm dark wood */
+    --color-accent: #c9a227;        /* Brass/gold */
+    --color-accent-hover: #b8922a;
+    --color-background: #faf6f0;    /* Warm cream */
+    --color-surface: #fffaf2;       /* Off-white cream */
+    --color-text: #2d2418;          /* Dark warm brown */
+    --color-text-muted: #6b5d4f;     /* Warm gray */
+    --color-text-light: #9b8a78;    /* Light warm gray */
+    --color-border: #e8e0d0;        /* Warm beige */
+    --color-border-light: #f0ebe0;
+    --color-success: #5d7a3f;       /* Olive green */
+    --color-error: #a63d3d;         /* Warm red */
+    --color-warning: #c08a1e;        /* Mustard */
+    --shadow-sm: 0 1px 2px rgba(45, 36, 24, 0.06);
+    --shadow-md: 0 4px 12px rgba(45, 36, 24, 0.08);
+    --shadow-lg: 0 10px 30px rgba(45, 36, 24, 0.10);
+    --shadow-xl: 0 20px 50px rgba(45, 36, 24, 0.12);
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.875rem;
+    --radius-xl: 1.25rem;
+    --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
   html {
     scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply antialiased;
+    font-family: var(--font-body);
+    background-color: var(--color-background);
+    color: var(--color-text);
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-primary);
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: white;
   }
 }
 
 @layer components {
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .font-body {
+    font-family: var(--font-body);
+  }
+
+  /* Brand Buttons */
   .btn-primary {
-    @apply bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    background-color: var(--color-primary);
+    color: white;
+    font-weight: 600;
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+  }
+  .btn-primary:hover {
+    background-color: var(--color-secondary);
+    transform: translateY(-1px);
+  }
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-accent {
+    background-color: var(--color-accent);
+    color: white;
+    font-weight: 600;
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+  }
+  .btn-accent:hover {
+    background-color: var(--color-accent-hover);
+    transform: translateY(-1px);
   }
 
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+    background-color: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    font-weight: 500;
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+  }
+  .btn-secondary:hover {
+    background-color: var(--color-surface);
+    border-color: var(--color-text-muted);
   }
 
   .btn-danger {
-    @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+    background-color: var(--color-error);
+    color: white;
+    font-weight: 600;
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+  }
+  .btn-danger:hover {
+    background-color: #8a3232;
   }
 
   .input-field {
-    @apply w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all duration-200;
+    width: 100%;
+    background-color: white;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    transition: all 0.2s ease;
+    outline: none;
+  }
+  .input-field:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15);
+  }
+  .input-field::placeholder {
+    color: var(--color-text-light);
   }
 
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+    padding: 1.5rem;
+  }
+
+  .card-elevated {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--color-border);
+    padding: 1.5rem;
+  }
+
+  .divider-ornate {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--color-accent);
+  }
+  .divider-ornate::before,
+  .divider-ornate::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-border), transparent);
   }
 }
