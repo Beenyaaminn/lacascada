@@ -1,4 +1,4 @@
-export type RolUsuario = 'admin' | 'garzon' | 'cliente';
+export type RolUsuario = 'admin' | 'garzon';
 export type EstadoMesa = 'libre' | 'ocupada' | 'esperando_pago';
 export type TipoPedido = 'mesa' | 'delivery' | 'retiro';
 export type EstadoPedido = 'pendiente' | 'en_preparacion' | 'entregado' | 'pagado' | 'cancelado';

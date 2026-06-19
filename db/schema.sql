@@ -3,7 +3,7 @@
 -- ============================================================
 
 -- Tipos ENUM
-CREATE TYPE rol_usuario AS ENUM ('admin', 'garzon', 'cliente');
+CREATE TYPE rol_usuario AS ENUM ('admin', 'garzon');
 CREATE TYPE estado_mesa AS ENUM ('libre', 'ocupada', 'esperando_pago');
 CREATE TYPE tipo_pedido AS ENUM ('mesa', 'delivery', 'retiro');
 CREATE TYPE estado_pedido AS ENUM ('pendiente', 'en_preparacion', 'entregado', 'pagado', 'cancelado');
@@ -18,7 +18,7 @@ CREATE TABLE usuarios (
   nombre        VARCHAR(150) NOT NULL,
   email         VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  rol           rol_usuario NOT NULL DEFAULT 'cliente',
+  rol           rol_usuario NOT NULL DEFAULT 'garzon',
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

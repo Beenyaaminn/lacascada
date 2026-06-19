@@ -25,7 +25,7 @@ async function migrate() {
   // ======== ENUM TYPES ========
   console.log('[1/5] Creando tipos ENUM...');
   await sql`DO $$ BEGIN
-    CREATE TYPE rol_usuario AS ENUM ('admin', 'garzon', 'cliente');
+    CREATE TYPE rol_usuario AS ENUM ('admin', 'garzon');
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`;
   await sql`DO $$ BEGIN
@@ -58,7 +58,7 @@ async function migrate() {
     nombre VARCHAR(150) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    rol rol_usuario NOT NULL DEFAULT 'cliente',
+    rol rol_usuario NOT NULL DEFAULT 'garzon',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;

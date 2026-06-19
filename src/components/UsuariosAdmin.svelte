@@ -110,7 +110,7 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Rol</label>
           <div class="grid grid-cols-3 gap-2">
-            {#each ['admin', 'garzon', 'cliente'] as r}
+            {#each ['admin', 'garzon'] as r}
               <label class="flex items-center justify-center gap-1 p-2 rounded-lg border cursor-pointer text-sm {rol === r ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600'}">
                 <input type="radio" bind:group={rol} value={r} class="sr-only" />
                 <span class="capitalize">{r}</span>

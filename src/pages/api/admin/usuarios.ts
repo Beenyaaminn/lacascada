@@ -35,7 +35,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (!nombre || !email || !password || !rol) {
       return new Response(JSON.stringify({ error: 'Todos los campos son obligatorios' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
-    if (!['admin', 'garzon', 'cliente'].includes(rol)) {
+    if (!['admin', 'garzon'].includes(rol)) {
       return new Response(JSON.stringify({ error: 'Rol inválido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
     const existente = await sql`SELECT id FROM usuarios WHERE email = ${email} LIMIT 1`;

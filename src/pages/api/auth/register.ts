@@ -26,7 +26,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const validRoles = ['admin', 'garzon', 'cliente'];
+    const validRoles = ['admin', 'garzon'];
     if (!validRoles.includes(rol)) {
       return new Response(JSON.stringify({ error: 'Rol inválido' }), {
         status: 400,
