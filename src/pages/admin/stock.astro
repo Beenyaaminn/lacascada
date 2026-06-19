@@ -5,7 +5,7 @@ import { getSessionFromCookie } from '../../lib/auth';
 const cookieHeader = Astro.request.headers.get('cookie');
 const session = getSessionFromCookie(cookieHeader);
 
-if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
+if (!session || session.rol !== 'admin') {
   return Astro.redirect('/login');
 }
 ---

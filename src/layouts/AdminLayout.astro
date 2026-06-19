@@ -51,19 +51,21 @@ const adminExtras: MenuItem[] = isAdmin ? [
   { label: 'Usuarios', href: '/admin/usuarios', icon: '👥' },
 ] : [];
 
-const menuSections: MenuSection[] = [
+const restauranteItems: MenuItem[] = [
+  { label: 'Toma de Pedidos', href: '/admin/mesas', icon: '🍽️' },
+  { label: 'Cocina', href: '/admin/cocina', icon: '👨‍🍳' },
+  { label: 'Reservas', href: '/admin/reservas', icon: '📅' },
+  { label: 'Pedidos', href: '/admin/pedidos', icon: '📦' },
+  { label: 'Productos', href: '/admin/productos', icon: '📋' },
+  ...(isAdmin ? [{ label: 'Créditos', href: '/admin/clientes', icon: '👥' }] : []),
+  ...adminExtras,
+];
+
+const allMenuSections: MenuSection[] = [
   {
     label: 'Restaurante',
     icon: '🍽️',
-    items: [
-      { label: 'Toma de Pedidos', href: '/admin/mesas', icon: '🍽️' },
-      { label: 'Cocina', href: '/admin/cocina', icon: '👨‍🍳' },
-      { label: 'Reservas', href: '/admin/reservas', icon: '📅' },
-      { label: 'Pedidos', href: '/admin/pedidos', icon: '📦' },
-      { label: 'Créditos', href: '/admin/clientes', icon: '👥' },
-      { label: 'Productos', href: '/admin/productos', icon: '📋' },
-      ...adminExtras,
-    ],
+    items: restauranteItems,
   },
   {
     label: 'Operaciones',
@@ -91,6 +93,8 @@ const menuSections: MenuSection[] = [
     ],
   },
 ];
+
+const menuSections = isAdmin ? allMenuSections : allMenuSections.filter(s => s.label === 'Restaurante' || s.label === 'Operaciones');
 ---
 <!doctype html>
 <html lang="es">
