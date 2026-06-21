@@ -3,9 +3,18 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { sql } from '../../../lib/db';
 import { registrarAuditoria } from '../../../lib/audit';
+import { checkRateLimit } from '../../../lib/ratelimit';
+import { logError } from '../../../lib/logger';
 
 export const POST: APIRoute = async ({ request }) => {
-  const ip = request.headers.get('x-forwarded-for') || '';
+  const ip = request.headers.get('x-forwarded-for') || '0.0.0.0';
+
+  const rl = checkRateLimit(`delivery:${ip}`, 10, 60000);
+  if (!rl.allowed) {
+    return new Response(JSON.stringify({ error: 'Demasiados pedidos. Intente de nuevo.' }), {
+      status: 429, headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   try {
     const {
@@ -98,7 +107,7 @@ export const POST: APIRoute = async ({ request }) => {
       status: 201, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error creando pedido delivery:', error);
+    logError('Creando pedido delivery', error);
     return new Response(JSON.stringify({ error: 'Error al crear el pedido' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 };

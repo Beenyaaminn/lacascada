@@ -13,6 +13,6 @@ export default defineConfig({
     tailwind(),
   ],
   security: {
-    checkOrigin: false,
+    checkOrigin: true,
   },
 });

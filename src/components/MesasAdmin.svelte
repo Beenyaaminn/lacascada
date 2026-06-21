@@ -252,21 +252,7 @@
         const data = await res.json();
         showCobroDelivery = false;
         if (data.voucher) {
-          const v = data.voucher;
-          const params = new URLSearchParams({
-            pedido_id: String(v.pedido_id),
-            fecha: new Date(v.fecha_hora).toLocaleString('es-CL'),
-            mesa: v.mesa_info,
-            metodo_pago: v.metodo_pago,
-            total: String(v.total),
-            vuelto: String(v.vuelto || 0),
-            efectivo_con_cuanto: String(v.efectivo_con_cuanto || 0),
-            nombre_cliente: v.nombre_cliente || '',
-            direccion: v.direccion || '',
-            telefono: v.telefono || '',
-            detalles: JSON.stringify(v.detalles),
-          });
-          window.open(`/admin/voucher?${params.toString()}`, '_blank');
+          window.open(`/admin/voucher?pedido_id=${data.voucher.pedido_id}`, '_blank');
         }
         loadData(true);
       } else {

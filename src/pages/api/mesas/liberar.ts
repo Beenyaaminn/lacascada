@@ -5,11 +5,6 @@ import { sql } from '../../../lib/db';
 import { getSessionFromCookie } from '../../../lib/auth';
 
 export const POST: APIRoute = async ({ request }) => {
-  const session = getSessionFromCookie(request.headers.get('cookie'));
-  if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
-    return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
-  }
-
   try {
     const { piso, mesa_numero } = await request.json();
 
@@ -19,12 +14,30 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    const mesa = await sql`
+      SELECT id, tomada_por FROM mesas
+      WHERE piso = ${piso} AND numero_mesa = ${mesa_numero} AND estado = 'ocupada'
+      LIMIT 1
+    `;
+
+    if (mesa.length === 0) {
+      return new Response(JSON.stringify({ liberada: false }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const esAutoservicio = mesa[0].tomada_por === null;
+    const session = getSessionFromCookie(request.headers.get('cookie'));
+    const esStaff = session && (session.rol === 'admin' || session.rol === 'garzon');
+
+    if (!esAutoservicio && !esStaff) {
+      return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+    }
+
     const result = await sql`
       UPDATE mesas
       SET estado = 'libre', tomada_por = NULL, tomada_desde = NULL
-      WHERE piso = ${piso} AND numero_mesa = ${mesa_numero}
-        AND estado = 'ocupada'
-        AND tomada_por IS NULL
+      WHERE id = ${mesa[0].id}
       RETURNING id
     `;
 

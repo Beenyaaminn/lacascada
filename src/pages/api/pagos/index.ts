@@ -4,6 +4,8 @@ import type { APIRoute } from 'astro';
 import { sql } from '../../../lib/db';
 import { getSessionFromCookie } from '../../../lib/auth';
 import { registrarAuditoria } from '../../../lib/audit';
+import { checkRateLimit } from '../../../lib/ratelimit';
+import { logError } from '../../../lib/logger';
 
 class PagoError extends Error {
   status: number;
@@ -20,6 +22,13 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const ip = request.headers.get('x-forwarded-for') || '';
+
+  const rl = checkRateLimit(`pagos:${ip}`, 60, 60000);
+  if (!rl.allowed) {
+    return new Response(JSON.stringify({ error: 'Demasiados intentos. Intente de nuevo.' }), {
+      status: 429, headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   try {
     const { pedido_id, metodo_pago, propina, descuento, efectivo_con_cuanto } = await request.json();
@@ -103,7 +112,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (error instanceof PagoError) {
       return new Response(JSON.stringify({ error: error.message }), { status: error.status, headers: { 'Content-Type': 'application/json' } });
     }
-    console.error('Error procesando pago:', error);
+    logError('Procesando pago', error);
     return new Response(JSON.stringify({ error: 'Error al procesar el pago' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 };

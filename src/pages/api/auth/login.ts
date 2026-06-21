@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { sql } from '../../../lib/db';
 import { signToken } from '../../../lib/auth';
 import { registrarAuditoria } from '../../../lib/audit';
+import { logError } from '../../../lib/logger';
 
 export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
   try {
@@ -82,7 +83,7 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Login error:', error);
+    logError('Login', error);
     return new Response(JSON.stringify({ error: 'Error interno del servidor' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

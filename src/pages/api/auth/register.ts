@@ -4,6 +4,7 @@ import type { APIRoute } from 'astro';
 import bcrypt from 'bcryptjs';
 import { sql } from '../../../lib/db';
 import { signToken, getSessionFromCookie } from '../../../lib/auth';
+import { logError } from '../../../lib/logger';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -63,7 +64,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Register error:', error);
+    logError('Register', error);
     return new Response(JSON.stringify({ error: 'Error interno del servidor' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

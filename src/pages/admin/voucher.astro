@@ -1,6 +1,7 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { getSessionFromCookie } from '../../lib/auth';
+import { sql } from '../../lib/db';
 
 const cookieHeader = Astro.request.headers.get('cookie');
 const session = getSessionFromCookie(cookieHeader);
@@ -9,86 +10,129 @@ if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
   return Astro.redirect('/login');
 }
 
-const pedidoId = Astro.url.searchParams.get('pedido_id') || '---';
-const fecha = Astro.url.searchParams.get('fecha') || new Date().toLocaleString('es-CL');
-const mesaInfo = Astro.url.searchParams.get('mesa') || '---';
-const metodoPago = Astro.url.searchParams.get('metodo_pago') || '---';
-const total = Astro.url.searchParams.get('total') || '0';
-const vuelto = Astro.url.searchParams.get('vuelto') || '0';
-const nombreCliente = Astro.url.searchParams.get('nombre_cliente') || '';
-const direccionCliente = Astro.url.searchParams.get('direccion') || '';
-const telefonoCliente = Astro.url.searchParams.get('telefono') || '';
-const efectivoConCuanto = Astro.url.searchParams.get('efectivo_con_cuanto') || '0';
-const detallesRaw = Astro.url.searchParams.get('detalles') || '[]';
+const pedidoId = parseInt(Astro.url.searchParams.get('pedido_id') || '0');
+let voucherData: any = null;
 
-let detalles: any[] = [];
-try {
-  detalles = JSON.parse(detallesRaw);
-} catch { detalles = []; }
+if (pedidoId > 0) {
+  try {
+    const pedido = await sql`
+      SELECT p.*, m.numero_mesa, m.piso
+      FROM pedidos p LEFT JOIN mesas m ON m.id = p.mesa_id
+      WHERE p.id = ${pedidoId} LIMIT 1
+    `;
+    if (pedido.length > 0) {
+      const detalles = await sql`
+        SELECT dp.*, pr.nombre as producto_nombre
+        FROM detalle_pedidos dp JOIN productos pr ON pr.id = dp.producto_id
+        WHERE dp.pedido_id = ${pedidoId}
+      `;
+      const p = pedido[0];
+      let mesaInfo;
+      if (p.tipo_pedido === 'delivery') {
+        mesaInfo = `Delivery - ${p.nombre_cliente || 'Cliente'}`;
+      } else if (p.numero_mesa) {
+        mesaInfo = `Piso ${p.piso} - Mesa ${p.numero_mesa}`;
+      } else {
+        mesaInfo = p.tipo_pedido || '';
+      }
+      voucherData = {
+        pedido_id: p.id,
+        fecha: new Date(p.fecha_hora).toLocaleString('es-CL'),
+        mesaInfo,
+        metodoPago: (p.metodo_pago || '').toUpperCase().replace('_', ' '),
+        total: p.total || 0,
+        vuelto: p.efectivo_con_cuanto > p.total ? p.efectivo_con_cuanto - p.total : 0,
+        nombreCliente: p.nombre_cliente || '',
+        direccion: p.direccion || '',
+        telefono: p.telefono || '',
+        efectivoConCuanto: p.efectivo_con_cuanto || 0,
+        detalles: detalles.map((d: any) => ({
+          cantidad: d.cantidad,
+          nombre: d.producto_nombre,
+          acompanamiento: d.acompanamiento,
+          subtotal: d.subtotal,
+        })),
+      };
+    }
+  } catch (e) {
+    console.error('Error cargando voucher:', (e as Error).message);
+  }
+}
+
+const tieneVoucher = !!voucherData;
+const p = voucherData;
 ---
 <AdminLayout title="Voucher #{pedidoId} - La Cascada">
   <div style="min-height: 100vh; background-color: var(--color-background); display: flex; align-items: center; justify-content: center; padding: 1rem;">
     <div class="bg-white shadow-lg rounded-lg p-6 max-w-[72mm] w-full font-mono text-xs" id="voucher-print">
-      <div class="text-center mb-3">
-        <p class="font-bold text-sm">LA CASCADA</p>
-        <p class="text-xs text-gray-500">Restaurant &bull; Punto de Venta</p>
-      </div>
-
-      <div class="border-t border-dashed border-gray-300 my-2"></div>
-
-      <div class="space-y-1 mb-2 text-xs">
-        <p><span class="font-semibold">RUT:</span> 13.384.575-5</p>
-        <p><span class="font-semibold">TEL:</span> +569 66937327</p>
-        <p><span class="font-semibold">DIR:</span> Rioseco #267, Lebu</p>
-      </div>
-
-      <div class="border-t border-dashed border-gray-300 my-2"></div>
-
-      <div class="space-y-1 mb-2">
-        <p><span class="font-semibold">FECHA:</span> {fecha}</p>
-        <p><span class="font-semibold">PEDIDO:</span> #{pedidoId}</p>
-        <p><span class="font-semibold">UBICACIÓN:</span> {mesaInfo}</p>
-        {nombreCliente && <p><span class="font-semibold">CLIENTE:</span> {nombreCliente}</p>}
-        {direccionCliente && <p><span class="font-semibold">DIRECCIÓN:</span> {direccionCliente}</p>}
-        {telefonoCliente && <p><span class="font-semibold">TEL:</span> {telefonoCliente}</p>}
-      </div>
-
-      <div class="border-t border-dashed border-gray-300 my-2"></div>
-
-      <p class="text-xs font-semibold mb-1">DETALLE:</p>
-      <div class="space-y-1 mb-3">
-        {detalles.map((d: any) => (
-          <div>
-            <p>{d.cantidad}x {d.nombre} <span class="float-right">${parseInt(d.subtotal).toLocaleString('es-CL')}</span></p>
-            {d.acompanamiento && <p class="text-gray-500 ml-4">[{d.acompanamiento}]</p>}
+      {tieneVoucher ? (
+        <>
+          <div class="text-center mb-3">
+            <p class="font-bold text-sm">LA CASCADA</p>
+            <p class="text-xs text-gray-500">Restaurant &bull; Punto de Venta</p>
           </div>
-        ))}
-      </div>
 
-      <div class="border-t border-dashed border-gray-300 my-2"></div>
+          <div class="border-t border-dashed border-gray-300 my-2"></div>
 
-      <div class="space-y-1">
-        <p><span class="font-semibold">SUBTOTAL:</span> <span class="float-right">${parseInt(total).toLocaleString('es-CL')}</span></p>
-        <p><span class="font-semibold">FORMA DE PAGO:</span> {metodoPago.toUpperCase().replace('_', ' ')}</p>
-      </div>
+          <div class="space-y-1 mb-2 text-xs">
+            <p><span class="font-semibold">RUT:</span> 13.384.575-5</p>
+            <p><span class="font-semibold">TEL:</span> +569 66937327</p>
+            <p><span class="font-semibold">DIR:</span> Rioseco #267, Lebu</p>
+          </div>
 
-      <div class="border-t border-dashed border-gray-300 my-2"></div>
+          <div class="border-t border-dashed border-gray-300 my-2"></div>
 
-      <p class="text-center font-bold text-sm">TOTAL: ${parseInt(total).toLocaleString('es-CL')}</p>
-      {parseInt(efectivoConCuanto) > 0 && <p class="text-center text-xs mt-1">EFECTIVO: ${parseInt(efectivoConCuanto).toLocaleString('es-CL')}</p>}
-      {parseInt(vuelto) > 0 && <p class="text-center text-xs mt-1">VUELTO: ${parseInt(vuelto).toLocaleString('es-CL')}</p>}
+          <div class="space-y-1 mb-2">
+            <p><span class="font-semibold">FECHA:</span> {p.fecha}</p>
+            <p><span class="font-semibold">PEDIDO:</span> #{p.pedido_id}</p>
+            <p><span class="font-semibold">UBICACIÓN:</span> {p.mesaInfo}</p>
+            {p.nombreCliente && <p><span class="font-semibold">CLIENTE:</span> {p.nombreCliente}</p>}
+            {p.direccion && <p><span class="font-semibold">DIRECCIÓN:</span> {p.direccion}</p>}
+            {p.telefono && <p><span class="font-semibold">TEL:</span> {p.telefono}</p>}
+          </div>
 
-      <div class="border-t border-dashed border-gray-300 my-2"></div>
+          <div class="border-t border-dashed border-gray-300 my-2"></div>
 
-      <p class="text-center text-xs text-gray-500">¡Gracias por su visita!</p>
-      <p class="text-center text-xs text-gray-400">* COMPROBANTE DE USO INTERNO *</p>
+          <p class="text-xs font-semibold mb-1">DETALLE:</p>
+          <div class="space-y-1 mb-3">
+            {p.detalles.map((d: any) => (
+              <div>
+                <p>{d.cantidad}x {d.nombre} <span class="float-right">${parseInt(d.subtotal).toLocaleString('es-CL')}</span></p>
+                {d.acompanamiento && <p class="text-gray-500 ml-4">[{d.acompanamiento}]</p>}
+              </div>
+            ))}
+          </div>
+
+          <div class="border-t border-dashed border-gray-300 my-2"></div>
+
+          <div class="space-y-1">
+            <p><span class="font-semibold">SUBTOTAL:</span> <span class="float-right">${p.total.toLocaleString('es-CL')}</span></p>
+            <p><span class="font-semibold">FORMA DE PAGO:</span> {p.metodoPago}</p>
+          </div>
+
+          <div class="border-t border-dashed border-gray-300 my-2"></div>
+
+          <p class="text-center font-bold text-sm">TOTAL: ${p.total.toLocaleString('es-CL')}</p>
+          {p.efectivoConCuanto > 0 && <p class="text-center text-xs mt-1">EFECTIVO: ${p.efectivoConCuanto.toLocaleString('es-CL')}</p>}
+          {p.vuelto > 0 && <p class="text-center text-xs mt-1">VUELTO: ${p.vuelto.toLocaleString('es-CL')}</p>}
+
+          <div class="border-t border-dashed border-gray-300 my-2"></div>
+
+          <p class="text-center text-xs text-gray-500">¡Gracias por su visita!</p>
+          <p class="text-center text-xs text-gray-400">* COMPROBANTE DE USO INTERNO *</p>
+        </>
+      ) : (
+        <p class="text-center text-gray-500 py-8">Voucher no encontrado</p>
+      )}
     </div>
   </div>
 
   <div class="text-center pb-8">
-    <button onclick="window.print()" class="btn-primary">
-      Imprimir Voucher
-    </button>
+    {tieneVoucher ? (
+      <button onclick="window.print()" class="btn-primary">
+        Imprimir Voucher
+      </button>
+    ) : null}
     <a href="/admin/pedidos" class="btn-secondary ml-2 inline-block no-underline">
       Volver a Pedidos
     </a>
