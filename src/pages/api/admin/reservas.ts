@@ -15,14 +15,19 @@ export const GET: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
   }
 
-  const reservas = await sql`
-    SELECT r.*, p.nombre as producto_nombre
-    FROM reservas_platos r
-    JOIN productos p ON p.id = r.producto_id
-    ORDER BY r.fecha DESC, r.created_at DESC
-  `;
+  try {
+    const reservas = await sql`
+      SELECT r.*, p.nombre as producto_nombre
+      FROM reservas_platos r
+      JOIN productos p ON p.id = r.producto_id
+      ORDER BY r.fecha DESC, r.created_at DESC
+    `;
 
-  return new Response(JSON.stringify({ reservas }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ reservas }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  } catch (error) {
+    console.error('Error GET reservas:', error);
+    return new Response(JSON.stringify({ error: 'Error al cargar reservas' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
 };
 
 export const POST: APIRoute = async ({ request }) => {
@@ -35,6 +40,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!nombre_cliente || !producto_id || !cantidad) {
       return new Response(JSON.stringify({ error: 'Todos los campos son requeridos' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (typeof cantidad !== 'number' || cantidad < 1 || cantidad > 99) {
+      return new Response(JSON.stringify({ error: 'Cantidad inválida (1-99)' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     const result = await sql`
@@ -56,6 +65,10 @@ export const PUT: APIRoute = async ({ request }) => {
 
   try {
     const { id, estado } = await request.json();
+    const validStates = ['pendiente', 'entregada', 'cancelada'];
+    if (!validStates.includes(estado)) {
+      return new Response(JSON.stringify({ error: 'Estado inválido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
     const result = await sql`
       UPDATE reservas_platos SET estado = ${estado}::estado_reserva WHERE id = ${id} RETURNING *
     `;

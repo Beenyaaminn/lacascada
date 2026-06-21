@@ -39,16 +39,24 @@
   }
 
   async function handleSave() {
-    const url = '/api/admin/clientes';
-    const method = editingId ? 'PUT' : 'POST';
-    const body = editingId ? { ...form, id: editingId, activo: true } : form;
+    try {
+      const url = '/api/admin/clientes';
+      const method = editingId ? 'PUT' : 'POST';
+      const body = editingId ? { ...form, id: editingId, activo: true } : form;
 
-    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    if (res.ok) {
-      showModal = false;
-      loadClientes();
-      message = editingId ? 'Actualizado' : 'Creado';
-      setTimeout(() => { message = ''; }, 3000);
+      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (res.ok) {
+        showModal = false;
+        loadClientes();
+        message = editingId ? 'Actualizado' : 'Creado';
+        setTimeout(() => { message = ''; }, 3000);
+      } else {
+        alert(data.error || 'Error al guardar');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión');
     }
   }
 
@@ -65,16 +73,24 @@
 
   async function registrarAbono() {
     if (!selectedCliente || montoAbono <= 0) return;
-    const res = await fetch(`/api/admin/clientes/${selectedCliente.id}/abonos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ monto: montoAbono }),
-    });
-    if (res.ok) {
-      showAbonoModal = false;
-      loadClientes();
-      message = 'Abono registrado';
-      setTimeout(() => { message = ''; }, 3000);
+    try {
+      const res = await fetch(`/api/admin/clientes/${selectedCliente.id}/abonos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ monto: montoAbono }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showAbonoModal = false;
+        loadClientes();
+        message = 'Abono registrado';
+        setTimeout(() => { message = ''; }, 3000);
+      } else {
+        alert(data.error || 'Error al registrar abono');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión');
     }
   }
 </script>

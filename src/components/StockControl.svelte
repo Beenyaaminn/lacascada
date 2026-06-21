@@ -6,6 +6,7 @@
 
   let proveedores: any[] = $state([]);
   let searchTerm: string = $state('');
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
   let editingId: number | null = $state(null);
 
   let formNombre: string = $state('');
@@ -81,21 +82,45 @@
       if (res.ok) {
         closeForm();
         loadProveedores();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error al guardar');
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión al guardar');
+    }
   }
 
   async function eliminarProveedor(id: number) {
     if (!confirm('¿Eliminar este proveedor?')) return;
-    await fetch(`/api/admin/proveedores?id=${id}`, { method: 'DELETE' });
+    try {
+      const res = await fetch(`/api/admin/proveedores?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || 'Error al eliminar');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión al eliminar');
+    }
     loadProveedores();
   }
 
   async function toggleActivo(p: any) {
-    await fetch('/api/admin/proveedores', {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: p.id, activo: !p.activo }),
-    });
+    try {
+      const res = await fetch('/api/admin/proveedores', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: p.id, activo: !p.activo }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || 'Error al cambiar estado');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión');
+    }
     loadProveedores();
   }
 
@@ -123,7 +148,10 @@
         <input
           type="text" class="input-field" placeholder="Buscar proveedor..."
           bind:value={searchTerm}
-          oninput={() => loadProveedores()}
+          oninput={() => {
+            if (searchTimeout) clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => loadProveedores(), 350);
+          }}
         />
       </div>
       <button class="btn-primary flex items-center gap-1.5" onclick={openNewForm}>

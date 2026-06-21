@@ -21,22 +21,27 @@ export const GET: APIRoute = async ({ request }) => {
   const activa = url.searchParams.get('activa');
 
   let cajas;
-  if (activa === '1') {
-    cajas = await sql`
-      SELECT c.*, t.tipo_turno, t.abierto_por as turno_abierto_por
-      FROM cajas c
-      JOIN turnos t ON t.id = c.turno_id
-      WHERE c.estado = 'abierta'
-      ORDER BY c.abierta_desde DESC
-    `;
-  } else {
-    cajas = await sql`
-      SELECT c.*, t.tipo_turno, t.abierto_por as turno_abierto_por
-      FROM cajas c
-      JOIN turnos t ON t.id = c.turno_id
-      ORDER BY c.abierta_desde DESC
-      LIMIT 20
-    `;
+  try {
+    if (activa === '1') {
+      cajas = await sql`
+        SELECT c.*, t.tipo_turno, t.abierto_por as turno_abierto_por
+        FROM cajas c
+        JOIN turnos t ON t.id = c.turno_id
+        WHERE c.estado = 'abierta'
+        ORDER BY c.abierta_desde DESC
+      `;
+    } else {
+      cajas = await sql`
+        SELECT c.*, t.tipo_turno, t.abierto_por as turno_abierto_por
+        FROM cajas c
+        JOIN turnos t ON t.id = c.turno_id
+        ORDER BY c.abierta_desde DESC
+        LIMIT 20
+      `;
+    }
+  } catch (error) {
+    console.error('Error GET cajas:', error);
+    return new Response(JSON.stringify({ error: 'Error al cargar cajas' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 
   return new Response(JSON.stringify({ cajas }), { status: 200, headers: { 'Content-Type': 'application/json' } });

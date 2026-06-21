@@ -1,6 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
+  function esc(s: string): string {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   let activeTab: string = $state('ventas');
   let hoy: any[] = $state([]);
   let ultimos7dias: any[] = $state([]);
@@ -164,7 +168,7 @@
 
     let mensualRows = '';
     for (const d of mensual) {
-      mensualRows += `<tr><td>${formatFecha(d.fecha)}</td><td class="r">${d.garzones || '—'}</td><td class="r">${formatCLP(d.total_ventas)}</td><td class="r">${formatCLP(d.total_propinas)}</td><td class="r">${pctPropina(d)}</td></tr>`;
+      mensualRows += `<tr><td>${formatFecha(d.fecha)}</td><td class="r">${esc(d.garzones || '—')}</td><td class="r">${formatCLP(d.total_ventas)}</td><td class="r">${formatCLP(d.total_propinas)}</td><td class="r">${pctPropina(d)}</td></tr>`;
     }
 
     let propMetodoRows = '';

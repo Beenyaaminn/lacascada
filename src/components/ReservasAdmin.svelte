@@ -31,24 +31,41 @@
   }
 
   async function handleCreate() {
-    const res = await fetch('/api/admin/reservas', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      showModal = false;
-      form = { nombre_cliente: '', producto_id: 1, cantidad: 1, fecha: new Date().toISOString().split('T')[0], hora: '' };
-      loadReservas();
+    try {
+      const res = await fetch('/api/admin/reservas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        showModal = false;
+        form = { nombre_cliente: '', producto_id: 1, cantidad: 1, fecha: new Date().toISOString().split('T')[0], hora: '' };
+        loadReservas();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error al crear reserva');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión');
     }
   }
 
   async function cambiarEstado(id: number, estado: string) {
-    await fetch('/api/admin/reservas', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, estado }),
-    });
+    try {
+      const res = await fetch('/api/admin/reservas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, estado }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || 'Error al cambiar estado');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión');
+    }
     loadReservas();
   }
 

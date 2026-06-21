@@ -31,24 +31,37 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    if (metodo_pago === 'efectivo' && (!efectivo_con_cuanto || efectivo_con_cuanto < total)) {
-      return new Response(JSON.stringify({ error: `El monto en efectivo ($${efectivo_con_cuanto || 0}) debe cubrir el total ($${total})` }), {
+    if (metodo_pago === 'efectivo' && (efectivo_con_cuanto == null || efectivo_con_cuanto <= 0)) {
+      return new Response(JSON.stringify({ error: 'Debe ingresar monto en efectivo' }), {
         status: 400, headers: { 'Content-Type': 'application/json' },
       });
     }
 
+    let calculatedTotal = 0;
     for (const item of items) {
-      const prod = await sql`SELECT id, nombre, maneja_stock, stock_actual FROM productos WHERE id = ${item.producto_id} LIMIT 1`;
+      const prod = await sql`SELECT id, nombre, maneja_stock, stock_actual, precio FROM productos WHERE id = ${item.producto_id} LIMIT 1`;
       if (prod.length === 0) {
         return new Response(JSON.stringify({ error: `Producto #${item.producto_id} no encontrado` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
       const cantidad = item.cantidad || 1;
-      if (cantidad > 99) {
-        return new Response(JSON.stringify({ error: `Cantidad máxima por producto es 99` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      if (cantidad < 1 || cantidad > 99) {
+        return new Response(JSON.stringify({ error: `Cantidad inválida (1-99) para ${prod[0].nombre}` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
       if (prod[0].maneja_stock && prod[0].stock_actual < cantidad) {
         return new Response(JSON.stringify({ error: `Stock insuficiente: ${prod[0].nombre} (disponible: ${prod[0].stock_actual})` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
+      const precio = Number(prod[0].precio) || 0;
+      calculatedTotal += precio * cantidad;
+    }
+
+    if (typeof total !== 'number' || total < 0 || Math.abs(total - calculatedTotal) > 1) {
+      return new Response(JSON.stringify({ error: `Total inválido. Esperado: $${calculatedTotal}, Recibido: $${total}` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (metodo_pago === 'efectivo' && efectivo_con_cuanto < total) {
+      return new Response(JSON.stringify({ error: `El monto en efectivo ($${efectivo_con_cuanto || 0}) debe cubrir el total ($${total})` }), {
+        status: 400, headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const efConCuanto = metodo_pago === 'efectivo' ? (efectivo_con_cuanto || 0) : 0;

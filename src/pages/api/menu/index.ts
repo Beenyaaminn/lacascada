@@ -40,7 +40,7 @@ export const GET: APIRoute = async () => {
     );
   } catch (error) {
     console.error('Menu API Error:', error);
-    return new Response(JSON.stringify({ error: 'Error al cargar el menú', detail: String(error) }), {
+    return new Response(JSON.stringify({ error: 'Error al cargar el menú' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

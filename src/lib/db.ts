@@ -28,5 +28,13 @@ sql.unsafe = async function (query: string, params: any[] = []): Promise<any[]> 
 };
 
 sql.begin = async function <T>(fn: (tx: typeof sql) => Promise<T>): Promise<T> {
-  return await fn(sql);
+  await (neonQueryFn as any).query('BEGIN', []);
+  try {
+    const result = await fn(sql);
+    await (neonQueryFn as any).query('COMMIT', []);
+    return result;
+  } catch (error) {
+    await (neonQueryFn as any).query('ROLLBACK', []);
+    throw error;
+  }
 };

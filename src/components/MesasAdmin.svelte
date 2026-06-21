@@ -30,10 +30,10 @@
     loadData();
     pollingInterval = setInterval(() => {
       if (document.visibilityState === 'visible') loadData();
-    }, 8000);
+    }, 30000);
     timerInterval = setInterval(() => {
       now = new Date();
-    }, 250);
+    }, 5000);
     return () => {
       if (pollingInterval) clearInterval(pollingInterval);
       if (timerInterval) clearInterval(timerInterval);

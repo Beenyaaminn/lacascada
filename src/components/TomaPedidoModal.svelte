@@ -13,6 +13,10 @@
     });
   }
 
+  function esc(s: string): string {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   let { mesa, onclose } = $props<{ mesa: Mesa; onclose: () => void }>();
 
   let step: string = $state(mesa.estado === 'libre' ? 'abrir' : 'cargando');
@@ -455,11 +459,11 @@
   <div class="divider"></div>
   <div class="line"><span>Fecha:</span><span>${fecha}</span></div>
   <div class="line"><span>Mesa:</span><span>Mesa ${String(mesa.numero_mesa).padStart(2, '0')} - Piso ${mesa.piso}</span></div>
-  <div class="line"><span>Garzón:</span><span>${garzones.find(g => String(g.id) === garzonId)?.nombre || ''}</span></div>
+  <div class="line"><span>Garzón:</span><span>${esc(garzones.find(g => String(g.id) === garzonId)?.nombre || '')}</span></div>
   <div class="line"><span>Comensales:</span><span>${comensales}</span></div>
   <div class="divider"></div>
   <div style="font-size:9px;margin-bottom:3px">DETALLE:</div>
-  ${todosLosItems.map((d: any) => `<div class="line"><span>${d.cantidad}x ${d.nombre}</span><span>$${d.subtotal.toLocaleString('es-CL')}</span></div>`).join('')}
+  ${todosLosItems.map((d: any) => `<div class="line"><span>${d.cantidad}x ${esc(d.nombre)}</span><span>$${d.subtotal.toLocaleString('es-CL')}</span></div>`).join('')}
   <div class="divider"></div>
   <div class="line"><span>Subtotal:</span><span>$${subtotalGeneral.toLocaleString('es-CL')}</span></div>
   ${descAplicado > 0 ? `<div class="line"><span>Descuento:</span><span>-$${descAplicado.toLocaleString('es-CL')}</span></div>` : ''}

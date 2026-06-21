@@ -18,8 +18,8 @@
 
   onMount(async () => {
     await loadPedidos();
-    pollingInterval = setInterval(loadPedidos, 8000);
-    timerInterval = setInterval(() => { now = new Date(); }, 1000);
+    pollingInterval = setInterval(loadPedidos, 30000);
+    timerInterval = setInterval(() => { now = new Date(); }, 5000);
     return () => {
       if (pollingInterval) clearInterval(pollingInterval);
       if (timerInterval) clearInterval(timerInterval);

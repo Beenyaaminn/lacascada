@@ -49,10 +49,14 @@
       const data = await res.json();
       pedidos = data.pedidos || [];
 
-      let params = new URLSearchParams({ desde: hoy });
-      const hoyRes = await fetch('/api/admin/pedidos?' + params.toString());
-      const hoyData = await hoyRes.json();
-      totalHoy = (hoyData.pedidos || []).reduce((s: number, p: any) => s + (p.estado !== 'cancelado' ? p.total : 0), 0);
+      if (filterEstado === 'hoy') {
+        totalHoy = (data.pedidos || []).reduce((s: number, p: any) => s + (p.estado !== 'cancelado' ? p.total : 0), 0);
+      } else {
+        const params = new URLSearchParams({ desde: hoy });
+        const hoyRes = await fetch('/api/admin/pedidos?' + params.toString());
+        const hoyData = await hoyRes.json();
+        totalHoy = (hoyData.pedidos || []).reduce((s: number, p: any) => s + (p.estado !== 'cancelado' ? p.total : 0), 0);
+      }
     } catch (e) {
       console.error('Error:', e);
     } finally {

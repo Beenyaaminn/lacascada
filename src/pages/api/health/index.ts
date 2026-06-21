@@ -20,7 +20,7 @@ export const GET: APIRoute = async () => {
         status: 'error',
         timestamp: new Date().toISOString(),
         db: 'disconnected',
-        error: String(error),
+        error: 'Database connection failed',
       }),
       { status: 503, headers: { 'Content-Type': 'application/json' } }
     );

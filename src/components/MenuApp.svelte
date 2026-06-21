@@ -137,7 +137,7 @@
   let actualizandoMenu: boolean = $state(false);
 
   $effect(() => { if (step === 'menu') { if (!menuPolling) menuPolling = setInterval(actualizarMenu, 30000); } else { if (menuPolling) { clearInterval(menuPolling); menuPolling = null; } } });
-  $effect(() => { if (step === 'mesa') { if (!mesaPolling) mesaPolling = setInterval(() => { cargarMesasDisponibles(piso, true); }, 8000); } else { if (mesaPolling) { clearInterval(mesaPolling); mesaPolling = null; } } });
+  $effect(() => { if (step === 'mesa') { if (!mesaPolling) mesaPolling = setInterval(() => { cargarMesasDisponibles(piso, true); }, 30000); } else { if (mesaPolling) { clearInterval(mesaPolling); mesaPolling = null; } } });
 
   async function actualizarMenu() { if (actualizandoMenu) return; actualizandoMenu = true; try { const mr = await fetch('/api/menu?_t=' + Date.now()); const md = await mr.json(); categorias = md.categorias || []; productos = md.productos || []; acompanamientos = md.acompanamientos || []; productosAcomp = md.productos_acompanamientos || []; } catch {} finally { actualizandoMenu = false; } }
 

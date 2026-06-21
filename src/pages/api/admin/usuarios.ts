@@ -38,6 +38,16 @@ export const POST: APIRoute = async ({ request }) => {
     if (!['admin', 'garzon'].includes(rol)) {
       return new Response(JSON.stringify({ error: 'Rol inválido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(JSON.stringify({ error: 'Formato de email inválido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (password.length < 8) {
+      return new Response(JSON.stringify({ error: 'La contraseña debe tener al menos 8 caracteres' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
     const existente = await sql`SELECT id FROM usuarios WHERE email = ${email} LIMIT 1`;
     if (existente.length > 0) {
       return new Response(JSON.stringify({ error: 'Ya existe un usuario con ese email' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
@@ -66,6 +76,9 @@ export const PUT: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ error: 'Rol inválido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
     if (password) {
+      if (password.length < 8) {
+        return new Response(JSON.stringify({ error: 'La contraseña debe tener al menos 8 caracteres' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
       const hash = await bcrypt.hash(password, 10);
       const result = await sql`
         UPDATE usuarios SET nombre = ${nombre}, email = ${email}, rol = ${rol}, password_hash = ${hash} WHERE id = ${id} RETURNING id, nombre, email, rol, created_at

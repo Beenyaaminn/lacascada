@@ -34,6 +34,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(JSON.stringify({ error: 'Formato de email inválido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (password.length < 8) {
+      return new Response(JSON.stringify({ error: 'La contraseña debe tener al menos 8 caracteres' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
     const existing = await sql`SELECT id FROM usuarios WHERE email = ${email} LIMIT 1`;
     if (existing.length > 0) {
       return new Response(JSON.stringify({ error: 'El email ya está registrado' }), {
@@ -54,6 +63,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    console.error('Register error:', error);
     return new Response(JSON.stringify({ error: 'Error interno del servidor' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

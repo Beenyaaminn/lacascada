@@ -68,7 +68,7 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
     const token = signToken(user);
     cookies.set('lacascada_token', token, {
       httpOnly: true,
-      secure: false,
+      secure: import.meta.env.PROD,
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 8,

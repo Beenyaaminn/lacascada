@@ -29,6 +29,10 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ error: 'Datos inválidos' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
+    if ((propina !== undefined && propina < 0) || (descuento !== undefined && descuento < 0)) {
+      return new Response(JSON.stringify({ error: 'Propina y descuento no pueden ser negativos' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
     const pedidoBefore = await sql`SELECT * FROM pedidos WHERE id = ${pedido_id} LIMIT 1`;
     if (pedidoBefore.length === 0) {
       return new Response(JSON.stringify({ error: 'Pedido no encontrado' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
@@ -86,7 +90,12 @@ export const POST: APIRoute = async ({ request }) => {
     await registrarAuditoria('PAGO_PROCESADO', 'pedidos', pedido_id, session.nombre,
       `Método: ${metodo_pago} | Total: $${pedido.total} | ${mesaInfo}`, ip);
 
-    const voucherData = await generarVoucher(pedido_id, metodo_pago);
+    let voucherData = null;
+    try {
+      voucherData = await generarVoucher(pedido_id, metodo_pago);
+    } catch (e) {
+      console.error('Error generando voucher:', e);
+    }
     return new Response(JSON.stringify({ pedido: result, voucher: voucherData }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });

@@ -38,13 +38,15 @@ export const POST: APIRoute = async ({ request, params }) => {
 
     const nuevoSaldo = Math.max(0, cliente[0].saldo_deudor - monto);
 
-    await sql`
-      INSERT INTO abonos (cliente_credito_id, monto) VALUES (${clienteId}, ${monto})
-    `;
+    await sql.begin(async (tx) => {
+      await tx`
+        INSERT INTO abonos (cliente_credito_id, monto) VALUES (${clienteId}, ${monto})
+      `;
 
-    await sql`
-      UPDATE clientes_credito SET saldo_deudor = ${nuevoSaldo} WHERE id = ${clienteId}
-    `;
+      await tx`
+        UPDATE clientes_credito SET saldo_deudor = ${nuevoSaldo} WHERE id = ${clienteId}
+      `;
+    });
 
     return new Response(JSON.stringify({ success: true, nuevo_saldo: nuevoSaldo }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {

@@ -17,6 +17,10 @@ export const GET: APIRoute = async ({ request }) => {
     const filtroPago = url.searchParams.get('metodo_pago') || '';
     const tipoPedido = url.searchParams.get('tipo') || '';
 
+    if (mes && !/^\d{4}-\d{2}$/.test(mes)) {
+      return new Response(JSON.stringify({ error: 'Formato de mes inválido. Use YYYY-MM' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
     if (detalles === '1') {
       let detallePagos;
       if (mes && filtroPago) {

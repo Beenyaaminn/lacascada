@@ -2,8 +2,14 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { sql } from '../../../lib/db';
+import { getSessionFromCookie } from '../../../lib/auth';
 
 export const POST: APIRoute = async ({ request }) => {
+  const session = getSessionFromCookie(request.headers.get('cookie'));
+  if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
+    return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+  }
+
   try {
     const { piso, mesa_numero } = await request.json();
 

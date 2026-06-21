@@ -48,6 +48,10 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ error: 'Categoría, nombre y precio son requeridos' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
+    if (typeof precio !== 'number' || precio < 0) {
+      return new Response(JSON.stringify({ error: 'El precio debe ser un número positivo' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
     const result = await sql`
       INSERT INTO productos (categoria_id, nombre, descripcion, precio, ingredientes, maneja_stock, stock_actual, disponible_dia, imagen_url)
       VALUES (${categoria_id}, ${nombre}, ${descripcion || null}, ${precio}, ${ingredientes || null}, ${maneja_stock || false}, ${stock_actual || 0}, ${disponible_dia !== false}, ${imagen_url || null})
@@ -112,7 +116,12 @@ export const DELETE: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ error: 'ID requerido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    await sql`DELETE FROM productos WHERE id = ${parseInt(id)}`;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return new Response(JSON.stringify({ error: 'ID inválido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    await sql`DELETE FROM productos WHERE id = ${parsedId}`;
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {

@@ -17,8 +17,13 @@ export const GET: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
   }
 
-  const mesas = await sql`SELECT * FROM mesas ORDER BY piso ASC, numero_mesa ASC`;
-  return new Response(JSON.stringify({ mesas, server_time: new Date().toISOString() }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  try {
+    const mesas = await sql`SELECT * FROM mesas ORDER BY piso ASC, numero_mesa ASC`;
+    return new Response(JSON.stringify({ mesas, server_time: new Date().toISOString() }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  } catch (error) {
+    console.error('Error GET mesas:', error);
+    return new Response(JSON.stringify({ error: 'Error al cargar mesas' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
 };
 
 export const PUT: APIRoute = async ({ request }) => {
