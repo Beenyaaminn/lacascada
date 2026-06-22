@@ -207,9 +207,15 @@
                   </div>
                 {:else if pedido.nombre_cliente}
                   <div class="flex items-center justify-center gap-1.5 mt-1">
-                    <span class="text-lg">🙋</span>
-                    <span class="text-sm font-bold text-emerald-300">{pedido.nombre_cliente}</span>
+                    <span class="text-lg">👤</span>
+                    <span class="text-sm font-bold text-purple-300">{pedido.nombre_cliente}</span>
                   </div>
+                  {#if pedido.tipo_pedido === 'reserva' && pedido.direccion?.includes('Reserva - ')}
+                    {@const hora = pedido.direccion.replace('Reserva - ', '')}
+                    <div class="flex items-center justify-center gap-1.5 mt-1">
+                      <span class="text-sm font-bold text-amber-400">🕐 Listo antes de las {hora}</span>
+                    </div>
+                  {/if}
                 {/if}
               </div>
             {:else}

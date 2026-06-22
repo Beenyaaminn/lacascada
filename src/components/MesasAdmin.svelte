@@ -488,10 +488,10 @@
       const res = await fetch('/api/delivery/pedido', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nombre: pedidoReservaData.nombre_cliente, telefono: 'Reserva', direccion: 'Reserva',
+          nombre: pedidoReservaData.nombre_cliente, telefono: 'Reserva', direccion: `Reserva - ${pedidoReservaData.hora ? pedidoReservaData.hora.slice(0, 5) : ''}`,
           metodo_pago: 'efectivo', efectivo_con_cuanto: pedidoReservaTotal(),
           items: pedidoReservaCart.map(i => ({ producto_id: i.producto.id, acompanamiento: i.acompanamiento, cantidad: 1, subtotal: i.subtotal })),
-          total: pedidoReservaTotal(), tipo: 'reserva',
+          total: pedidoReservaTotal(), tipo: 'reserva', costo_envio: 0, zona: '',
         }),
       });
       if (res.ok) {
