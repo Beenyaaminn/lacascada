@@ -128,7 +128,7 @@
     finally { cargandoMesas = false; }
   }
 
-  $effect(() => { if (step === 'mesa' && mesasDisponibles.length === 0 && !cargandoMesas) cargarMesasDisponibles(piso); if (step === 'verificando') verificarMesaQR(urlPiso, urlMesa); });
+  $effect(() => { if (step === 'verificando') verificarMesaQR(urlPiso, urlMesa); });
 
   let menuPolling: ReturnType<typeof setInterval> | null = null;
   let mesaPolling: ReturnType<typeof setInterval> | null = null;
@@ -193,7 +193,7 @@
           <h2 class="font-display text-2xl font-bold mb-3" style="color:#1a1410;">¿Estás en La Cascada?</h2>
           <p class="text-[#6b5d4f] text-sm mb-6 leading-relaxed">La autoatención es solo para clientes <strong>dentro del restaurante</strong>. Si estás en tu casa o en otro lugar, usá el delivery.</p>
           <div class="flex flex-col gap-3">
-            <button class="w-full py-3.5 rounded-xl text-white font-bold text-base transition-all" style="background-color:#c9a227;" onclick={() => { step = 'mesa'; piso = 1; cargarMesasDisponibles(1); }}>Sí, estoy en el local</button>
+            <button class="w-full py-3.5 rounded-xl text-white font-bold text-base transition-all" style="background-color:#c9a227;" onclick={async () => { step = 'mesa'; piso = 1; await cargarMesasDisponibles(1); }}>Sí, estoy en el local</button>
             <a href="/delivery" class="w-full py-3.5 rounded-xl border-2 font-semibold text-base transition-all no-underline text-center" style="border-color:#e8e0d0; color:#6b5d4f;">No, quiero pedir delivery</a>
           </div>
         </div>
