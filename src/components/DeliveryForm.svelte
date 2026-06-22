@@ -9,7 +9,7 @@
   let submitting: boolean = $state(false); let orderSuccess: boolean = $state(false); let orderError: string = $state('');
   let pedidoId: number | null = $state(null); let vuelto: number = $state(0);
   let showAcompModal: boolean = $state(false); let selectedProduct: Producto | null = $state(null);
-  let selectedBaseAcomp: number = $state(0); let selectedExtras: number[] = $state([]);
+  let selectedAcomps: number[] = $state([]);
 
   let categorias = $state.raw(menuData?.categorias || []); let productos = $state.raw(menuData?.productos || []);
   let acompanamientos = $state.raw(menuData?.acompanamientos || []); let productosAcomp = $state.raw(menuData?.productos_acompanamientos || []);
@@ -21,14 +21,13 @@
   interface CartItem { id: string; producto: Producto; cantidad: number; acompanamiento: string; subtotal: number; }
 
   function getFiltered(): Producto[] { return productos.filter(p => p.categoria_id === activeCategoria); }
-  function getBase(pId: number) { const ids = productosAcomp.filter(pa => pa.producto_id === pId).map(pa => pa.acompanamiento_id); return acompanamientos.filter(a => ids.includes(a.id) && !a.es_extra); }
-  function getExtra(pId: number) { const ids = productosAcomp.filter(pa => pa.producto_id === pId).map(pa => pa.acompanamiento_id); return acompanamientos.filter(a => ids.includes(a.id) && a.es_extra); }
+  function getAcomps(pId: number) { const ids = productosAcomp.filter(pa => pa.producto_id === pId).map(pa => pa.acompanamiento_id); return acompanamientos.filter(a => ids.includes(a.id)); }
   function getTotal() { return cart.reduce((s, i) => s + i.subtotal, 0); }
 
-  function clickProducto(p: Producto) { selectedProduct = p; selectedBaseAcomp = 0; selectedExtras = []; const b = getBase(p.id); if (b.length === 1) selectedBaseAcomp = b[0].id; if (b.length > 0 || getExtra(p.id).length > 0) showAcompModal = true; else addSimple(); }
+  function clickProducto(p: Producto) { selectedProduct = p; selectedAcomps = []; if (getAcomps(p.id).length > 0) showAcompModal = true; else addSimple(); }
   function closeModal() { showAcompModal = false; selectedProduct = null; }
   function addSimple() { if (!selectedProduct) return; cart = [...cart, { id: crypto.randomUUID?.() ?? Math.random().toString(36).substring(2), producto: selectedProduct, cantidad: 1, acompanamiento: 'Sin acompañamiento', subtotal: selectedProduct.precio }]; closeModal(); }
-  function addToCart() { if (!selectedProduct) return; const maxAcomp = 2; const baseCount = selectedBaseAcomp > 0 ? 1 : 0; if (baseCount + selectedExtras.length > maxAcomp) return; let ep = 0; const en: string[] = []; for (const id of selectedExtras) { const e = acompanamientos.find(a => a.id === id); if (e) { ep += e.recargo; en.push(e.nombre); } } const b = acompanamientos.find(a => a.id === selectedBaseAcomp); const name = [b?.nombre, ...en].filter(Boolean).join(' + ') || 'Sin acompañamiento'; cart = [...cart, { id: crypto.randomUUID?.() ?? Math.random().toString(36).substring(2), producto: selectedProduct, cantidad: 1, acompanamiento: name, subtotal: selectedProduct.precio + ep }]; closeModal(); }
+  function addToCart() { if (!selectedProduct) return; let ep = 0; const names: string[] = []; for (const id of selectedAcomps) { const a = acompanamientos.find(x => x.id === id); if (a) { ep += a.recargo; names.push(a.nombre); } } const name = names.length > 0 ? names.join(' + ') : 'Sin acompañamiento'; cart = [...cart, { id: crypto.randomUUID?.() ?? Math.random().toString(36).substring(2), producto: selectedProduct, cantidad: 1, acompanamiento: name, subtotal: selectedProduct.precio + ep }]; closeModal(); }
   function remove(id: string) { cart = cart.filter(i => i.id !== id); }
   function goCheckout() { if (cart.length === 0) return; step = 'datos'; efectivoConCuanto = getTotal(); }
   function back() { step = 'menu'; }
@@ -175,15 +174,20 @@
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick={closeModal}></div>
     <div class="relative w-full sm:max-w-md max-h-[80vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-6 z-10 shadow-2xl animate-slide-up" style="background-color:#fff;">
       <div class="flex items-center gap-4 mb-5"><span class="text-3xl">{catIcon(selectedProduct.categoria_nombre || '')}</span><div><h3 class="font-semibold text-lg text-[#1a1410]">{selectedProduct.nombre}</h3><p class="text-[#c9a227] font-bold">{formatCLP(selectedProduct.precio)}</p></div></div>
-      {#if getBase(selectedProduct.id).length > 0}
-        <div class="mb-4"><p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Acompañamiento</p>
+      {#if getAcomps(selectedProduct.id).length > 0}
+        <div class="mb-4">
+          <p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Acompañamientos (máx. 2) {#if selectedAcomps.length === 0}<span class="text-red-400 font-normal normal-case">— Sin acompañamiento</span>{/if}</p>
           <div class="space-y-2">
-            <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedBaseAcomp === 0 ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'}"><input type="radio" name="ba" value="0" checked={selectedBaseAcomp === 0} onchange={() => { selectedBaseAcomp = 0 }} style="accent-color:#c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">Sin acompañamiento</span></label>
-            {#each getBase(selectedProduct.id) as acomp (acomp.id)}<label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedBaseAcomp === acomp.id ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'}"><input type="radio" name="ba" value={acomp.id} checked={selectedBaseAcomp === acomp.id} onchange={() => { selectedBaseAcomp = acomp.id }} style="accent-color:#c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">{acomp.nombre}</span></label>{/each}</div></div>
-      {/if}
-      {#if getExtra(selectedProduct.id).length > 0}
-        <div class="mb-4"><p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Extras (máx. 2 en total)</p>
-          <div class="space-y-2">{#each getExtra(selectedProduct.id) as extra (extra.id)}<label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedExtras.includes(extra.id) ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'} {((selectedBaseAcomp > 0 ? 1 : 0) + selectedExtras.length) >= 2 && !selectedExtras.includes(extra.id) ? 'opacity-40 pointer-events-none' : ''}"><input type="checkbox" checked={selectedExtras.includes(extra.id)} disabled={((selectedBaseAcomp > 0 ? 1 : 0) + selectedExtras.length) >= 2 && !selectedExtras.includes(extra.id)} onchange={(e) => { if (e.target.checked) selectedExtras = [...selectedExtras, extra.id]; else selectedExtras = selectedExtras.filter(id => id !== extra.id); }} style="accent-color:#c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">{extra.nombre}</span><span class="text-sm text-[#c9a227] font-bold">+{formatCLP(extra.recargo)}</span></label>{/each}</div></div>
+            {#each getAcomps(selectedProduct.id) as acomp (acomp.id)}
+              {@const disabled = selectedAcomps.length >= 2 && !selectedAcomps.includes(acomp.id)}
+              <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedAcomps.includes(acomp.id) ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'} {disabled ? 'opacity-40 pointer-events-none' : ''}">
+                <input type="checkbox" checked={selectedAcomps.includes(acomp.id)} disabled={disabled} onchange={(e) => { if (e.target.checked) selectedAcomps = [...selectedAcomps, acomp.id]; else selectedAcomps = selectedAcomps.filter(id => id !== acomp.id); }} style="accent-color:#c9a227;" />
+                <span class="flex-1 text-sm font-medium text-[#2d2418]">{acomp.nombre}</span>
+                {#if acomp.recargo > 0}<span class="text-sm text-[#c9a227] font-bold">+{formatCLP(acomp.recargo)}</span>{/if}
+              </label>
+            {/each}
+          </div>
+        </div>
       {/if}
       <button class="w-full py-3.5 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#c9a227;" onclick={addToCart}>Agregar al pedido</button>
     </div>

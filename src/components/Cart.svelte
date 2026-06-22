@@ -50,11 +50,8 @@
                 <div class="flex-1 pr-2">
                   <p class="font-medium text-gray-900 text-sm">{item.producto.nombre}</p>
                   {#if item.baseAcomp}
-                    <p class="text-xs text-gray-500 mt-0.5">Con: {item.baseAcomp}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">{item.baseAcomp}</p>
                   {/if}
-                  {#each item.extras as extra}
-                    <p class="text-xs text-brand-600 mt-0.5">+ {extra}</p>
-                  {/each}
                 </div>
                 <div class="text-right">
                   <p class="font-semibold text-sm">${item.precioTotal.toLocaleString('es-CL')}</p>

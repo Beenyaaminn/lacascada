@@ -26,8 +26,7 @@
   let cartItems: CartItem[] = $state([]);
   let showAcompModal: boolean = $state(false);
   let selectedProduct: Producto | null = $state(null);
-  let selectedBaseAcomp: number | null = $state(null);
-  let selectedExtras: number[] = $state([]);
+  let selectedAcomps: number[] = $state([]);
   let showSuccess: boolean = $state(false);
   let orderError: string = $state('');
   let nombreComensal: string = $state('');
@@ -74,8 +73,6 @@
     const ids = productosAcomp.filter((pa: any) => pa.producto_id === id).map((pa: any) => pa.acompanamiento_id);
     return acompanamientos.filter(a => ids.includes(a.id));
   }
-  function getBaseAcomp(id: number) { return getAcompForProducto(id).filter(a => !a.es_extra); }
-  function getExtraAcomp(id: number) { return getAcompForProducto(id).filter(a => a.es_extra); }
 
   async function cargarMesasDisponibles(pisoSel: number, silencioso = false) {
     if (!silencioso) cargandoMesas = true; mesaError = '';
@@ -141,17 +138,14 @@
 
   async function actualizarMenu() { if (actualizandoMenu) return; actualizandoMenu = true; try { const mr = await fetch('/api/menu?_t=' + Date.now()); const md = await mr.json(); categorias = md.categorias || []; productos = md.productos || []; acompanamientos = md.acompanamientos || []; productosAcomp = md.productos_acompanamientos || []; } catch {} finally { actualizandoMenu = false; } }
 
-  function openAcompModal(p: Producto) { selectedProduct = p; selectedBaseAcomp = null; selectedExtras = []; showAcompModal = true; }
-  function closeAcompModal() { showAcompModal = false; selectedProduct = null; selectedBaseAcomp = null; selectedExtras = []; }
+  function openAcompModal(p: Producto) { selectedProduct = p; selectedAcomps = []; showAcompModal = true; }
+  function closeAcompModal() { showAcompModal = false; selectedProduct = null; selectedAcomps = []; }
 
   function addToCart() {
     if (!selectedProduct) return;
-    const maxAcomp = 2; const baseCount = selectedBaseAcomp ? 1 : 0;
-    if (baseCount + selectedExtras.length > maxAcomp) return;
-    let precio = selectedProduct.precio; let bn: string | null = null; const en: string[] = [];
-    if (selectedBaseAcomp) bn = acompanamientos.find(a => a.id === selectedBaseAcomp)?.nombre || null;
-    for (const eid of selectedExtras) { const ex = acompanamientos.find(a => a.id === eid); if (ex) { precio += ex.recargo; en.push(ex.nombre); } }
-    cartItems = [...cartItems, { id: generateId(), producto: selectedProduct, cantidad: 1, baseAcomp: bn, extras: en, precioTotal: precio }];
+    let precio = selectedProduct.precio; const names: string[] = [];
+    for (const id of selectedAcomps) { const a = acompanamientos.find(x => x.id === id); if (a) { precio += a.recargo; names.push(a.nombre); } }
+    cartItems = [...cartItems, { id: generateId(), producto: selectedProduct, cantidad: 1, baseAcomp: names.join(', ') || null, extras: [], precioTotal: precio }];
     closeAcompModal(); showCart = true;
   }
 
@@ -166,7 +160,7 @@
   async function submitOrder() {
     if (cartItems.length === 0) return; orderError = '';
     try {
-      const res = await fetch('/api/pedidos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ piso, mesa, nombre_cliente: nombreComensal.trim() || null, items: cartItems.map(i => ({ producto_id: i.producto.id, cantidad: i.cantidad, acompanamiento: [i.baseAcomp, ...i.extras].filter(Boolean).join(', ') || null, subtotal: i.precioTotal * i.cantidad })), total: getCartTotal() }) });
+      const res = await fetch('/api/pedidos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ piso, mesa, nombre_cliente: nombreComensal.trim() || null, items: cartItems.map(i => ({ producto_id: i.producto.id, cantidad: i.cantidad, acompanamiento: i.baseAcomp || null, subtotal: i.precioTotal * i.cantidad })), total: getCartTotal() }) });
       if (!res.ok) { const e = await res.json(); orderError = e.error || 'Error al enviar'; return; }
       cartItems = []; showCart = false; showSuccess = true; pedidoRealizado = true; setTimeout(() => { showSuccess = false; }, 5000);
     } catch { orderError = 'Error de conexión.'; }
@@ -342,27 +336,17 @@
         </div>
       </div>
 
-      {#if getBaseAcomp(selectedProduct.id).length > 0}
+      {#if getAcompForProducto(selectedProduct.id).length > 0}
         <div class="mb-4">
-          <p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Acompañamiento</p>
+          <p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Acompañamientos (máx. 2) {#if selectedAcomps.length === 0}<span class="text-red-400 font-normal normal-case">— Sin acompañamiento</span>{/if}</p>
           <div class="space-y-2">
-            <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedBaseAcomp === null ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'}">
-              <input type="radio" name="baseAcomp" checked={selectedBaseAcomp === null} onchange={() => { selectedBaseAcomp = null }} style="accent-color: #c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">Sin acompañamiento</span></label>
-            {#each getBaseAcomp(selectedProduct.id) as acomp (acomp.id)}
-              <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedBaseAcomp === acomp.id ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'}">
-                <input type="radio" name="baseAcomp" value={acomp.id} checked={selectedBaseAcomp === acomp.id} onchange={() => { selectedBaseAcomp = acomp.id }} style="accent-color: #c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">{acomp.nombre}</span></label>
-            {/each}
-          </div>
-        </div>
-      {/if}
-
-      {#if getExtraAcomp(selectedProduct.id).length > 0}
-        <div class="mb-4">
-          <p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Extras (máx. 2 en total)</p>
-          <div class="space-y-2">
-            {#each getExtraAcomp(selectedProduct.id) as extra (extra.id)}
-              <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedExtras.includes(extra.id) ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'} {((selectedBaseAcomp ? 1 : 0) + selectedExtras.length) >= 2 && !selectedExtras.includes(extra.id) ? 'opacity-40 pointer-events-none' : ''}">
-                <input type="checkbox" checked={selectedExtras.includes(extra.id)} disabled={((selectedBaseAcomp ? 1 : 0) + selectedExtras.length) >= 2 && !selectedExtras.includes(extra.id)} onchange={(e) => { if (e.target.checked) selectedExtras = [...selectedExtras, extra.id]; else selectedExtras = selectedExtras.filter(id => id !== extra.id); }} style="accent-color: #c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">{extra.nombre}</span><span class="text-sm text-[#c9a227] font-bold">+{formatCLP(extra.recargo)}</span></label>
+            {#each getAcompForProducto(selectedProduct.id) as acomp (acomp.id)}
+              {@const disabled = selectedAcomps.length >= 2 && !selectedAcomps.includes(acomp.id)}
+              <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedAcomps.includes(acomp.id) ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'} {disabled ? 'opacity-40 pointer-events-none' : ''}">
+                <input type="checkbox" checked={selectedAcomps.includes(acomp.id)} disabled={disabled} onchange={(e) => { if (e.target.checked) selectedAcomps = [...selectedAcomps, acomp.id]; else selectedAcomps = selectedAcomps.filter(id => id !== acomp.id); }} style="accent-color: #c9a227;" />
+                <span class="flex-1 text-sm font-medium text-[#2d2418]">{acomp.nombre}</span>
+                {#if acomp.recargo > 0}<span class="text-sm text-[#c9a227] font-bold">+{formatCLP(acomp.recargo)}</span>{/if}
+              </label>
             {/each}
           </div>
         </div>

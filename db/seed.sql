@@ -26,7 +26,7 @@ INSERT INTO categorias (nombre, orden) VALUES
   ('Cafés', 7),
   ('Alcoholes', 8);
 
--- Acompañamientos para colaciones (base = sin recargo, extra = con recargo)
+-- Acompañamientos para colaciones (máx. 2 por plato, Papas Fritas con recargo)
 INSERT INTO acompanamientos (nombre, es_extra, recargo) VALUES
   ('Arroz', FALSE, 0),
   ('Puré', FALSE, 0),
@@ -34,7 +34,7 @@ INSERT INTO acompanamientos (nombre, es_extra, recargo) VALUES
   ('Tallarines', FALSE, 0),
   ('Papas Salteadas', FALSE, 0),
   ('Arroz Primavera', FALSE, 0),
-  ('Papas Fritas', TRUE, 2000);
+  ('Papas Fritas', FALSE, 2000);
 
 -- Vincular acompañamientos a las colaciones
 INSERT INTO productos_acompanamientos (producto_id, acompanamiento_id) VALUES
