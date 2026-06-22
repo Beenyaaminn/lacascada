@@ -145,7 +145,7 @@
   function closeAcompModal() { showAcompModal = false; selectedProduct = null; selectedBaseAcomp = null; selectedExtras = []; }
 
   function addToCart() {
-    if (!selectedProduct) return; const hasB = getBaseAcomp(selectedProduct.id).length > 0; if (hasB && !selectedBaseAcomp) return;
+    if (!selectedProduct) return;
     let precio = selectedProduct.precio; let bn: string | null = null; const en: string[] = [];
     if (selectedBaseAcomp) bn = acompanamientos.find(a => a.id === selectedBaseAcomp)?.nombre || null;
     for (const eid of selectedExtras) { const ex = acompanamientos.find(a => a.id === eid); if (ex) { precio += ex.recargo; en.push(ex.nombre); } }
@@ -344,6 +344,8 @@
         <div class="mb-4">
           <p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Acompañamiento</p>
           <div class="space-y-2">
+            <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedBaseAcomp === null ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'}">
+              <input type="radio" name="baseAcomp" checked={selectedBaseAcomp === null} onchange={() => { selectedBaseAcomp = null }} style="accent-color: #c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">Sin acompañamiento</span></label>
             {#each getBaseAcomp(selectedProduct.id) as acomp (acomp.id)}
               <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedBaseAcomp === acomp.id ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'}">
                 <input type="radio" name="baseAcomp" value={acomp.id} checked={selectedBaseAcomp === acomp.id} onchange={() => { selectedBaseAcomp = acomp.id }} style="accent-color: #c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">{acomp.nombre}</span></label>
@@ -364,11 +366,7 @@
         </div>
       {/if}
 
-      {#if selectedBaseAcomp || getBaseAcomp(selectedProduct.id).length === 0}
-        <button class="w-full py-3.5 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#c9a227;" onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#b8922a'; }} onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#c9a227'; }} onclick={addToCart}>Agregar al pedido</button>
-      {:else}
-        <p class="text-sm text-red-400 text-center font-medium">Seleccioná un acompañamiento</p>
-      {/if}
+      <button class="w-full py-3.5 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#c9a227;" onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#b8922a'; }} onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#c9a227'; }} onclick={addToCart}>Agregar al pedido</button>
     </div>
   </div>
 {/if}

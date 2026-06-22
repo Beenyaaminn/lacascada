@@ -35,7 +35,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     let calculatedTotal = 0;
     for (const item of items) {
-      const prod = await sql`SELECT id, nombre, maneja_stock, stock_actual, precio FROM productos WHERE id = ${item.producto_id} LIMIT 1`;
+      const prod = await sql`SELECT id, nombre, maneja_stock, stock_actual FROM productos WHERE id = ${item.producto_id} LIMIT 1`;
       if (prod.length === 0) {
         return new Response(JSON.stringify({ error: `Producto #${item.producto_id} no encontrado` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
@@ -46,11 +46,13 @@ export const POST: APIRoute = async ({ request }) => {
       if (prod[0].maneja_stock && prod[0].stock_actual < cantidad) {
         return new Response(JSON.stringify({ error: `Stock insuficiente: ${prod[0].nombre} (disponible: ${prod[0].stock_actual})` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
-      const precio = Number(prod[0].precio) || 0;
-      calculatedTotal += precio * cantidad;
+      if (typeof item.subtotal !== 'number' || item.subtotal < 0) {
+        return new Response(JSON.stringify({ error: `Subtotal inválido para ${prod[0].nombre}` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+      calculatedTotal += item.subtotal;
     }
 
-    if (typeof total !== 'number' || total < 0 || Math.abs(total - calculatedTotal) > 1) {
+    if (typeof total !== 'number' || total < 0 || Math.abs(total - calculatedTotal) > Math.max(calculatedTotal * 0.01, 1)) {
       return new Response(JSON.stringify({ error: `Total inválido. Esperado: $${calculatedTotal}, Recibido: $${total}` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 

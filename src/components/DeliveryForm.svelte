@@ -177,15 +177,15 @@
       <div class="flex items-center gap-4 mb-5"><span class="text-3xl">{catIcon(selectedProduct.categoria_nombre || '')}</span><div><h3 class="font-semibold text-lg text-[#1a1410]">{selectedProduct.nombre}</h3><p class="text-[#c9a227] font-bold">{formatCLP(selectedProduct.precio)}</p></div></div>
       {#if getBase(selectedProduct.id).length > 0}
         <div class="mb-4"><p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Acompañamiento</p>
-          <div class="space-y-2">{#each getBase(selectedProduct.id) as acomp (acomp.id)}<label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedBaseAcomp === acomp.id ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'}"><input type="radio" name="ba" value={acomp.id} checked={selectedBaseAcomp === acomp.id} onchange={() => { selectedBaseAcomp = acomp.id }} style="accent-color:#c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">{acomp.nombre}</span></label>{/each}</div></div>
+          <div class="space-y-2">
+            <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedBaseAcomp === 0 ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'}"><input type="radio" name="ba" value="0" checked={selectedBaseAcomp === 0} onchange={() => { selectedBaseAcomp = 0 }} style="accent-color:#c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">Sin acompañamiento</span></label>
+            {#each getBase(selectedProduct.id) as acomp (acomp.id)}<label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedBaseAcomp === acomp.id ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'}"><input type="radio" name="ba" value={acomp.id} checked={selectedBaseAcomp === acomp.id} onchange={() => { selectedBaseAcomp = acomp.id }} style="accent-color:#c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">{acomp.nombre}</span></label>{/each}</div></div>
       {/if}
       {#if getExtra(selectedProduct.id).length > 0}
         <div class="mb-4"><p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Extras</p>
           <div class="space-y-2">{#each getExtra(selectedProduct.id) as extra (extra.id)}<label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedExtras.includes(extra.id) ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'}"><input type="checkbox" checked={selectedExtras.includes(extra.id)} onchange={(e) => { if (e.target.checked) selectedExtras = [...selectedExtras, extra.id]; else selectedExtras = selectedExtras.filter(id => id !== extra.id); }} style="accent-color:#c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">{extra.nombre}</span><span class="text-sm text-[#c9a227] font-bold">+{formatCLP(extra.recargo)}</span></label>{/each}</div></div>
       {/if}
-      {#if selectedBaseAcomp > 0 || getBase(selectedProduct.id).length === 0}
-        <button class="w-full py-3.5 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#c9a227;" onclick={addToCart}>Agregar al pedido</button>
-      {:else}<p class="text-sm text-red-400 text-center font-medium">Seleccioná un acompañamiento</p>{/if}
+      <button class="w-full py-3.5 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#c9a227;" onclick={addToCart}>Agregar al pedido</button>
     </div>
   </div>
 {/if}

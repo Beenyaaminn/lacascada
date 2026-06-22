@@ -26,16 +26,21 @@ INSERT INTO categorias (nombre, orden) VALUES
   ('Cafés', 7),
   ('Alcoholes', 8);
 
--- Acompañamientos base para colaciones
+-- Acompañamientos para colaciones (base = sin recargo, extra = con recargo)
 INSERT INTO acompanamientos (nombre, es_extra, recargo) VALUES
-  ('Puré', FALSE, 0),
-  ('Tallarines', FALSE, 0),
-  ('Charquicán', FALSE, 0),
-  ('Cazuela', FALSE, 0),
   ('Arroz', FALSE, 0),
-  ('Papas Fritas', TRUE, 1500),
-  ('Papas Mayo', TRUE, 1800),
-  ('Ensalada Chilena', TRUE, 1000);
+  ('Puré', FALSE, 0),
+  ('Papas Mayo', FALSE, 0),
+  ('Tallarines', FALSE, 0),
+  ('Papas Salteadas', FALSE, 0),
+  ('Arroz Primavera', FALSE, 0),
+  ('Papas Fritas', TRUE, 2000);
+
+-- Vincular acompañamientos a las colaciones
+INSERT INTO productos_acompanamientos (producto_id, acompanamiento_id) VALUES
+  (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7),
+  (2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7),
+  (3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (3, 7);
 
 -- Productos de ejemplo (colaciones - sin stock)
 INSERT INTO productos (categoria_id, nombre, descripcion, precio, ingredientes, maneja_stock, disponible_dia) VALUES
