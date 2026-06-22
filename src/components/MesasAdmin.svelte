@@ -27,6 +27,17 @@
   let efectivoConCuantoDelivery: number = $state(0);
   let cobrandoDelivery: boolean = $state(false);
 
+  let showRetiroModal: boolean = $state(false);
+  let retiroStep: string = $state('productos');
+  let retiroNombre: string = $state(''); let retiroTelefono: string = $state('');
+  let retiroCart: any[] = $state([]);
+  let retiroCategorias: any[] = $state([]); let retiroProductos: any[] = $state([]);
+  let retiroAcomps: any[] = $state([]); let retiroAcompLinks: any[] = $state([]);
+  let retiroActiveCat: number = $state(0);
+  let retiroShowAcomp: boolean = $state(false); let retiroAcompProd: any = $state(null);
+  let retiroSelectedAcomps: number[] = $state([]);
+  let retiroGuardando: boolean = $state(false);
+
   onMount(() => {
     loadData();
     pollingInterval = setInterval(() => {
@@ -282,6 +293,73 @@
     if (id === 'delivery') return deliveryOrders.filter((d: any) => d.estado !== 'pagado' && d.estado !== 'cancelado').length;
     return 0;
   }
+
+  async function abrirRetiroModal() {
+    retiroNombre = ''; retiroTelefono = ''; retiroCart = []; retiroStep = 'productos';
+    retiroSelectedAcomps = []; retiroShowAcomp = false; retiroAcompProd = null;
+    try {
+      const res = await fetch('/api/menu');
+      const data = await res.json();
+      retiroCategorias = data.categorias || [];
+      retiroProductos = data.productos || [];
+      retiroAcomps = data.acompanamientos || [];
+      retiroAcompLinks = data.productos_acompanamientos || [];
+      retiroActiveCat = retiroCategorias[0]?.id || 0;
+    } catch (e) { alert('Error al cargar menú'); return; }
+    showRetiroModal = true;
+  }
+
+  function retiroGetAcomp(pid: number): any[] {
+    const ids = retiroAcompLinks.filter((pa: any) => pa.producto_id === pid).map((pa: any) => pa.acompanamiento_id);
+    return retiroAcomps.filter(a => ids.includes(a.id));
+  }
+
+  function retiroClickProducto(prod: any) {
+    const acomp = retiroGetAcomp(prod.id);
+    if (acomp.length > 0) { retiroAcompProd = prod; retiroSelectedAcomps = []; retiroShowAcomp = true; }
+    else retiroAddToCart(prod, null);
+  }
+
+  function retiroAddToCart(prod: any, acompNombre: string | null) {
+    let ep = 0;
+    if (acompNombre) {
+      const names = acompNombre.split(', ').filter(Boolean);
+      for (const n of names) { const a = retiroAcomps.find(x => x.nombre === n); if (a) ep += a.recargo; }
+    }
+    retiroCart = [...retiroCart, { id: Date.now() + Math.random(), producto: prod, acompanamiento: acompNombre || 'Sin acompañamiento', subtotal: prod.precio + ep }];
+    retiroShowAcomp = false; retiroAcompProd = null;
+  }
+
+  function retiroConfirmarAcomp() {
+    if (!retiroAcompProd) return;
+    const names: string[] = [];
+    for (const id of retiroSelectedAcomps) { const a = retiroAcomps.find(x => x.id === id); if (a) names.push(a.nombre); }
+    retiroAddToCart(retiroAcompProd, names.length > 0 ? names.join(', ') : null);
+  }
+
+  function retiroRemove(idx: number) { retiroCart = retiroCart.filter((_, i) => i !== idx); }
+
+  function retiroGetTotal() { return retiroCart.reduce((s, i) => s + i.subtotal, 0); }
+
+  async function retiroCrearPedido() {
+    if (!retiroNombre.trim() || !retiroTelefono.trim()) { alert('Nombre y teléfono son obligatorios'); return; }
+    if (retiroCart.length === 0) { alert('Agregá al menos un producto'); return; }
+    retiroGuardando = true;
+    try {
+      const res = await fetch('/api/delivery/pedido', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: retiroNombre.trim(), telefono: retiroTelefono.trim(), direccion: 'Retiro en local',
+          metodo_pago: 'efectivo', efectivo_con_cuanto: 0,
+          items: retiroCart.map(i => ({ producto_id: i.producto.id, acompanamiento: i.acompanamiento, cantidad: 1, subtotal: i.subtotal })),
+          total: retiroGetTotal(), tipo: 'retiro',
+        }),
+      });
+      if (res.ok) { showRetiroModal = false; loadData(true); alert('Pedido retiro creado correctamente'); }
+      else { const d = await res.json(); alert(d.error || 'Error al crear pedido'); }
+    } catch (e) { alert('Error de conexión'); }
+    finally { retiroGuardando = false; }
+  }
 </script>
 
 <div class="max-w-5xl mx-auto px-4 py-6">
@@ -456,6 +534,10 @@
 
     <!-- ===== DELIVERY ===== -->
     {:else if activeTab === 'delivery'}
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-semibold text-gray-800">Pedidos Delivery / Retiro</h3>
+        <button class="btn-primary text-sm px-4 py-2 flex items-center gap-1.5" onclick={abrirRetiroModal}><span class="text-base">+</span> Nuevo Retiro</button>
+      </div>
       {#if deliveryOrders.length === 0}
         <div class="text-center py-16 text-gray-400">
           <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
@@ -559,6 +641,93 @@
             {cobrandoDelivery ? 'Procesando...' : `Cobrar $${cobroDeliveryPedido.total.toLocaleString('es-CL')}`}
           </button>
         </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Nuevo Retiro Modal -->
+  {#if showRetiroModal}
+    <div class="fixed inset-0 z-50 flex items-center justify-center" role="dialog">
+      <div class="absolute inset-0 bg-black/50" onclick={() => { showRetiroModal = false }}></div>
+      <div class="relative bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden z-10 flex flex-col">
+        <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-lg font-bold text-gray-900">Nuevo Retiro en Local</h3>
+          <button class="text-gray-400 hover:text-gray-600 text-2xl" onclick={() => { showRetiroModal = false }}>&times;</button>
+        </div>
+
+        {#if retiroStep === 'productos'}
+          <div class="flex-1 overflow-hidden flex flex-col sm:flex-row">
+            <!-- Menu -->
+            <div class="flex-1 overflow-y-auto p-4">
+              <nav class="flex gap-1.5 overflow-x-auto pb-3 mb-4">
+                {#each retiroCategorias as cat (cat.id)}
+                  <button class="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors {retiroActiveCat === cat.id ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" onclick={() => { retiroActiveCat = cat.id }}>{cat.nombre}</button>
+                {/each}
+              </nav>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {#each retiroProductos.filter(p => p.categoria_id === retiroActiveCat) as prod (prod.id)}
+                  <button class="text-left bg-white rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:shadow-sm transition-all cursor-pointer" onclick={() => retiroClickProducto(prod)}>
+                    <div class="flex justify-between items-start">
+                      <div class="flex-1 pr-2"><p class="font-semibold text-gray-900 text-sm">{prod.nombre}</p></div>
+                      <span class="text-brand-700 font-bold text-sm whitespace-nowrap">${prod.precio.toLocaleString('es-CL')}</span>
+                    </div>
+                  </button>
+                {/each}
+              </div>
+            </div>
+            <!-- Cart sidebar -->
+            <div class="w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-gray-200 p-4 bg-gray-50 flex flex-col">
+              <h4 class="font-semibold text-gray-900 mb-3">Pedido</h4>
+              <div class="flex-1 overflow-y-auto space-y-2 mb-3">
+                {#each retiroCart as item, idx}
+                  <div class="bg-white rounded-lg p-2 text-sm flex justify-between items-start">
+                    <div class="flex-1 min-w-0 pr-2">
+                      <p class="font-medium text-gray-800">{item.producto.nombre}</p>
+                      {#if item.acompanamiento && item.acompanamiento !== 'Sin acompañamiento'}<p class="text-xs text-gray-400">{item.acompanamiento}</p>{/if}
+                    </div>
+                    <div class="text-right shrink-0">
+                      <p class="font-semibold">${item.subtotal.toLocaleString('es-CL')}</p>
+                      <button class="text-xs text-red-400 hover:text-red-600" onclick={() => retiroRemove(idx)}>Quitar</button>
+                    </div>
+                  </div>
+                {:else}
+                  <p class="text-gray-400 text-sm text-center py-8">Sin productos</p>
+                {/each}
+              </div>
+              <div class="border-t pt-3">
+                <div class="flex justify-between font-bold text-lg mb-3"><span>Total</span><span class="text-brand-700">${retiroGetTotal().toLocaleString('es-CL')}</span></div>
+                <div class="space-y-2">
+                  <input type="text" class="input-field w-full text-sm" placeholder="Nombre del cliente" bind:value={retiroNombre} />
+                  <input type="text" class="input-field w-full text-sm" placeholder="Teléfono" bind:value={retiroTelefono} />
+                </div>
+                <button class="btn-primary w-full py-3 mt-3 disabled:opacity-50" disabled={retiroCart.length === 0 || retiroGuardando} onclick={retiroCrearPedido}>
+                  {retiroGuardando ? 'Creando...' : `Crear Pedido · $${retiroGetTotal().toLocaleString('es-CL')}`}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Acomp sub-modal -->
+          {#if retiroShowAcomp && retiroAcompProd}
+            <div class="absolute inset-0 bg-black/30 z-20 flex items-center justify-center" onclick={() => { retiroShowAcomp = false }}>
+              <div class="bg-white rounded-xl p-5 max-w-sm w-full mx-4 shadow-xl" onclick={(e) => e.stopPropagation()}>
+                <h4 class="font-semibold text-gray-900 mb-3">{retiroAcompProd.nombre} - ${retiroAcompProd.precio.toLocaleString('es-CL')}</h4>
+                <p class="text-xs text-gray-500 mb-2">Acompañamientos (máx. 2)</p>
+                <div class="space-y-2 mb-4">
+                  {#each retiroGetAcomp(retiroAcompProd.id) as acomp (acomp.id)}
+                    {@const disabled = retiroSelectedAcomps.length >= 2 && !retiroSelectedAcomps.includes(acomp.id)}
+                    <label class="flex items-center gap-2 p-2 rounded-lg border cursor-pointer {retiroSelectedAcomps.includes(acomp.id) ? 'border-brand-500 bg-brand-50' : 'border-gray-200'} {disabled ? 'opacity-40 pointer-events-none' : ''}">
+                      <input type="checkbox" checked={retiroSelectedAcomps.includes(acomp.id)} disabled={disabled} onchange={(e) => { if (e.target.checked) retiroSelectedAcomps = [...retiroSelectedAcomps, acomp.id]; else retiroSelectedAcomps = retiroSelectedAcomps.filter(id => id !== acomp.id); }} />
+                      <span class="flex-1 text-sm">{acomp.nombre}</span>
+                      {#if acomp.recargo > 0}<span class="text-brand-700 font-bold text-sm">+${acomp.recargo.toLocaleString('es-CL')}</span>{/if}
+                    </label>
+                  {/each}
+                </div>
+                <button class="btn-primary w-full py-2.5" onclick={retiroConfirmarAcomp}>Agregar</button>
+              </div>
+            </div>
+          {/if}
+        {/if}
       </div>
     </div>
   {/if}
