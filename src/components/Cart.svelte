@@ -45,7 +45,7 @@
       {:else}
         <div class="space-y-3">
           {#each cartItems as item (item.id)}
-            <div class="bg-gray-50 rounded-lg p-3">
+            <div class="bg-white rounded-xl p-3.5 border border-gray-200 shadow-sm">
               <div class="flex justify-between items-start">
                 <div class="flex-1 pr-2">
                   <p class="font-medium text-gray-900 text-sm">{item.producto.nombre}</p>
@@ -81,16 +81,19 @@
         {/if}
 
         <button
+          class="w-full py-3 text-base font-semibold rounded-xl mb-2 transition-all"
+          style="background-color:#16a34a; color:#fff;"
+          on:mouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#15803d'; }}
+          on:mouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#16a34a'; }}
+          on:click={() => dispatch('close')}
+        >
+          Seguir pidiendo
+        </button>
+        <button
           class="btn-primary w-full py-3 text-lg"
           on:click={() => dispatch('submit')}
         >
           Enviar Pedido
-        </button>
-        <button
-          class="w-full py-2 mt-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-          on:click={() => dispatch('close')}
-        >
-          Seguir pidiendo
         </button>
       </div>
     {/if}
