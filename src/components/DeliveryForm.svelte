@@ -99,7 +99,7 @@
     {#if step === 'menu'}
       <div class="pt-8 pb-6">
         <p class="text-[#6b5d4f] text-xs tracking-[0.2em] uppercase mb-2">{modo === 'retiro' ? 'Retiro en local' : 'Delivery a domicilio'}</p>
-        <h2 class="font-display text-3xl md:text-4xl text-[#1a1410] font-bold leading-tight">{modo === 'retiro' ? 'Pedí y retirá' : 'Pedí desde casa'}</h2>
+        <h2 class="font-display text-3xl md:text-4xl text-[#1a1410] font-bold leading-tight">{modo === 'retiro' ? 'Pide y retira en el local' : 'Pide desde tu casa'}</h2>
         <p class="text-[#6b5d4f] text-sm mt-2 max-w-lg leading-relaxed">{modo === 'retiro' ? 'Hacé tu pedido y pasá a buscarlo por el restaurante.' : 'Elegí tus platos favoritos y te los llevamos.'}</p>
       </div>
 
