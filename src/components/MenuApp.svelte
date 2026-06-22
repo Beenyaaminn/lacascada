@@ -176,7 +176,7 @@
 </script>
 
 <!-- ============ SELECCIÓN DE MESA ============ -->
-{#if step === 'mesa' || step === 'verificando'}
+{#if step === 'mesa' || step === 'verificando' || step === 'confirmacion'}
   <div class="min-h-screen flex items-center justify-center p-4" style="background-color: #faf6f0;">
 
     <div class="relative z-10 w-full max-w-lg animate-fade-in">
