@@ -401,14 +401,22 @@
   async function confirmarAsignacionReserva(mesa: any) {
     if (!asignarReservaData) return;
     try {
-      const res = await fetch('/api/admin/reservas', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: asignarReservaData.id, estado: 'confirmada', mesa_id: mesa.id }),
-      });
-      if (res.ok) {
+      const [resRes, mesaRes] = await Promise.all([
+        fetch('/api/admin/reservas', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: asignarReservaData.id, estado: 'confirmada', mesa_id: mesa.id }),
+        }),
+        fetch('/api/admin/mesas', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: mesa.id, estado: 'ocupada', tomada_por: asignarReservaData.nombre_cliente }),
+        }),
+      ]);
+      if (resRes.ok && mesaRes.ok) {
         showAsignarReservaModal = false;
-        loadData(true);
-      } else { const d = await res.json(); alert(d.error || 'Error'); }
+        await loadData(true);
+        modalMesa = { ...mesa, estado: 'ocupada', tomada_por: asignarReservaData.nombre_cliente };
+        showModal = true;
+      } else { const d = await resRes.json(); alert(d.error || 'Error'); }
     } catch (e) { alert('Error de conexión'); }
   }
   function tomarPedidoReserva(r: any) {
@@ -599,7 +607,6 @@
                     <td class="p-2 text-right">
                       {#if r.estado === 'pendiente'}
                         <div class="flex gap-1 justify-end">
-                          <button class="text-xs text-brand-600 hover:text-brand-800" onclick={() => tomarPedidoReserva(r)}>Tomar pedido</button>
                           <button class="text-xs text-blue-600 hover:text-blue-800" onclick={() => abrirAsignarReserva(r)}>Asignar mesa</button>
                           <button class="text-xs text-red-600 hover:text-red-800" onclick={() => cambiarEstadoReserva(r.id, 'cancelada')}>Cancelar</button>
                         </div>
