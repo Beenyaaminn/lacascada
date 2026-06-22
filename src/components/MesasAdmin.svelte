@@ -404,9 +404,8 @@
   async function abrirAsignarReserva(r: any) {
     asignarReservaData = r;
     try {
-      const res = await fetch('/api/mesas/disponibles');
-      const data = await res.json();
-      mesasLibres = (data.mesas || []).filter((m: any) => m.estado === 'libre').sort((a: any, b: any) => a.piso * 100 + a.numero_mesa - (b.piso * 100 + b.numero_mesa));
+      await loadData(true);
+      mesasLibres = mesas.filter((m: any) => m.estado === 'libre').sort((a: any, b: any) => a.piso * 100 + a.numero_mesa - (b.piso * 100 + b.numero_mesa));
     } catch (e) { mesasLibres = []; }
     showAsignarReservaModal = true;
   }
@@ -414,20 +413,20 @@
   async function confirmarAsignacionReserva(mesa: any) {
     if (!asignarReservaData) return;
     try {
-      const [resRes, mesaRes] = await Promise.all([
-        fetch('/api/admin/reservas', {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: asignarReservaData.id, estado: 'confirmada', mesa_id: mesa.id }),
-        }),
-        fetch('/api/admin/mesas', {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: mesa.id, estado: 'ocupada', tomada_por: asignarReservaData.nombre_cliente }),
-        }),
-      ]);
-      if (resRes.ok && mesaRes.ok) {
+      const mesaRes = await fetch('/api/admin/mesas', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: mesa.id, estado: 'ocupada', tomada_por: asignarReservaData.nombre_cliente }),
+      });
+      if (!mesaRes.ok) { const d = await mesaRes.json(); alert(d.error || 'Error al ocupar mesa'); return; }
+
+      const resRes = await fetch('/api/admin/reservas', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: asignarReservaData.id, estado: 'confirmada', mesa_id: mesa.id }),
+      });
+      if (resRes.ok) {
         showAsignarReservaModal = false;
         await loadData(true);
-      } else { const d = await resRes.json(); alert(d.error || 'Error al asignar'); }
+      } else { const d = await resRes.json(); alert(d.error || 'Error al vincular reserva'); }
     } catch (e) { alert('Error de conexión'); }
   }
 
