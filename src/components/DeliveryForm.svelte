@@ -42,30 +42,31 @@
       if (!zona) { orderError = 'Seleccioná una zona de delivery'; return; }
       if (!direccion.trim()) { orderError = 'La dirección es obligatoria'; return; }
     }
-    if (metodoPago === 'efectivo' && efectivoConCuanto < getTotal()) { orderError = `El monto debe cubrir el total (${formatCLP(getTotal())})`; return; }
-    submitting = true; orderError = '';
-    try {
-      const body: any = {
-        nombre: nombre.trim(), telefono: telefono.trim(), metodo_pago: metodoPago,
-        efectivo_con_cuanto: metodoPago === 'efectivo' ? efectivoConCuanto : 0,
-        items: cart.map(i => ({ producto_id: i.producto.id, acompanamiento: i.acompanamiento, cantidad: i.cantidad, subtotal: i.subtotal })),
-        total: getTotal(), tipo: modo,
-      };
-      if (modo === 'delivery') {
-        body.direccion = direccion.trim();
-        body.zona = zona;
-        body.costo_envio = getCostoEnvio();
-      } else {
-        body.direccion = 'Retiro en local';
-      }
-      const res = await fetch('/api/delivery/pedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const d = await res.json();
-      if (res.ok) { orderSuccess = true; pedidoId = d.pedido_id; vuelto = d.vuelto || 0; step = 'exito'; } else { orderError = d.error || 'Error al crear el pedido'; }
-    } catch { orderError = 'Error de conexión.'; }
-    finally { submitting = false; }
+
+    const tipo = modo === 'retiro' ? '🏃 *Retiro en local*' : `🛵 *Delivery* - ${zona}`;
+    const metodoStr = metodoPago === 'efectivo' ? `Efectivo${efectivoConCuanto > getTotal() ? ` (paga con ${formatCLP(efectivoConCuanto)})` : ''}` : metodoPago === 'debito' ? 'Débito' : 'Crédito';
+    
+    let msg = `*La Cascada - Nuevo Pedido*%0A${tipo}%0A%0A`;
+    msg += `*Cliente:* ${nombre.trim()}%0A`;
+    msg += `*Tel:* ${telefono.trim()}%0A`;
+    if (modo === 'delivery') msg += `*Dir:* ${direccion.trim()}%0A`;
+    msg += `*Pago:* ${metodoStr}%0A%0A`;
+    msg += `*Pedido:*%0A`;
+    for (const item of cart) {
+      msg += `${item.cantidad}x ${item.producto.nombre} - ${formatCLP(item.subtotal)}%0A`;
+      if (item.acompanamiento && item.acompanamiento !== 'Sin acompañamiento') msg += `  + ${item.acompanamiento}%0A`;
+    }
+    msg += `%0A`;
+    msg += `*Subtotal:* ${formatCLP(getSubtotalProductos())}%0A`;
+    if (getCostoEnvio() > 0) msg += `*Envío (${zona}):* ${formatCLP(getCostoEnvio())}%0A`;
+    msg += `*TOTAL:* ${formatCLP(getTotal())}%0A`;
+    if (metodoPago === 'efectivo' && efectivoConCuanto > getTotal()) msg += `*Vuelto:* ${formatCLP(efectivoConCuanto - getTotal())}%0A`;
+
+    window.open(`https://wa.me/56966937327?text=${msg}`, '_blank');
+    orderSuccess = true; pedidoId = null; vuelto = 0; step = 'exito';
   }
 
-  function nuevoPedido() { cart = []; nombre = ''; direccion = ''; telefono = ''; zona = ''; modo = 'delivery'; metodoPago = 'efectivo'; efectivoConCuanto = 0; orderSuccess = false; orderError = ''; pedidoId = null; vuelto = 0; step = 'menu'; }
+  function nuevoPedido() { cart = []; nombre = ''; direccion = ''; telefono = ''; zona = ''; modo = 'delivery'; metodoPago = 'efectivo'; efectivoConCuanto = 0; orderSuccess = false; orderError = ''; step = 'menu'; }
   function formatCLP(n: number) { return '$' + n.toLocaleString('es-CL'); }
 
   function handleTelefonoInput(e: Event) {
@@ -195,7 +196,7 @@
 
           {#if orderError}<div class="rounded-xl p-3 mb-4 text-sm font-medium" style="background-color:#fef2f2; color:#dc2626; border:1px solid #fecaca;">{orderError}</div>{/if}
 
-          <button class="w-full py-3.5 rounded-xl text-white font-bold text-lg transition-all shadow-lg" style="background-color:#c9a227;" onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#b8922a'; }} onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#c9a227'; }} onclick={submitOrder} disabled={submitting}>{submitting ? 'Enviando...' : `Confirmar · ${formatCLP(getTotal())}`}</button>
+          <button class="w-full py-3.5 rounded-xl text-white font-bold text-lg transition-all shadow-lg" style="background-color:#c9a227;" onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#b8922a'; }} onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#c9a227'; }} onclick={submitOrder}>Confirmar · {formatCLP(getTotal())}</button>
         </div>
       </div>
 
@@ -204,13 +205,10 @@
       <div class="max-w-md mx-auto pt-12 text-center">
         <div class="rounded-3xl p-8 sm:p-10 shadow-lg border animate-fade-in" style="background-color:#fff; border-color:#e8e0d0;">
           <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style="background-color:#f0fdf4;"><span class="text-3xl">✅</span></div>
-          <h2 class="font-display text-2xl text-[#1a1410] font-bold mb-2">¡Pedido recibido!</h2>
-          <p class="text-[#6b5d4f] mb-1">Pedido <span class="font-bold text-[#c9a227] text-lg">#{pedidoId}</span></p>
-          {#if metodoPago === 'efectivo' && vuelto > 0}<p class="text-sm font-medium mt-2" style="color:#16a34a;">Vuelto: {formatCLP(vuelto)}</p>{/if}
+          <h2 class="font-display text-2xl text-[#1a1410] font-bold mb-2">¡Pedido enviado!</h2>
+          <p class="text-[#6b5d4f] text-sm mb-4">Tu pedido fue enviado por WhatsApp. Te contactaremos para confirmar.</p>
           {#if modo === 'retiro'}
-            <p class="text-[#6b5d4f] text-sm mt-6 leading-relaxed">Te llamaremos al <span class="font-semibold text-[#1a1410]">{telefono}</span> cuando esté listo para que lo retirés.</p>
-          {:else}
-            <p class="text-[#6b5d4f] text-sm mt-6 leading-relaxed">Te llamaremos al <span class="font-semibold text-[#1a1410]">{telefono}</span> cuando esté listo para despacho.</p>
+            <p class="text-[#6b5d4f] text-sm mt-6 leading-relaxed">Revisaremos tu pedido y te contactaremos al <span class="font-semibold text-[#1a1410]">{telefono}</span> para coordinar{modo === 'retiro' ? ' el retiro' : ' el despacho'}.</p>
           {/if}
           <button class="w-full py-3.5 rounded-xl text-white font-bold mt-8 transition-all" style="background-color:#c9a227;" onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#b8922a'; }} onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#c9a227'; }} onclick={nuevoPedido}>Hacer otro pedido</button>
         </div>

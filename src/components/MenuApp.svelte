@@ -166,10 +166,20 @@
   async function submitOrder() {
     if (cartItems.length === 0) return; orderError = '';
     try {
-      const res = await fetch('/api/pedidos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ piso, mesa, nombre_cliente: nombreComensal.trim() || null, items: cartItems.map(i => ({ producto_id: i.producto.id, cantidad: i.cantidad, acompanamiento: i.baseAcomp || null, subtotal: i.precioTotal * i.cantidad })), total: getCartTotal() }) });
-      if (!res.ok) { const e = await res.json(); orderError = e.error || 'Error al enviar'; return; }
-      cartItems = []; showCart = false; showSuccess = true; pedidoRealizado = true; setTimeout(() => { showSuccess = false; }, 5000);
-    } catch { orderError = 'Error de conexión.'; }
+      await fetch('/api/mesas/ocupar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ piso, mesa_numero: mesa }) });
+    } catch { /* no crítico */ }
+
+    let msg = `*La Cascada - Pedido en Mesa*%0A🍽️ *Autoatención* - Piso ${piso} Mesa ${mesa}%0A%0A`;
+    if (nombreComensal.trim()) msg += `*Cliente:* ${nombreComensal.trim()}%0A%0A`;
+    msg += `*Pedido:*%0A`;
+    for (const i of cartItems) {
+      msg += `${i.cantidad}x ${i.producto.nombre} - ${formatCLP(i.precioTotal * i.cantidad)}%0A`;
+      if (i.baseAcomp) msg += `  + ${i.baseAcomp}%0A`;
+    }
+    msg += `%0A*TOTAL:* ${formatCLP(getCartTotal())}%0A`;
+
+    window.open(`https://wa.me/56966937327?text=${msg}`, '_blank');
+    cartItems = []; showCart = false; showSuccess = true; pedidoRealizado = true; setTimeout(() => { showSuccess = false; }, 5000);
   }
 
   function formatCLP(n: number) { return '$' + n.toLocaleString('es-CL'); }
@@ -388,7 +398,7 @@
   <div class="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-50 animate-slide-up">
     <div class="rounded-2xl p-5 shadow-2xl flex items-center gap-3 text-white" style="background-color:#1a1410;">
       <span class="text-2xl">✅</span>
-      <div><p class="font-bold">¡Pedido enviado!</p><p class="text-xs text-white/50">Piso {piso} · Mesa {mesa} — Ya lo están preparando</p></div>
+      <div><p class="font-bold">¡Pedido enviado!</p><p class="text-xs text-white/50">Piso {piso} · Mesa {mesa} — Enviado por WhatsApp</p></div>
     </div>
   </div>
 {/if}
