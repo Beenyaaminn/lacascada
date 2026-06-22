@@ -4,6 +4,7 @@
   let { menuData } = $props<{ menuData: any }>();
 
   let step: string = $state('menu');
+  let modo: string = $state('delivery'); let zona: string = $state(''); const costoZonas: Record<string, number> = { 'Lebu Norte': 2000, 'Lebu Centro': 1500 };
   let nombre: string = $state(''); let direccion: string = $state(''); let telefono: string = $state('');
   let metodoPago: string = $state('efectivo'); let efectivoConCuanto: number = $state(0);
   let submitting: boolean = $state(false); let orderSuccess: boolean = $state(false); let orderError: string = $state('');
@@ -22,7 +23,9 @@
 
   function getFiltered(): Producto[] { return productos.filter(p => p.categoria_id === activeCategoria); }
   function getAcomps(pId: number) { const ids = productosAcomp.filter(pa => pa.producto_id === pId).map(pa => pa.acompanamiento_id); return acompanamientos.filter(a => ids.includes(a.id)); }
-  function getTotal() { return cart.reduce((s, i) => s + i.subtotal, 0); }
+  function getSubtotalProductos() { return cart.reduce((s, i) => s + i.subtotal, 0); }
+  function getCostoEnvio() { return modo === 'delivery' ? (costoZonas[zona] || 0) : 0; }
+  function getTotal() { return getSubtotalProductos() + getCostoEnvio(); }
 
   function clickProducto(p: Producto) { selectedProduct = p; selectedAcomps = []; if (getAcomps(p.id).length > 0) showAcompModal = true; else addSimple(); }
   function closeModal() { showAcompModal = false; selectedProduct = null; }
@@ -33,18 +36,35 @@
   function back() { step = 'menu'; }
 
   async function submitOrder() {
-    if (!nombre.trim() || !direccion.trim() || !telefono.trim()) { orderError = 'Todos los campos son obligatorios'; return; }
+    if (!nombre.trim() || !telefono.trim()) { orderError = 'Nombre y teléfono son obligatorios'; return; }
+    if (modo === 'delivery') {
+      if (!zona) { orderError = 'Seleccioná una zona de delivery'; return; }
+      if (!direccion.trim()) { orderError = 'La dirección es obligatoria'; return; }
+    }
     if (metodoPago === 'efectivo' && efectivoConCuanto < getTotal()) { orderError = `El monto debe cubrir el total (${formatCLP(getTotal())})`; return; }
     submitting = true; orderError = '';
     try {
-      const res = await fetch('/api/delivery/pedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: nombre.trim(), direccion: direccion.trim(), telefono: telefono.trim(), metodo_pago: metodoPago, efectivo_con_cuanto: metodoPago === 'efectivo' ? efectivoConCuanto : 0, items: cart.map(i => ({ producto_id: i.producto.id, acompanamiento: i.acompanamiento, cantidad: i.cantidad, subtotal: i.subtotal })), total: getTotal() }) });
+      const body: any = {
+        nombre: nombre.trim(), telefono: telefono.trim(), metodo_pago: metodoPago,
+        efectivo_con_cuanto: metodoPago === 'efectivo' ? efectivoConCuanto : 0,
+        items: cart.map(i => ({ producto_id: i.producto.id, acompanamiento: i.acompanamiento, cantidad: i.cantidad, subtotal: i.subtotal })),
+        total: getTotal(), tipo: modo,
+      };
+      if (modo === 'delivery') {
+        body.direccion = direccion.trim();
+        body.zona = zona;
+        body.costo_envio = getCostoEnvio();
+      } else {
+        body.direccion = 'Retiro en local';
+      }
+      const res = await fetch('/api/delivery/pedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const d = await res.json();
       if (res.ok) { orderSuccess = true; pedidoId = d.pedido_id; vuelto = d.vuelto || 0; step = 'exito'; } else { orderError = d.error || 'Error al crear el pedido'; }
     } catch { orderError = 'Error de conexión.'; }
     finally { submitting = false; }
   }
 
-  function nuevoPedido() { cart = []; nombre = ''; direccion = ''; telefono = ''; metodoPago = 'efectivo'; efectivoConCuanto = 0; orderSuccess = false; orderError = ''; pedidoId = null; vuelto = 0; step = 'menu'; }
+  function nuevoPedido() { cart = []; nombre = ''; direccion = ''; telefono = ''; zona = ''; modo = 'delivery'; metodoPago = 'efectivo'; efectivoConCuanto = 0; orderSuccess = false; orderError = ''; pedidoId = null; vuelto = 0; step = 'menu'; }
   function formatCLP(n: number) { return '$' + n.toLocaleString('es-CL'); }
 
   function handleTelefonoInput(e: Event) {
@@ -65,7 +85,7 @@
         <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background-color: #c9a227;">LC</div>
         <div>
           <h1 class="font-display text-lg font-semibold leading-none" style="color: #1a1410;">La Cascada</h1>
-          <p class="text-[11px] tracking-wider uppercase" style="color: #6b5d4f;">Delivery</p>
+          <p class="text-[11px] tracking-wider uppercase" style="color: #6b5d4f;">{modo === 'retiro' ? 'Retiro en local' : 'Delivery'}</p>
         </div>
       </div>
       {#if step === 'menu' && cart.length > 0}
@@ -78,9 +98,15 @@
     <!-- STEP: MENU -->
     {#if step === 'menu'}
       <div class="pt-8 pb-6">
-        <p class="text-[#6b5d4f] text-xs tracking-[0.2em] uppercase mb-2">Delivery a domicilio</p>
-        <h2 class="font-display text-3xl md:text-4xl text-[#1a1410] font-bold leading-tight">Pedí desde casa</h2>
-        <p class="text-[#6b5d4f] text-sm mt-2 max-w-lg leading-relaxed">Elegí tus platos favoritos y te los llevamos. Llená tus datos al finalizar.</p>
+        <p class="text-[#6b5d4f] text-xs tracking-[0.2em] uppercase mb-2">{modo === 'retiro' ? 'Retiro en local' : 'Delivery a domicilio'}</p>
+        <h2 class="font-display text-3xl md:text-4xl text-[#1a1410] font-bold leading-tight">{modo === 'retiro' ? 'Pedí y retirá' : 'Pedí desde casa'}</h2>
+        <p class="text-[#6b5d4f] text-sm mt-2 max-w-lg leading-relaxed">{modo === 'retiro' ? 'Hacé tu pedido y pasá a buscarlo por el restaurante.' : 'Elegí tus platos favoritos y te los llevamos.'}</p>
+      </div>
+
+      <!-- Modo selector -->
+      <div class="flex gap-2 mb-6">
+        <button class="flex-1 py-3 rounded-xl text-sm font-bold transition-all border-2 {modo === 'delivery' ? 'border-[#c9a227] bg-[#c9a227] text-white' : 'border-[#e8e0d0] bg-white text-[#6b5d4f]'}" onclick={() => { modo = 'delivery'; activeCategoria = categorias[0]?.id || 0; }}>🛵 Delivery</button>
+        <button class="flex-1 py-3 rounded-xl text-sm font-bold transition-all border-2 {modo === 'retiro' ? 'border-[#c9a227] bg-[#c9a227] text-white' : 'border-[#e8e0d0] bg-white text-[#6b5d4f]'}" onclick={() => { modo = 'retiro'; activeCategoria = categorias[0]?.id || 0; }}>🏃 Retiro en local</button>
       </div>
 
       <nav class="flex gap-2 overflow-x-auto pb-1 mb-4 sm:mb-8 sticky top-[57px] z-20 pt-2 scrollbar-hide" style="background: linear-gradient(to bottom, #faf6f0 60%, transparent);">
@@ -107,11 +133,27 @@
         <button class="text-[#c9a227] text-sm mb-8 flex items-center gap-1.5 font-medium hover:underline" onclick={back}>← Volver al menú</button>
         <div class="rounded-2xl p-6 sm:p-8 shadow-lg border" style="background-color:#fff; border-color:#e8e0d0;">
           <h2 class="font-display text-2xl text-[#1a1410] font-bold mb-1">Tus datos</h2>
-          <p class="text-[#6b5d4f] text-sm mb-6">Completá para recibir tu pedido</p>
+          <p class="text-[#6b5d4f] text-sm mb-6">{modo === 'retiro' ? 'Completá para tu retiro en local' : 'Completá para recibir tu pedido'}</p>
 
           <div class="space-y-4 mb-6">
             <div><label class="block text-xs font-semibold text-[#1a1410] uppercase tracking-wider mb-1.5">Nombre</label><input type="text" bind:value={nombre} placeholder="Tu nombre completo" class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all" style="border-color:#e8e0d0; background-color:#faf6f0;" onfocus={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#c9a227'; }} onblur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#e8e0d0'; }} /></div>
-            <div><label class="block text-xs font-semibold text-[#1a1410] uppercase tracking-wider mb-1.5">Dirección</label><input type="text" bind:value={direccion} placeholder="Calle, número, depto" class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all" style="border-color:#e8e0d0; background-color:#faf6f0;" onfocus={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#c9a227'; }} onblur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#e8e0d0'; }} /></div>
+
+            {#if modo === 'delivery'}
+              <div>
+                <label class="block text-xs font-semibold text-[#1a1410] uppercase tracking-wider mb-2">Zona de delivery</label>
+                <div class="grid grid-cols-2 gap-2">
+                  {#each Object.keys(costoZonas) as z}
+                    <label class="flex flex-col items-center p-3 rounded-xl border-2 cursor-pointer transition-all {zona === z ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0]'}">
+                      <input type="radio" bind:group={zona} value={z} class="sr-only" />
+                      <span class="text-sm font-semibold text-[#1a1410]">{z}</span>
+                      <span class="text-xs text-[#c9a227] font-bold mt-1">+{formatCLP(costoZonas[z])}</span>
+                    </label>
+                  {/each}
+                </div>
+              </div>
+              <div><label class="block text-xs font-semibold text-[#1a1410] uppercase tracking-wider mb-1.5">Dirección</label><input type="text" bind:value={direccion} placeholder="Calle, número, depto" class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all" style="border-color:#e8e0d0; background-color:#faf6f0;" onfocus={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#c9a227'; }} onblur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#e8e0d0'; }} /></div>
+            {/if}
+
             <div><label class="block text-xs font-semibold text-[#1a1410] uppercase tracking-wider mb-1.5">Teléfono</label><input type="tel" value={telefono} oninput={handleTelefonoInput} placeholder="+569 XXXXXXXX" maxlength="14" class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all" style="border-color:#e8e0d0; background-color:#faf6f0;" onfocus={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#c9a227'; }} onblur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#e8e0d0'; }} /></div>
             <div>
               <label class="block text-xs font-semibold text-[#1a1410] uppercase tracking-wider mb-2">Método de pago</label>
@@ -140,7 +182,14 @@
                 </div>
               {/each}
             </div>
+            {#if getCostoEnvio() > 0}
+              <div class="flex justify-between text-sm border-t pt-2 mb-2" style="border-color:#e8e0d0;">
+                <span class="text-[#6b5d4f]">Envío ({zona})</span>
+                <span class="font-semibold text-[#c9a227]">{formatCLP(getCostoEnvio())}</span>
+              </div>
+            {/if}
             <div class="border-t pt-3 flex justify-between items-center" style="border-color:#e8e0d0;"><span class="font-bold text-[#1a1410]">Total</span><span class="text-xl font-bold" style="color:#c9a227;">{formatCLP(getTotal())}</span></div>
+            {#if modo === 'retiro'}<p class="text-xs text-[#6b5d4f] mt-2 text-center">📍 Retirás en Rioseco #267, Lebu</p>{/if}
           </div>
 
           {#if orderError}<div class="rounded-xl p-3 mb-4 text-sm font-medium" style="background-color:#fef2f2; color:#dc2626; border:1px solid #fecaca;">{orderError}</div>{/if}
@@ -157,7 +206,11 @@
           <h2 class="font-display text-2xl text-[#1a1410] font-bold mb-2">¡Pedido recibido!</h2>
           <p class="text-[#6b5d4f] mb-1">Pedido <span class="font-bold text-[#c9a227] text-lg">#{pedidoId}</span></p>
           {#if metodoPago === 'efectivo' && vuelto > 0}<p class="text-sm font-medium mt-2" style="color:#16a34a;">Vuelto: {formatCLP(vuelto)}</p>{/if}
-          <p class="text-[#6b5d4f] text-sm mt-6 leading-relaxed">Te llamaremos al <span class="font-semibold text-[#1a1410]">{telefono}</span> cuando esté listo para despacho.</p>
+          {#if modo === 'retiro'}
+            <p class="text-[#6b5d4f] text-sm mt-6 leading-relaxed">Te llamaremos al <span class="font-semibold text-[#1a1410]">{telefono}</span> cuando esté listo para que lo retirés.</p>
+          {:else}
+            <p class="text-[#6b5d4f] text-sm mt-6 leading-relaxed">Te llamaremos al <span class="font-semibold text-[#1a1410]">{telefono}</span> cuando esté listo para despacho.</p>
+          {/if}
           <button class="w-full py-3.5 rounded-xl text-white font-bold mt-8 transition-all" style="background-color:#c9a227;" onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#b8922a'; }} onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#c9a227'; }} onclick={nuevoPedido}>Hacer otro pedido</button>
         </div>
       </div>
@@ -168,7 +221,7 @@
   <footer class="border-t py-10 px-4 mt-8" style="border-color:#e8e0d0; background-color:#fff;">
     <div class="max-w-5xl mx-auto text-center">
       <p class="font-display text-xl text-[#c9a227] font-bold">La Cascada</p>
-      <p class="text-[#6b5d4f] text-xs mt-1">Delivery &bull; Rioseco #267, Lebu</p>
+      <p class="text-[#6b5d4f] text-xs mt-1">{modo === 'retiro' ? 'Retiro en local' : 'Delivery'} &bull; Rioseco #267, Lebu</p>
       <p class="text-[#6b5d4f] text-xs">+569 66937327</p>
     </div>
   </footer>

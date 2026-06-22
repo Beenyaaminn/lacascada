@@ -19,11 +19,19 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const {
       nombre, direccion, telefono, metodo_pago,
-      efectivo_con_cuanto, items, total
+      efectivo_con_cuanto, items, total, tipo, zona, costo_envio
     } = await request.json();
 
-    if (!nombre || !direccion || !telefono) {
-      return new Response(JSON.stringify({ error: 'Nombre, dirección y teléfono son obligatorios' }), {
+    const esRetiro = tipo === 'retiro';
+
+    if (!nombre || !telefono) {
+      return new Response(JSON.stringify({ error: 'Nombre y teléfono son obligatorios' }), {
+        status: 400, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!esRetiro && !direccion) {
+      return new Response(JSON.stringify({ error: 'La dirección es obligatoria' }), {
         status: 400, headers: { 'Content-Type': 'application/json' },
       });
     }
@@ -46,6 +54,8 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    const envio = (typeof costo_envio === 'number' && costo_envio > 0) ? costo_envio : 0;
+
     let calculatedTotal = 0;
     for (const item of items) {
       const prod = await sql`SELECT id, nombre, maneja_stock, stock_actual FROM productos WHERE id = ${item.producto_id} LIMIT 1`;
@@ -64,6 +74,7 @@ export const POST: APIRoute = async ({ request }) => {
       }
       calculatedTotal += item.subtotal;
     }
+    calculatedTotal += envio;
 
     if (typeof total !== 'number' || total < 0 || Math.abs(total - calculatedTotal) > Math.max(calculatedTotal * 0.01, 1)) {
       return new Response(JSON.stringify({ error: `Total inválido. Esperado: $${calculatedTotal}, Recibido: $${total}` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
@@ -76,11 +87,14 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const efConCuanto = metodo_pago === 'efectivo' ? (efectivo_con_cuanto || 0) : 0;
+    const dirFinal = esRetiro ? 'Retiro en local' : (zona ? `[${zona}] ${direccion}` : direccion);
+    const tipoPedido = esRetiro ? 'retiro' : 'delivery';
+    const zonaInfo = zona || '';
 
     const result = await sql.begin(async (tx) => {
       const pedido = await tx`
-        INSERT INTO pedidos (tipo_pedido, estado, total, nombre_cliente, direccion, telefono, efectivo_con_cuanto)
-        VALUES ('delivery', 'pendiente', ${total}, ${nombre}, ${direccion}, ${telefono}, ${efConCuanto})
+        INSERT INTO pedidos (tipo_pedido, estado, total, nombre_cliente, direccion, telefono, efectivo_con_cuanto, descuento)
+        VALUES (${tipoPedido}, 'pendiente', ${total}, ${nombre}, ${dirFinal}, ${telefono}, ${efConCuanto}, ${envio})
         RETURNING id, fecha_hora
       `;
       const pedidoId = pedido[0].id;
@@ -98,7 +112,7 @@ export const POST: APIRoute = async ({ request }) => {
     const pedidoId = result;
 
     await registrarAuditoria('PEDIDO_DELIVERY_CREADO', 'pedidos', pedidoId, nombre,
-      `Delivery | ${items.length} items | Total: $${total} | Dir: ${direccion}`, ip);
+      `${esRetiro ? 'Retiro' : 'Delivery'}${zonaInfo ? ' ' + zonaInfo : ''} | ${items.length} items | Total: $${total}${envio > 0 ? ' (envio: $' + envio + ')' : ''}`, ip);
 
     return new Response(JSON.stringify({
       success: true,

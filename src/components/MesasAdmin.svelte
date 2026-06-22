@@ -471,9 +471,10 @@
               <div class="flex items-start justify-between flex-wrap gap-3">
                 <div class="flex-1">
                   <div class="flex items-center gap-2 mb-1">
-                    <span class="text-2xl">🛵</span>
+                    <span class="text-2xl">{pedido.tipo_pedido === 'retiro' ? '🏃' : '🛵'}</span>
                     <span class="font-bold text-gray-900">#{pedido.id}</span>
                     <span class="px-2 py-0.5 rounded-full text-xs font-medium {getEstadoBadge(pedido.estado)}">{pedido.estado.replace(/_/g, ' ')}</span>
+                    {#if pedido.tipo_pedido === 'retiro'}<span class="text-xs text-purple-600 font-medium">Retiro</span>{/if}
                     {#if pedido.metodo_pago}
                       <span class="text-xs text-gray-500 capitalize">{pedido.metodo_pago.replace('_', ' ')}</span>
                     {/if}
