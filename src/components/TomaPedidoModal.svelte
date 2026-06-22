@@ -20,7 +20,6 @@
   let { mesa, onclose } = $props<{ mesa: Mesa; onclose: () => void }>();
 
   let step: string = $state(mesa.estado === 'libre' ? 'abrir' : 'cargando');
-  let comentarios: string = $state('');
   let garzonId: string = $state('');
   let comensales: number = $state(1);
   let garzones: any[] = $state([]);
@@ -57,6 +56,7 @@
     id: number;
     label: string;
     items: OrdenItem[];
+    comentarios: string;
   }
 
   interface PedidoInfo {
@@ -128,7 +128,7 @@
                 subtotal: d.subtotal || d.producto_precio * d.cantidad,
               };
             });
-            return { id: i + 1, label: `Pedido #${p.id}`, items };
+            return { id: i + 1, label: `Pedido #${p.id}`, items, comentarios: '' };
           });
 
           pedidosInfo = pedidosMesa.map((p: any, i: number) => ({
@@ -309,6 +309,7 @@
       id: i + 1,
       label: `Comensal ${i + 1}`,
       items: [],
+      comentarios: '',
     }));
     activeComensal = 0;
     step = 'orden';
@@ -355,7 +356,7 @@
                 subtotal: i.subtotal || i.producto.precio * i.cantidad,
               })),
               total: itemsNuevos.reduce((s, i) => s + (i.subtotal || i.producto.precio * i.cantidad), 0),
-              comentarios: comentarios.trim() || null,
+              comentarios: comensalesList[idx].comentarios?.trim() || null,
             }),
           }).then(r => r.json())
         )
@@ -614,14 +615,14 @@
             <h2 class="text-lg font-bold text-gray-900">{formatMesa()}</h2>
             <p class="text-xs text-gray-500">{comensales} comensal{comensales !== 1 ? 'es' : ''}</p>
           </div>
-          {#if comentarios}
-            <span class="text-xs text-gray-400 italic hidden sm:inline">"{comentarios}"</span>
+          {#if comensalesList[activeComensal]?.comentarios}
+            <span class="text-xs text-gray-400 italic hidden sm:inline">"{comensalesList[activeComensal].comentarios}"</span>
           {/if}
         </div>
         <div class="flex items-center gap-3">
           {#if pedidosInfo.length === 0}
             <div class="flex-1 space-y-2">
-              <textarea class="input-field h-16 resize-none text-xs w-full" placeholder="Comentarios del pedido (ej: sin cebolla, alérgico a...)" bind:value={comentarios}></textarea>
+              <textarea class="input-field h-16 resize-none text-xs w-full" placeholder="Comentarios del pedido (ej: sin cebolla, alérgico a...)" bind:value={comensalesList[activeComensal].comentarios}></textarea>
               <div class="flex items-center gap-3">
                 <div class="text-right">
                   <p class="text-xs text-gray-500">Total</p>
