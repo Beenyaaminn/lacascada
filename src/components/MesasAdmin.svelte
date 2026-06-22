@@ -350,7 +350,7 @@
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nombre: retiroNombre.trim(), telefono: retiroTelefono.trim(), direccion: 'Retiro en local',
-          metodo_pago: 'efectivo', efectivo_con_cuanto: 0,
+          metodo_pago: 'efectivo', efectivo_con_cuanto: retiroGetTotal(),
           items: retiroCart.map(i => ({ producto_id: i.producto.id, acompanamiento: i.acompanamiento, cantidad: 1, subtotal: i.subtotal })),
           total: retiroGetTotal(), tipo: 'retiro',
         }),
