@@ -22,7 +22,6 @@
   let step: string = $state(mesa.estado === 'libre' ? 'abrir' : 'cargando');
   let comentarios: string = $state('');
   let garzonId: string = $state('');
-  let precioListado: number = $state(0);
   let comensales: number = $state(1);
   let garzones: any[] = $state([]);
   let categorias: Categoria[] = $state([]);
@@ -586,10 +585,6 @@
                 <option value={String(g.id)}>{g.nombre}</option>
               {/each}
             </select>
-          </div>
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Precio Listado</label>
-            <input type="number" class="input-field" min="0" placeholder="0" bind:value={precioListado} />
           </div>
         </div>
         <div>
