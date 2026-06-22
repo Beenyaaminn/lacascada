@@ -38,6 +38,12 @@
   let retiroSelectedAcomps: number[] = $state([]);
   let retiroGuardando: boolean = $state(false);
 
+  let showReservaModal: boolean = $state(false);
+  let showAsignarReservaModal: boolean = $state(false);
+  let asignarReservaData: any = $state(null);
+  let mesasLibres: any[] = $state([]);
+  let reservaForm = $state({ nombre_cliente: '', comensales: 2, fecha: new Date().toISOString().split('T')[0], hora: '' });
+
   onMount(() => {
     loadData();
     pollingInterval = setInterval(() => {
@@ -362,6 +368,53 @@
     } catch (e) { alert('Error de conexión'); }
     finally { retiroGuardando = false; }
   }
+
+  async function crearReserva() {
+    try {
+      const res = await fetch('/api/admin/reservas', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reservaForm),
+      });
+      if (res.ok) {
+        showReservaModal = false;
+        reservaForm = { nombre_cliente: '', comensales: 2, fecha: new Date().toISOString().split('T')[0], hora: '' };
+        loadData(true);
+      } else { const d = await res.json(); alert(d.error || 'Error'); }
+    } catch (e) { alert('Error de conexión'); }
+  }
+
+  async function cambiarEstadoReserva(id: number, estado: string) {
+    await fetch('/api/admin/reservas', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, estado }) });
+    loadData(true);
+  }
+
+  async function abrirAsignarReserva(r: any) {
+    asignarReservaData = r;
+    try {
+      const res = await fetch('/api/mesas/disponibles');
+      const data = await res.json();
+      mesasLibres = (data.mesas || []).filter((m: any) => m.estado === 'libre').sort((a: any, b: any) => a.piso * 100 + a.numero_mesa - (b.piso * 100 + b.numero_mesa));
+    } catch (e) { mesasLibres = []; }
+    showAsignarReservaModal = true;
+  }
+
+  async function confirmarAsignacionReserva(mesa: any) {
+    if (!asignarReservaData) return;
+    try {
+      const res = await fetch('/api/admin/reservas', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: asignarReservaData.id, estado: 'confirmada', mesa_id: mesa.id }),
+      });
+      if (res.ok) {
+        await fetch('/api/admin/mesas', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: mesa.id, estado: 'ocupada', tomada_por: asignarReservaData.nombre_cliente }),
+        });
+        showAsignarReservaModal = false;
+        loadData(true);
+      } else { const d = await res.json(); alert(d.error || 'Error'); }
+    } catch (e) { alert('Error de conexión'); }
+  }
 </script>
 
 <div class="max-w-5xl mx-auto px-4 py-6">
@@ -506,31 +559,54 @@
 
     <!-- ===== RESERVAS ===== -->
     {:else if activeTab === 'reservas'}
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-semibold text-gray-800">Reservas de Mesa</h3>
+        <button class="btn-primary text-sm px-4 py-2 flex items-center gap-1.5" onclick={() => { showReservaModal = true }}><span class="text-base">+</span> Nueva Reserva</button>
+      </div>
       {#if reservas.length === 0}
         <div class="text-center py-16 text-gray-400">
-          <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
           <p class="text-lg font-medium">Sin reservas</p>
-          <p class="text-sm mt-1">No hay reservas activas por el momento</p>
+          <p class="text-sm mt-1">No hay reservas registradas</p>
         </div>
       {:else}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {#each reservas as reserva (reserva.id)}
-            <div class="card p-4 border-l-4 {reserva.estado === 'pendiente' ? 'border-blue-400' : reserva.estado === 'entregada' ? 'border-green-400' : 'border-red-400'}">
-              <div class="flex justify-between items-start mb-2">
-                <h3 class="font-semibold text-gray-900">{reserva.nombre_cliente}</h3>
-                <span class="text-xs px-2 py-0.5 rounded-full {reserva.estado === 'pendiente' ? 'bg-blue-100 text-blue-700' : reserva.estado === 'entregada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
-                  {reserva.estado}
-                </span>
-              </div>
-              <p class="text-sm text-gray-600">{reserva.producto_nombre || 'Plato #' + reserva.producto_id}</p>
-              <div class="flex justify-between items-center mt-2 text-xs text-gray-500">
-                <span>Cant: {reserva.cantidad}</span>
-                <span>{new Date(reserva.fecha).toLocaleDateString('es-CL')}</span>
-              </div>
-            </div>
-          {/each}
+        <div class="card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="text-left p-2 font-medium text-gray-600">Cliente</th>
+                  <th class="text-center p-2 font-medium text-gray-600">Pers.</th>
+                  <th class="text-center p-2 font-medium text-gray-600">Fecha</th>
+                  <th class="text-center p-2 font-medium text-gray-600">Hora</th>
+                  <th class="text-center p-2 font-medium text-gray-600">Mesa</th>
+                  <th class="text-center p-2 font-medium text-gray-600">Estado</th>
+                  <th class="text-right p-2 font-medium text-gray-600">Acción</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                {#each reservas as r (r.id)}
+                  <tr class="hover:bg-gray-50">
+                    <td class="p-2 font-medium">{r.nombre_cliente}</td>
+                    <td class="p-2 text-center">{r.cantidad || 1}</td>
+                    <td class="p-2 text-center text-xs">{new Date(r.fecha).toLocaleDateString('es-CL')}</td>
+                    <td class="p-2 text-center text-xs font-mono">{r.hora ? r.hora.slice(0, 5) : '—'}</td>
+                    <td class="p-2 text-center text-xs text-gray-500">{r.mesa_info || '—'}</td>
+                    <td class="p-2 text-center">
+                      <span class="px-2 py-0.5 rounded-full text-xs {r.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-700' : r.estado === 'confirmada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">{r.estado}</span>
+                    </td>
+                    <td class="p-2 text-right">
+                      {#if r.estado === 'pendiente'}
+                        <div class="flex gap-1 justify-end">
+                          <button class="text-xs text-blue-600 hover:text-blue-800" onclick={() => abrirAsignarReserva(r)}>Asignar mesa</button>
+                          <button class="text-xs text-red-600 hover:text-red-800" onclick={() => cambiarEstadoReserva(r.id, 'cancelada')}>Cancelar</button>
+                        </div>
+                      {/if}
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
         </div>
       {/if}
 
@@ -730,6 +806,52 @@
             </div>
           {/if}
         {/if}
+      </div>
+    </div>
+  {/if}
+
+  <!-- Nueva Reserva Modal -->
+  {#if showReservaModal}
+    <div class="fixed inset-0 z-50 flex items-center justify-center" role="dialog">
+      <div class="absolute inset-0 bg-black/50" onclick={() => { showReservaModal = false }}></div>
+      <div class="relative bg-white rounded-2xl w-full max-w-md p-6 z-10">
+        <h3 class="text-lg font-bold mb-4">Nueva Reserva de Mesa</h3>
+        <div class="space-y-3">
+          <div><label class="block text-xs font-medium text-gray-600 mb-1">Nombre del Cliente</label><input class="input-field" bind:value={reservaForm.nombre_cliente} /></div>
+          <div><label class="block text-xs font-medium text-gray-600 mb-1">Comensales</label><input class="input-field" type="number" bind:value={reservaForm.comensales} min="1" max="20" /></div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="block text-xs font-medium text-gray-600 mb-1">Fecha</label><input class="input-field" type="date" bind:value={reservaForm.fecha} /></div>
+            <div><label class="block text-xs font-medium text-gray-600 mb-1">Hora</label><input class="input-field" type="time" bind:value={reservaForm.hora} /></div>
+          </div>
+          <div class="flex gap-3 pt-3">
+            <button class="btn-secondary flex-1" onclick={() => { showReservaModal = false }}>Cancelar</button>
+            <button class="btn-primary flex-1" onclick={crearReserva}>Reservar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Asignar Mesa Modal -->
+  {#if showAsignarReservaModal && asignarReservaData}
+    <div class="fixed inset-0 z-50 flex items-center justify-center" role="dialog">
+      <div class="absolute inset-0 bg-black/50" onclick={() => { showAsignarReservaModal = false }}></div>
+      <div class="relative bg-white rounded-2xl w-full max-w-md p-6 z-10">
+        <h3 class="text-lg font-bold mb-2">Asignar Mesa a {asignarReservaData.nombre_cliente}</h3>
+        <p class="text-sm text-gray-500 mb-4">{asignarReservaData.cantidad || 1} comensales</p>
+        {#if mesasLibres.length === 0}
+          <p class="text-center text-gray-400 py-6">No hay mesas disponibles</p>
+        {:else}
+          <div class="grid grid-cols-4 gap-2 mb-4">
+            {#each mesasLibres as m (m.id)}
+              <button class="aspect-square rounded-xl border-2 border-gray-200 hover:border-brand-500 hover:bg-brand-50 transition-all flex flex-col items-center justify-center gap-1" onclick={() => confirmarAsignacionReserva(m)}>
+                <span class="text-lg">🍽️</span>
+                <span class="text-xs font-semibold text-gray-700">P{m.piso} M{m.numero_mesa}</span>
+              </button>
+            {/each}
+          </div>
+        {/if}
+        <button class="btn-secondary w-full" onclick={() => { showAsignarReservaModal = false }}>Cerrar</button>
       </div>
     </div>
   {/if}
