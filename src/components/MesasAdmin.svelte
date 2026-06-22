@@ -411,6 +411,12 @@
       } else { const d = await res.json(); alert(d.error || 'Error'); }
     } catch (e) { alert('Error de conexión'); }
   }
+  function tomarPedidoReserva(r: any) {
+    const libre = mesas.filter(m => m.estado === 'libre').sort((a, b) => a.numero_mesa - b.numero_mesa);
+    if (libre.length === 0) { alert('No hay mesas libres'); return; }
+    modalMesa = libre[0];
+    showModal = true;
+  }
 </script>
 
 <div class="max-w-5xl mx-auto px-4 py-6">
@@ -593,6 +599,7 @@
                     <td class="p-2 text-right">
                       {#if r.estado === 'pendiente'}
                         <div class="flex gap-1 justify-end">
+                          <button class="text-xs text-brand-600 hover:text-brand-800" onclick={() => tomarPedidoReserva(r)}>Tomar pedido</button>
                           <button class="text-xs text-blue-600 hover:text-blue-800" onclick={() => abrirAsignarReserva(r)}>Asignar mesa</button>
                           <button class="text-xs text-red-600 hover:text-red-800" onclick={() => cambiarEstadoReserva(r.id, 'cancelada')}>Cancelar</button>
                         </div>
