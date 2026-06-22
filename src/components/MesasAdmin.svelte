@@ -42,7 +42,20 @@
   let showAsignarReservaModal: boolean = $state(false);
   let asignarReservaData: any = $state(null);
   let mesasLibres: any[] = $state([]);
-  let reservaForm = $state({ nombre_cliente: '', comensales: 2, fecha: new Date().toISOString().split('T')[0], hora: '' });
+  let reservaForm = $state({ nombre_cliente: '', comensales: 1, fecha: new Date().toISOString().split('T')[0], hora: '' });
+
+  let showPedidoReservaModal: boolean = $state(false);
+  let pedidoReservaData: any = $state(null);
+  let pedidoReservaCart: any[] = $state([]);
+  let pedidoReservaCats: any[] = $state([]);
+  let pedidoReservaProds: any[] = $state([]);
+  let pedidoReservaAcomps: any[] = $state([]);
+  let pedidoReservaAcompLinks: any[] = $state([]);
+  let pedidoReservaActiveCat: number = $state(0);
+  let pedidoReservaShowAcomp: boolean = $state(false);
+  let pedidoReservaAcompProd: any = $state(null);
+  let pedidoReservaSelectedAcomps: number[] = $state([]);
+  let pedidoReservaGuardando: boolean = $state(false);
 
   onMount(() => {
     loadData();
@@ -377,7 +390,7 @@
       });
       if (res.ok) {
         showReservaModal = false;
-        reservaForm = { nombre_cliente: '', comensales: 2, fecha: new Date().toISOString().split('T')[0], hora: '' };
+        reservaForm = { nombre_cliente: '', comensales: 1, fecha: new Date().toISOString().split('T')[0], hora: '' };
         loadData(true);
       } else { const d = await res.json(); alert(d.error || 'Error'); }
     } catch (e) { alert('Error de conexión'); }
@@ -416,6 +429,82 @@
         await loadData(true);
       } else { const d = await resRes.json(); alert(d.error || 'Error al asignar'); }
     } catch (e) { alert('Error de conexión'); }
+  }
+
+  async function abrirPedidoReserva(r: any) {
+    pedidoReservaData = r;
+    pedidoReservaCart = [];
+    pedidoReservaActiveCat = 0;
+    pedidoReservaShowAcomp = false;
+    pedidoReservaAcompProd = null;
+    pedidoReservaSelectedAcomps = [];
+    try {
+      const res = await fetch('/api/menu');
+      const data = await res.json();
+      pedidoReservaCats = data.categorias || [];
+      pedidoReservaProds = data.productos || [];
+      pedidoReservaAcomps = data.acompanamientos || [];
+      pedidoReservaAcompLinks = data.productos_acompanamientos || [];
+      pedidoReservaActiveCat = pedidoReservaCats[0]?.id || 0;
+    } catch (e) { alert('Error al cargar menú'); return; }
+    showPedidoReservaModal = true;
+  }
+
+  function pedidoReservaGetAcomp(pid: number) {
+    const ids = pedidoReservaAcompLinks.filter((pa: any) => pa.producto_id === pid).map((pa: any) => pa.acompanamiento_id);
+    return pedidoReservaAcomps.filter((a: any) => ids.includes(a.id));
+  }
+
+  function pedidoReservaClick(prod: any) {
+    const acomp = pedidoReservaGetAcomp(prod.id);
+    if (acomp.length > 0) { pedidoReservaAcompProd = prod; pedidoReservaSelectedAcomps = []; pedidoReservaShowAcomp = true; }
+    else pedidoReservaAdd(prod, null);
+  }
+
+  function pedidoReservaAdd(prod: any, acompNombre: string | null) {
+    let ep = 0;
+    if (acompNombre) {
+      const names = acompNombre.split(', ').filter(Boolean);
+      for (const n of names) { const a = pedidoReservaAcomps.find((x: any) => x.nombre === n); if (a) ep += a.recargo; }
+    }
+    pedidoReservaCart = [...pedidoReservaCart, { id: Date.now() + Math.random(), producto: prod, acompanamiento: acompNombre || 'Sin acompañamiento', subtotal: prod.precio + ep }];
+    pedidoReservaShowAcomp = false; pedidoReservaAcompProd = null;
+  }
+
+  function pedidoReservaConfirmarAcomp() {
+    if (!pedidoReservaAcompProd) return;
+    const names: string[] = [];
+    for (const id of pedidoReservaSelectedAcomps) { const a = pedidoReservaAcomps.find((x: any) => x.id === id); if (a) names.push(a.nombre); }
+    pedidoReservaAdd(pedidoReservaAcompProd, names.length > 0 ? names.join(', ') : null);
+  }
+
+  function pedidoReservaRemove(idx: number) { pedidoReservaCart = pedidoReservaCart.filter((_, i) => i !== idx); }
+  function pedidoReservaTotal() { return pedidoReservaCart.reduce((s, i) => s + i.subtotal, 0); }
+
+  async function pedidoReservaCrear() {
+    if (!pedidoReservaData || pedidoReservaCart.length === 0) return;
+    pedidoReservaGuardando = true;
+    try {
+      const res = await fetch('/api/delivery/pedido', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: pedidoReservaData.nombre_cliente, telefono: 'Reserva', direccion: 'Reserva',
+          metodo_pago: 'efectivo', efectivo_con_cuanto: pedidoReservaTotal(),
+          items: pedidoReservaCart.map(i => ({ producto_id: i.producto.id, acompanamiento: i.acompanamiento, cantidad: 1, subtotal: i.subtotal })),
+          total: pedidoReservaTotal(), tipo: 'reserva',
+        }),
+      });
+      if (res.ok) {
+        await fetch('/api/admin/reservas', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: pedidoReservaData.id, estado: 'confirmada' }),
+        });
+        showPedidoReservaModal = false;
+        loadData(true);
+        alert('Pedido creado correctamente');
+      } else { const d = await res.json(); alert(d.error || 'Error'); }
+    } catch (e) { alert('Error de conexión'); }
+    finally { pedidoReservaGuardando = false; }
   }
 </script>
 
@@ -599,8 +688,14 @@
                     <td class="p-2 text-right">
                       {#if r.estado === 'pendiente'}
                         <div class="flex gap-1 justify-end">
+                          <button class="text-xs text-brand-600 hover:text-brand-800" onclick={() => abrirPedidoReserva(r)}>Tomar pedido</button>
                           <button class="text-xs text-blue-600 hover:text-blue-800" onclick={() => abrirAsignarReserva(r)}>Asignar mesa</button>
                           <button class="text-xs text-red-600 hover:text-red-800" onclick={() => cambiarEstadoReserva(r.id, 'cancelada')}>Cancelar</button>
+                        </div>
+                      {/if}
+                      {#if r.estado === 'confirmada' && !r.mesa_info}
+                        <div class="flex gap-1 justify-end">
+                          <button class="text-xs text-blue-600 hover:text-blue-800" onclick={() => abrirAsignarReserva(r)}>Asignar mesa</button>
                         </div>
                       {/if}
                     </td>
@@ -854,6 +949,82 @@
           </div>
         {/if}
         <button class="btn-secondary w-full" onclick={() => { showAsignarReservaModal = false }}>Cerrar</button>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Pedido Reserva Modal -->
+  {#if showPedidoReservaModal && pedidoReservaData}
+    <div class="fixed inset-0 z-50 flex items-center justify-center" role="dialog">
+      <div class="absolute inset-0 bg-black/50" onclick={() => { showPedidoReservaModal = false }}></div>
+      <div class="relative bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden z-10 flex flex-col">
+        <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-lg font-bold text-gray-900">Pedido: {pedidoReservaData.nombre_cliente}</h3>
+          <button class="text-gray-400 hover:text-gray-600 text-2xl" onclick={() => { showPedidoReservaModal = false }}>&times;</button>
+        </div>
+        <div class="flex-1 overflow-hidden flex flex-col sm:flex-row">
+          <div class="flex-1 overflow-y-auto p-4">
+            <nav class="flex gap-1.5 overflow-x-auto pb-3 mb-4">
+              {#each pedidoReservaCats as cat (cat.id)}
+                <button class="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors {pedidoReservaActiveCat === cat.id ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" onclick={() => { pedidoReservaActiveCat = cat.id }}>{cat.nombre}</button>
+              {/each}
+            </nav>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {#each pedidoReservaProds.filter((p: any) => p.categoria_id === pedidoReservaActiveCat) as prod (prod.id)}
+                <button class="text-left bg-white rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:shadow-sm transition-all cursor-pointer" onclick={() => pedidoReservaClick(prod)}>
+                  <div class="flex justify-between items-start">
+                    <div class="flex-1 pr-2"><p class="font-semibold text-gray-900 text-sm">{prod.nombre}</p></div>
+                    <span class="text-brand-700 font-bold text-sm whitespace-nowrap">${prod.precio.toLocaleString('es-CL')}</span>
+                  </div>
+                </button>
+              {/each}
+            </div>
+          </div>
+          <div class="w-full sm:w-80 border-t sm:border-t-0 sm:border-l border-gray-200 p-4 bg-gray-50 flex flex-col">
+            <h4 class="font-semibold text-gray-900 mb-3">Pedido</h4>
+            <div class="flex-1 overflow-y-auto space-y-2 mb-3">
+              {#each pedidoReservaCart as item, idx}
+                <div class="bg-white rounded-lg p-2 text-sm flex justify-between items-start">
+                  <div class="flex-1 min-w-0 pr-2">
+                    <p class="font-medium text-gray-800">{item.producto.nombre}</p>
+                    {#if item.acompanamiento && item.acompanamiento !== 'Sin acompañamiento'}<p class="text-xs text-gray-400">{item.acompanamiento}</p>{/if}
+                  </div>
+                  <div class="text-right shrink-0">
+                    <p class="font-semibold">${item.subtotal.toLocaleString('es-CL')}</p>
+                    <button class="text-xs text-red-400 hover:text-red-600" onclick={() => pedidoReservaRemove(idx)}>Quitar</button>
+                  </div>
+                </div>
+              {:else}
+                <p class="text-gray-400 text-sm text-center py-8">Sin productos</p>
+              {/each}
+            </div>
+            <div class="border-t pt-3">
+              <div class="flex justify-between font-bold text-lg mb-3"><span>Total</span><span class="text-brand-700">${pedidoReservaTotal().toLocaleString('es-CL')}</span></div>
+              <button class="btn-primary w-full py-3 disabled:opacity-50" disabled={pedidoReservaCart.length === 0 || pedidoReservaGuardando} onclick={pedidoReservaCrear}>
+                {pedidoReservaGuardando ? 'Creando...' : `Crear Pedido · $${pedidoReservaTotal().toLocaleString('es-CL')}`}
+              </button>
+            </div>
+          </div>
+        </div>
+        {#if pedidoReservaShowAcomp && pedidoReservaAcompProd}
+          <div class="absolute inset-0 bg-black/30 z-20 flex items-center justify-center" onclick={() => { pedidoReservaShowAcomp = false }}>
+            <div class="bg-white rounded-xl p-5 max-w-sm w-full mx-4 shadow-xl" onclick={(e) => e.stopPropagation()}>
+              <h4 class="font-semibold text-gray-900 mb-3">{pedidoReservaAcompProd.nombre} - ${pedidoReservaAcompProd.precio.toLocaleString('es-CL')}</h4>
+              <p class="text-xs text-gray-500 mb-2">Acompañamientos (máx. 2)</p>
+              <div class="space-y-2 mb-4">
+                {#each pedidoReservaGetAcomp(pedidoReservaAcompProd.id) as acomp (acomp.id)}
+                  {@const disabled = pedidoReservaSelectedAcomps.length >= 2 && !pedidoReservaSelectedAcomps.includes(acomp.id)}
+                  <label class="flex items-center gap-2 p-2 rounded-lg border cursor-pointer {pedidoReservaSelectedAcomps.includes(acomp.id) ? 'border-brand-500 bg-brand-50' : 'border-gray-200'} {disabled ? 'opacity-40 pointer-events-none' : ''}">
+                    <input type="checkbox" checked={pedidoReservaSelectedAcomps.includes(acomp.id)} disabled={disabled} onchange={(e) => { if (e.target.checked) pedidoReservaSelectedAcomps = [...pedidoReservaSelectedAcomps, acomp.id]; else pedidoReservaSelectedAcomps = pedidoReservaSelectedAcomps.filter(id => id !== acomp.id); }} />
+                    <span class="flex-1 text-sm">{acomp.nombre}</span>
+                    {#if acomp.recargo > 0}<span class="text-brand-700 font-bold text-sm">+${acomp.recargo.toLocaleString('es-CL')}</span>{/if}
+                  </label>
+                {/each}
+              </div>
+              <button class="btn-primary w-full py-2.5" onclick={pedidoReservaConfirmarAcomp}>Agregar</button>
+            </div>
+          </div>
+        {/if}
       </div>
     </div>
   {/if}
