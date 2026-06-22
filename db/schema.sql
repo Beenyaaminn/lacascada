@@ -5,7 +5,7 @@
 -- Tipos ENUM
 CREATE TYPE rol_usuario AS ENUM ('admin', 'garzon');
 CREATE TYPE estado_mesa AS ENUM ('libre', 'ocupada', 'esperando_pago');
-CREATE TYPE tipo_pedido AS ENUM ('mesa', 'delivery', 'retiro');
+CREATE TYPE tipo_pedido AS ENUM ('mesa', 'delivery', 'retiro', 'reserva');
 CREATE TYPE estado_pedido AS ENUM ('pendiente', 'en_preparacion', 'entregado', 'pagado', 'cancelado');
 CREATE TYPE metodo_pago AS ENUM ('efectivo', 'debito', 'credito', 'a_credito');
 CREATE TYPE estado_reserva AS ENUM ('pendiente', 'entregada', 'cancelada');
