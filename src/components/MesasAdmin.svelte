@@ -414,16 +414,8 @@
       if (resRes.ok && mesaRes.ok) {
         showAsignarReservaModal = false;
         await loadData(true);
-        modalMesa = { ...mesa, estado: 'ocupada', tomada_por: asignarReservaData.nombre_cliente };
-        showModal = true;
-      } else { const d = await resRes.json(); alert(d.error || 'Error'); }
+      } else { const d = await resRes.json(); alert(d.error || 'Error al asignar'); }
     } catch (e) { alert('Error de conexión'); }
-  }
-  function tomarPedidoReserva(r: any) {
-    const libre = mesas.filter(m => m.estado === 'libre').sort((a, b) => a.numero_mesa - b.numero_mesa);
-    if (libre.length === 0) { alert('No hay mesas libres'); return; }
-    modalMesa = libre[0];
-    showModal = true;
   }
 </script>
 
