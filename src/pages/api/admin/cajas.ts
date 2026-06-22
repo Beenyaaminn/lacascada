@@ -30,6 +30,16 @@ export const GET: APIRoute = async ({ request }) => {
         WHERE c.estado = 'abierta'
         ORDER BY c.abierta_desde DESC
       `;
+      for (const c of cajas) {
+        const pagos = await sql`
+          SELECT COALESCE(SUM(total), 0)::int as total_efectivo
+          FROM pedidos
+          WHERE estado = 'pagado'
+            AND metodo_pago = 'efectivo'
+            AND fecha_hora >= ${c.abierta_desde}
+        `;
+        c.efectivo_esperado = (c.efectivo_inicial || 0) + (pagos[0]?.total_efectivo || 0);
+      }
     } else {
       cajas = await sql`
         SELECT c.*, t.tipo_turno, t.abierto_por as turno_abierto_por

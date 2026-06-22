@@ -235,8 +235,16 @@
           {#if selectedPedido.telefono}
             <p class="text-xs text-gray-400">📞 {selectedPedido.telefono}</p>
           {/if}
-        {:else if selectedPedido.mesa_numero}
+          {:else if selectedPedido.mesa_numero}
           <p class="text-xs text-gray-500 mt-1">🍽️ Piso {selectedPedido.mesa_piso} - Mesa {selectedPedido.mesa_numero}</p>
+        {/if}
+        {#if selectedPedido.detalles && selectedPedido.detalles.length > 0}
+          <div class="border-t border-gray-200 mt-2 pt-2">
+            <p class="text-xs font-semibold text-gray-600 mb-1">Productos:</p>
+            {#each selectedPedido.detalles as d}
+              <p class="text-xs text-gray-700">{d.cantidad}x {d.producto_nombre || '#' + d.producto_id} {#if d.acompanamiento && d.acompanamiento !== 'Sin acompañamiento'}<span class="text-gray-400">({d.acompanamiento})</span>{/if} — ${(d.subtotal || 0).toLocaleString('es-CL')}</p>
+            {/each}
+          </div>
         {/if}
       </div>
       <div class="mb-4">

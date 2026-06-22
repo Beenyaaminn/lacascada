@@ -22,6 +22,7 @@
 
   let showCobroDelivery: boolean = $state(false);
   let cobroDeliveryPedido: any | null = $state(null);
+  let cobroDeliveryDetalles: any[] = $state([]);
   let metodoPagoDelivery: string = $state('efectivo');
   let efectivoConCuantoDelivery: number = $state(0);
   let cobrandoDelivery: boolean = $state(false);
@@ -228,11 +229,17 @@
     loadData(true);
   }
 
-  function cobrarDelivery(pedido: any) {
+  async function cobrarDelivery(pedido: any) {
     cobroDeliveryPedido = pedido;
+    cobroDeliveryDetalles = [];
     metodoPagoDelivery = 'efectivo';
     efectivoConCuantoDelivery = pedido.total || 0;
     showCobroDelivery = true;
+    try {
+      const res = await fetch(`/api/admin/pedidos/${pedido.id}/detalles`);
+      const data = await res.json();
+      cobroDeliveryDetalles = data.detalles || [];
+    } catch (e) { /* fallback */ }
   }
 
   async function procesarCobroDelivery() {
@@ -515,6 +522,14 @@
           <p class="text-xs text-gray-500 mt-1">🛵 {cobroDeliveryPedido.nombre_cliente || 'Delivery'}</p>
           {#if cobroDeliveryPedido.direccion}
             <p class="text-xs text-gray-400">📍 {cobroDeliveryPedido.direccion}</p>
+          {/if}
+          {#if cobroDeliveryDetalles.length > 0}
+            <div class="border-t border-gray-200 mt-2 pt-2">
+              <p class="text-xs font-semibold text-gray-600 mb-1">Productos:</p>
+              {#each cobroDeliveryDetalles as d}
+                <p class="text-xs text-gray-700">{d.cantidad}x {d.producto_nombre || '#' + d.producto_id} {#if d.acompanamiento && d.acompanamiento !== 'Sin acompañamiento'}<span class="text-gray-400">({d.acompanamiento})</span>{/if} — ${(d.subtotal || 0).toLocaleString('es-CL')}</p>
+              {/each}
+            </div>
           {/if}
         </div>
         <div class="mb-4">

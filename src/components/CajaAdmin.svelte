@@ -110,6 +110,13 @@
         </div>
       </div>
 
+      {#if cajaActiva.efectivo_esperado != null}
+        <div class="bg-green-50 rounded-lg p-3 border border-green-200">
+          <p class="text-xs text-green-700 font-medium">Efectivo esperado (inicial + pagos en efectivo)</p>
+          <p class="text-xl font-bold text-green-800">{formatCLP(cajaActiva.efectivo_esperado)}</p>
+        </div>
+      {/if}
+
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-1.5">Efectivo Final</label>
         <div class="flex items-center gap-2">
