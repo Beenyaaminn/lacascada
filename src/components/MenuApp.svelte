@@ -145,9 +145,14 @@
   function prepararAddToCart() { confirmStep = true; }
   function addToCart() {
     if (!selectedProduct) return;
-    let precio = selectedProduct.precio; const names: string[] = [];
-    for (const id of selectedAcomps) { const a = acompanamientos.find(x => x.id === id); if (a) { precio += a.recargo; names.push(a.nombre); } }
-    cartItems = [...cartItems, { id: generateId(), producto: selectedProduct, cantidad: 1, baseAcomp: names.join(', ') || null, extras: [], precioTotal: precio }];
+    const tieneAcomp = getAcompForProducto(selectedProduct.id).length > 0;
+    if (tieneAcomp) {
+      let precio = selectedProduct.precio; const names: string[] = [];
+      for (const id of selectedAcomps) { const a = acompanamientos.find(x => x.id === id); if (a) { precio += a.recargo; names.push(a.nombre); } }
+      cartItems = [...cartItems, { id: generateId(), producto: selectedProduct, cantidad: 1, baseAcomp: names.join(', ') || null, extras: [], precioTotal: precio }];
+    } else {
+      cartItems = [...cartItems, { id: generateId(), producto: selectedProduct, cantidad: 1, baseAcomp: null, extras: [], precioTotal: selectedProduct.precio }];
+    }
     closeAcompModal(); showCart = true;
   }
 
@@ -155,8 +160,7 @@
   function getCartTotal() { return cartItems.reduce((s, i) => s + i.precioTotal * i.cantidad, 0); }
 
   function handleProductClick(p: Producto) {
-    if (getAcompForProducto(p.id).length > 0) openAcompModal(p);
-    else { cartItems = [...cartItems, { id: generateId(), producto: p, cantidad: 1, baseAcomp: null, extras: [], precioTotal: p.precio }]; showCart = true; }
+    openAcompModal(p);
   }
 
   async function submitOrder() {

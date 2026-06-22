@@ -28,11 +28,10 @@
   function getCostoEnvio() { return modo === 'delivery' ? (costoZonas[zona] || 0) : 0; }
   function getTotal() { return getSubtotalProductos() + getCostoEnvio(); }
 
-  function clickProducto(p: Producto) { selectedProduct = p; selectedAcomps = []; confirmStep = false; if (getAcomps(p.id).length > 0) showAcompModal = true; else addSimple(); }
+  function clickProducto(p: Producto) { selectedProduct = p; selectedAcomps = []; confirmStep = false; showAcompModal = true; }
   function closeModal() { showAcompModal = false; selectedProduct = null; confirmStep = false; }
-  function addSimple() { if (!selectedProduct) return; cart = [...cart, { id: crypto.randomUUID?.() ?? Math.random().toString(36).substring(2), producto: selectedProduct, cantidad: 1, acompanamiento: 'Sin acompañamiento', subtotal: selectedProduct.precio }]; closeModal(); }
   function prepararAddToCart() { confirmStep = true; }
-  function confirmarYAgregar() { if (!selectedProduct) return; let ep = 0; const names: string[] = []; for (const id of selectedAcomps) { const a = acompanamientos.find(x => x.id === id); if (a) { ep += a.recargo; names.push(a.nombre); } } const name = names.length > 0 ? names.join(' + ') : 'Sin acompañamiento'; cart = [...cart, { id: crypto.randomUUID?.() ?? Math.random().toString(36).substring(2), producto: selectedProduct, cantidad: 1, acompanamiento: name, subtotal: selectedProduct.precio + ep }]; closeModal(); }
+  function confirmarYAgregar() { if (!selectedProduct) return; const tieneAcomp = getAcomps(selectedProduct.id).length > 0; if (tieneAcomp) { let ep = 0; const names: string[] = []; for (const id of selectedAcomps) { const a = acompanamientos.find(x => x.id === id); if (a) { ep += a.recargo; names.push(a.nombre); } } const name = names.length > 0 ? names.join(' + ') : 'Sin acompañamiento'; cart = [...cart, { id: crypto.randomUUID?.() ?? Math.random().toString(36).substring(2), producto: selectedProduct, cantidad: 1, acompanamiento: name, subtotal: selectedProduct.precio + ep }]; } else { cart = [...cart, { id: crypto.randomUUID?.() ?? Math.random().toString(36).substring(2), producto: selectedProduct, cantidad: 1, acompanamiento: 'Sin acompañamiento', subtotal: selectedProduct.precio }]; } closeModal(); }
   function remove(id: string) { cart = cart.filter(i => i.id !== id); }
   function goCheckout() { if (cart.length === 0) return; step = 'datos'; efectivoConCuanto = getTotal(); }
   function back() { step = 'menu'; }
