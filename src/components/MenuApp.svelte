@@ -27,6 +27,7 @@
   let showAcompModal: boolean = $state(false);
   let selectedProduct: Producto | null = $state(null);
   let selectedAcomps: number[] = $state([]);
+  let confirmStep: boolean = $state(false);
   let showSuccess: boolean = $state(false);
   let orderError: string = $state('');
   let nombreComensal: string = $state('');
@@ -138,9 +139,10 @@
 
   async function actualizarMenu() { if (actualizandoMenu) return; actualizandoMenu = true; try { const mr = await fetch('/api/menu?_t=' + Date.now()); const md = await mr.json(); categorias = md.categorias || []; productos = md.productos || []; acompanamientos = md.acompanamientos || []; productosAcomp = md.productos_acompanamientos || []; } catch {} finally { actualizandoMenu = false; } }
 
-  function openAcompModal(p: Producto) { selectedProduct = p; selectedAcomps = []; showAcompModal = true; }
-  function closeAcompModal() { showAcompModal = false; selectedProduct = null; selectedAcomps = []; }
+  function openAcompModal(p: Producto) { selectedProduct = p; selectedAcomps = []; confirmStep = false; showAcompModal = true; }
+  function closeAcompModal() { showAcompModal = false; selectedProduct = null; selectedAcomps = []; confirmStep = false; }
 
+  function prepararAddToCart() { confirmStep = true; }
   function addToCart() {
     if (!selectedProduct) return;
     let precio = selectedProduct.precio; const names: string[] = [];
@@ -352,7 +354,17 @@
         </div>
       {/if}
 
-      <button class="w-full py-3.5 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#c9a227;" onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#b8922a'; }} onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#c9a227'; }} onclick={addToCart}>Agregar al pedido</button>
+      {#if confirmStep}
+        <div class="text-center">
+          <p class="text-sm font-medium text-gray-700 mb-3">Agregar {selectedProduct?.nombre} al carro?</p>
+          <div class="flex gap-3">
+            <button class="flex-1 py-3 rounded-xl border-2 border-gray-300 text-gray-600 font-semibold transition-all text-base" onclick={() => { confirmStep = false }}>No, cancelar</button>
+            <button class="flex-1 py-3 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#c9a227;" onclick={addToCart}>Si, agregar</button>
+          </div>
+        </div>
+      {:else}
+        <button class="w-full py-3.5 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#c9a227;" onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#b8922a'; }} onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#c9a227'; }} onclick={prepararAddToCart}>Agregar al pedido</button>
+      {/if}
     </div>
   </div>
 {/if}

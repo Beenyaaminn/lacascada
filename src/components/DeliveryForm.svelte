@@ -11,6 +11,7 @@
   let pedidoId: number | null = $state(null); let vuelto: number = $state(0);
   let showAcompModal: boolean = $state(false); let selectedProduct: Producto | null = $state(null);
   let selectedAcomps: number[] = $state([]);
+  let confirmStep: boolean = $state(false);
 
   let categorias = $state.raw(menuData?.categorias || []); let productos = $state.raw(menuData?.productos || []);
   let acompanamientos = $state.raw(menuData?.acompanamientos || []); let productosAcomp = $state.raw(menuData?.productos_acompanamientos || []);
@@ -27,10 +28,11 @@
   function getCostoEnvio() { return modo === 'delivery' ? (costoZonas[zona] || 0) : 0; }
   function getTotal() { return getSubtotalProductos() + getCostoEnvio(); }
 
-  function clickProducto(p: Producto) { selectedProduct = p; selectedAcomps = []; if (getAcomps(p.id).length > 0) showAcompModal = true; else addSimple(); }
-  function closeModal() { showAcompModal = false; selectedProduct = null; }
+  function clickProducto(p: Producto) { selectedProduct = p; selectedAcomps = []; confirmStep = false; if (getAcomps(p.id).length > 0) showAcompModal = true; else addSimple(); }
+  function closeModal() { showAcompModal = false; selectedProduct = null; confirmStep = false; }
   function addSimple() { if (!selectedProduct) return; cart = [...cart, { id: crypto.randomUUID?.() ?? Math.random().toString(36).substring(2), producto: selectedProduct, cantidad: 1, acompanamiento: 'Sin acompañamiento', subtotal: selectedProduct.precio }]; closeModal(); }
-  function addToCart() { if (!selectedProduct) return; let ep = 0; const names: string[] = []; for (const id of selectedAcomps) { const a = acompanamientos.find(x => x.id === id); if (a) { ep += a.recargo; names.push(a.nombre); } } const name = names.length > 0 ? names.join(' + ') : 'Sin acompañamiento'; cart = [...cart, { id: crypto.randomUUID?.() ?? Math.random().toString(36).substring(2), producto: selectedProduct, cantidad: 1, acompanamiento: name, subtotal: selectedProduct.precio + ep }]; closeModal(); }
+  function prepararAddToCart() { confirmStep = true; }
+  function confirmarYAgregar() { if (!selectedProduct) return; let ep = 0; const names: string[] = []; for (const id of selectedAcomps) { const a = acompanamientos.find(x => x.id === id); if (a) { ep += a.recargo; names.push(a.nombre); } } const name = names.length > 0 ? names.join(' + ') : 'Sin acompañamiento'; cart = [...cart, { id: crypto.randomUUID?.() ?? Math.random().toString(36).substring(2), producto: selectedProduct, cantidad: 1, acompanamiento: name, subtotal: selectedProduct.precio + ep }]; closeModal(); }
   function remove(id: string) { cart = cart.filter(i => i.id !== id); }
   function goCheckout() { if (cart.length === 0) return; step = 'datos'; efectivoConCuanto = getTotal(); }
   function back() { step = 'menu'; }
@@ -248,7 +250,17 @@
           </div>
         </div>
       {/if}
-      <button class="w-full py-3.5 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#c9a227;" onclick={addToCart}>Agregar al pedido</button>
+      {#if confirmStep}
+        <div class="text-center">
+          <p class="text-sm font-medium text-gray-700 mb-3">Agregar {selectedProduct?.nombre} al carro?</p>
+          <div class="flex gap-3">
+            <button class="flex-1 py-3 rounded-xl border-2 border-gray-300 text-gray-600 font-semibold transition-all text-base" onclick={() => { confirmStep = false }}>No, cancelar</button>
+            <button class="flex-1 py-3 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#c9a227;" onclick={confirmarYAgregar}>Si, agregar</button>
+          </div>
+        </div>
+      {:else}
+        <button class="w-full py-3.5 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#c9a227;" onclick={prepararAddToCart}>Agregar al pedido</button>
+      {/if}
     </div>
   </div>
 {/if}
