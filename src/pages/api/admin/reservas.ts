@@ -17,13 +17,18 @@ export const GET: APIRoute = async ({ request }) => {
 
   try {
     const reservas = await sql`
-      SELECT r.*, p.nombre as producto_nombre
+      SELECT r.*, m.numero_mesa, m.piso
       FROM reservas_platos r
-      JOIN productos p ON p.id = r.producto_id
-      ORDER BY r.fecha DESC, r.created_at DESC
+      LEFT JOIN mesas m ON (r as any).mesa_id::int = m.id
+      ORDER BY r.fecha DESC, r.hora ASC NULLS LAST
     `;
 
-    return new Response(JSON.stringify({ reservas }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const result = reservas.map(r => ({
+      ...r,
+      mesa_info: r.numero_mesa ? `P${r.piso} M${r.numero_mesa}` : null,
+    }));
+
+    return new Response(JSON.stringify({ reservas: result }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error GET reservas:', error);
     return new Response(JSON.stringify({ error: 'Error al cargar reservas' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
@@ -36,19 +41,17 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
-    const { nombre_cliente, producto_id, cantidad, fecha, hora } = await request.json();
+    const { nombre_cliente, comensales, fecha, hora } = await request.json();
 
-    if (!nombre_cliente || !producto_id || !cantidad) {
-      return new Response(JSON.stringify({ error: 'Todos los campos son requeridos' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    if (!nombre_cliente) {
+      return new Response(JSON.stringify({ error: 'El nombre del cliente es requerido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    if (typeof cantidad !== 'number' || cantidad < 1 || cantidad > 99) {
-      return new Response(JSON.stringify({ error: 'Cantidad inválida (1-99)' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    }
+    const cant = typeof comensales === 'number' && comensales >= 1 ? comensales : 1;
 
     const result = await sql`
-      INSERT INTO reservas_platos (nombre_cliente, producto_id, cantidad, fecha, hora)
-      VALUES (${nombre_cliente}, ${producto_id}, ${cantidad}, ${fecha || new Date().toISOString().split('T')[0]}, ${hora || null}::time)
+      INSERT INTO reservas_platos (nombre_cliente, producto_id, cantidad, fecha, hora, estado)
+      VALUES (${nombre_cliente}, NULL, ${cant}, ${fecha || new Date().toISOString().split('T')[0]}, ${hora || null}::time, 'pendiente')
       RETURNING *
     `;
 
@@ -64,14 +67,21 @@ export const PUT: APIRoute = async ({ request }) => {
   }
 
   try {
-    const { id, estado } = await request.json();
-    const validStates = ['pendiente', 'entregada', 'cancelada'];
+    const { id, estado, mesa_id } = await request.json();
+    const validStates = ['pendiente', 'confirmada', 'cancelada'];
     if (!validStates.includes(estado)) {
       return new Response(JSON.stringify({ error: 'Estado inválido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
-    const result = await sql`
-      UPDATE reservas_platos SET estado = ${estado}::estado_reserva WHERE id = ${id} RETURNING *
-    `;
+    let result;
+    if (mesa_id) {
+      result = await sql`
+        UPDATE reservas_platos SET estado = ${estado}::estado_reserva, mesa_id = ${mesa_id} WHERE id = ${id} RETURNING *
+      `;
+    } else {
+      result = await sql`
+        UPDATE reservas_platos SET estado = ${estado}::estado_reserva WHERE id = ${id} RETURNING *
+      `;
+    }
     return new Response(JSON.stringify({ reserva: result[0] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Error al actualizar' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
