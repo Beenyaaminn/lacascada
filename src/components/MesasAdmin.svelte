@@ -57,10 +57,11 @@
     operationInFlight = true;
     updating = true;
     try {
-      const [mesasRes, reservasRes, deliveryRes] = await Promise.all([
+      const [mesasRes, reservasRes, deliveryRes, retiroRes] = await Promise.all([
         fetch('/api/admin/mesas?_t=' + Date.now(), { cache: 'no-store' }),
         fetch('/api/admin/reservas?_t=' + Date.now(), { cache: 'no-store' }),
         fetch('/api/admin/pedidos?tipo=delivery&_t=' + Date.now(), { cache: 'no-store' }),
+        fetch('/api/admin/pedidos?tipo=retiro&_t=' + Date.now(), { cache: 'no-store' }),
       ]);
       const mesasData = await mesasRes.json();
       mesas = mesasData.mesas || [];
@@ -82,7 +83,8 @@
       const reservasData = await reservasRes.json();
       reservas = reservasData.reservas || [];
       const deliveryData = await deliveryRes.json();
-      deliveryOrders = deliveryData.pedidos || [];
+      const retiroData = await retiroRes.json();
+      deliveryOrders = [...(deliveryData.pedidos || []), ...(retiroData.pedidos || [])];
       lastUpdate = new Date();
     } catch (e) {
       console.error('Error cargando datos:', e);
