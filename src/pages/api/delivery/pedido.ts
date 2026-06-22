@@ -23,6 +23,7 @@ export const POST: APIRoute = async ({ request }) => {
     } = await request.json();
 
     const esRetiro = tipo === 'retiro';
+    const esReserva = tipo === 'reserva';
 
     if (!nombre || !telefono) {
       return new Response(JSON.stringify({ error: 'Nombre y teléfono son obligatorios' }), {
@@ -87,8 +88,8 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const efConCuanto = metodo_pago === 'efectivo' ? (efectivo_con_cuanto || 0) : 0;
-    const dirFinal = esRetiro ? 'Retiro en local' : (zona ? `[${zona}] ${direccion}` : direccion);
-    const tipoPedido = esRetiro ? 'retiro' : 'delivery';
+    const dirFinal = esReserva ? direccion : (esRetiro ? 'Retiro en local' : (zona ? `[${zona}] ${direccion}` : direccion));
+    const tipoPedido = esReserva ? 'reserva' : (esRetiro ? 'retiro' : 'delivery');
     const zonaInfo = zona || '';
 
     const result = await sql.begin(async (tx) => {
