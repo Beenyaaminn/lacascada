@@ -92,7 +92,7 @@
       if (mesa.estado !== 'libre') {
         const pedidosMesa = (pData.pedidos || []).filter((p: any) =>
           p.mesa_id === mesa.id &&
-          p.tipo_pedido === 'mesa' &&
+          (p.tipo_pedido === 'mesa' || p.tipo_pedido === 'reserva') &&
           p.estado !== 'pagado' &&
           p.estado !== 'cancelado'
         );

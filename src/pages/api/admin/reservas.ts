@@ -77,6 +77,13 @@ export const PUT: APIRoute = async ({ request }) => {
       result = await sql`
         UPDATE reservas_platos SET estado = ${estado}::estado_reserva, mesa_id = ${mesa_id} WHERE id = ${id} RETURNING *
       `;
+      if (result.length > 0) {
+        const nombre = result[0].nombre_cliente;
+        await sql`
+          UPDATE pedidos SET mesa_id = ${mesa_id}
+          WHERE tipo_pedido = 'reserva' AND nombre_cliente = ${nombre} AND mesa_id IS NULL
+        `;
+      }
     } else {
       result = await sql`
         UPDATE reservas_platos SET estado = ${estado}::estado_reserva WHERE id = ${id} RETURNING *
