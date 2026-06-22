@@ -19,7 +19,7 @@ export const GET: APIRoute = async ({ request }) => {
     const reservas = await sql`
       SELECT r.*, m.numero_mesa, m.piso
       FROM reservas_platos r
-      LEFT JOIN mesas m ON (r as any).mesa_id::int = m.id
+      LEFT JOIN mesas m ON r.mesa_id = m.id
       ORDER BY r.fecha DESC, r.hora ASC NULLS LAST
     `;
 
