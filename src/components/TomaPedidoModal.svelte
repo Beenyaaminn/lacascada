@@ -467,6 +467,28 @@
       subtotalGeneral += v.total;
     }
 
+    function getAcompRecargo(name: string): number {
+      return acompanamientos.find(a => a.nombre === name)?.recargo || 0;
+    }
+
+    function buildDetalleHTML(): string {
+      let html = '';
+      for (const d of todosLosItems) {
+        const acompNames = d.acompanamiento ? d.acompanamiento.split(',').map((n: string) => n.trim()).filter(Boolean) : [];
+        const acompConRecargo = acompNames.filter((n: string) => getAcompRecargo(n) > 0);
+        const acompSinRecargo = acompNames.filter((n: string) => getAcompRecargo(n) === 0);
+        const baseSubtotal = d.subtotal - acompConRecargo.reduce((s: number, n: string) => s + getAcompRecargo(n) * (d.cantidad || 1), 0);
+        html += `<div class="line"><span>${d.cantidad}x ${esc(d.nombre)}</span><span>$${baseSubtotal.toLocaleString('es-CL')}</span></div>`;
+        for (const n of acompConRecargo) {
+          html += `<div class="line" style="font-size:9px;padding-left:8px;"><span>+ ${esc(n)}</span><span>$${(getAcompRecargo(n) * (d.cantidad || 1)).toLocaleString('es-CL')}</span></div>`;
+        }
+        for (const n of acompSinRecargo) {
+          html += `<div class="line" style="font-size:9px;padding-left:8px;color:#666;"><span>+ ${esc(n)}</span><span>—</span></div>`;
+        }
+      }
+      return html;
+    }
+
     const propMonto = propTipo === 'porcentaje' ? Math.round(subtotalGeneral * propAplicada / 100) : propAplicada;
     const totalFinal = Math.max(0, subtotalGeneral - descAplicado + propMonto);
     const vuelto = Math.max(0, montoPag - totalFinal);
@@ -499,7 +521,7 @@
   <div class="line"><span>Comensales:</span><span>${comensales}</span></div>
   <div class="divider"></div>
   <div style="font-size:9px;margin-bottom:3px">DETALLE:</div>
-  ${todosLosItems.map((d: any) => `<div class="line"><span>${d.cantidad}x ${esc(d.nombre)}</span><span>$${d.subtotal.toLocaleString('es-CL')}</span></div>`).join('')}
+  ${buildDetalleHTML()}
   <div class="divider"></div>
   <div class="line"><span>Subtotal:</span><span>$${subtotalGeneral.toLocaleString('es-CL')}</span></div>
   ${descAplicado > 0 ? `<div class="line"><span>Descuento:</span><span>-$${descAplicado.toLocaleString('es-CL')}</span></div>` : ''}

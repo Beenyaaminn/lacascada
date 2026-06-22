@@ -26,6 +26,7 @@ if (pedidoId > 0) {
         FROM detalle_pedidos dp JOIN productos pr ON pr.id = dp.producto_id
         WHERE dp.pedido_id = ${pedidoId}
       `;
+      const acompData = await sql`SELECT * FROM acompanamientos`;
       const p = pedido[0];
       let mesaInfo;
       if (p.tipo_pedido === 'delivery') {
@@ -46,12 +47,28 @@ if (pedidoId > 0) {
         direccion: p.direccion || '',
         telefono: p.telefono || '',
         efectivoConCuanto: p.efectivo_con_cuanto || 0,
-        detalles: detalles.map((d: any) => ({
-          cantidad: d.cantidad,
-          nombre: d.producto_nombre,
-          acompanamiento: d.acompanamiento,
-          subtotal: d.subtotal,
-        })),
+        detalles: detalles.map((d: any) => {
+          const acompNames = d.acompanamiento ? d.acompanamiento.split(',').map((n: string) => n.trim()).filter(Boolean) : [];
+          const conRecargo: { nombre: string; recargo: number }[] = [];
+          const sinRecargo: string[] = [];
+          for (const name of acompNames) {
+            const found = acompData.find((a: any) => a.nombre === name);
+            if (found && found.recargo > 0) {
+              conRecargo.push({ nombre: name, recargo: found.recargo * (d.cantidad || 1) });
+            } else {
+              sinRecargo.push(name);
+            }
+          }
+          const extrasTotal = conRecargo.reduce((s, a) => s + a.recargo, 0);
+          return {
+            cantidad: d.cantidad,
+            nombre: d.producto_nombre,
+            subtotal: d.subtotal,
+            baseSubtotal: (d.subtotal || 0) - extrasTotal,
+            conRecargo,
+            sinRecargo,
+          };
+        }),
       };
     }
   } catch (e) {
@@ -97,8 +114,13 @@ const p = voucherData;
           <div class="space-y-1 mb-3">
             {p.detalles.map((d: any) => (
               <div>
-                <p>{d.cantidad}x {d.nombre} <span class="float-right">${parseInt(d.subtotal).toLocaleString('es-CL')}</span></p>
-                {d.acompanamiento && <p class="text-gray-500 ml-4">[{d.acompanamiento}]</p>}
+                <p>{d.cantidad}x {d.nombre} <span class="float-right">${d.baseSubtotal?.toLocaleString('es-CL') || '0'}</span></p>
+                {d.conRecargo?.map((a: any) => (
+                  <p class="text-gray-500 ml-4 text-xs">+ {a.nombre} <span class="float-right">${a.recargo?.toLocaleString('es-CL') || '0'}</span></p>
+                ))}
+                {d.sinRecargo?.map((n: string) => (
+                  <p class="text-gray-400 ml-4 text-xs">+ {n}</p>
+                ))}
               </div>
             ))}
           </div>
