@@ -130,8 +130,14 @@
             <h3 class="font-semibold text-[#1a1410] mb-3 text-sm uppercase tracking-wider">Resumen</h3>
             <div class="space-y-2 mb-3">
               {#each cart as item (item.id)}
-                <div class="flex justify-between text-sm"><span class="text-[#2d2418]">{item.cantidad}x {item.producto.nombre}</span><span class="font-semibold text-[#1a1410]">{formatCLP(item.subtotal)}</span></div>
-                {#if item.acompanamiento && item.acompanamiento !== 'Sin acompañamiento'}<p class="text-xs opacity-50 ml-4">+ {item.acompanamiento}</p>{/if}
+                <div class="flex justify-between items-center text-sm">
+                  <div class="flex-1 min-w-0">
+                    <span class="text-[#2d2418]">{item.cantidad}x {item.producto.nombre}</span>
+                    {#if item.acompanamiento && item.acompanamiento !== 'Sin acompañamiento'}<p class="text-xs opacity-50">+ {item.acompanamiento}</p>{/if}
+                  </div>
+                  <span class="font-semibold text-[#1a1410] shrink-0 mr-2">{formatCLP(item.subtotal)}</span>
+                  <button class="text-red-400 hover:text-red-600 text-lg leading-none px-1" onclick={() => remove(item.id)} title="Eliminar">&times;</button>
+                </div>
               {/each}
             </div>
             <div class="border-t pt-3 flex justify-between items-center" style="border-color:#e8e0d0;"><span class="font-bold text-[#1a1410]">Total</span><span class="text-xl font-bold" style="color:#c9a227;">{formatCLP(getTotal())}</span></div>
