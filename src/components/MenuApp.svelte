@@ -178,7 +178,7 @@
     }
     msg += `%0A*TOTAL:* ${formatCLP(getCartTotal())}%0A`;
 
-    window.open(`https://wa.me/56966937327?text=${msg}`, '_blank');
+    window.open(`https://wa.me/56983329958?text=${msg}`, '_blank');
     cartItems = []; showCart = false; showSuccess = true; pedidoRealizado = true; setTimeout(() => { showSuccess = false; }, 5000);
   }
 

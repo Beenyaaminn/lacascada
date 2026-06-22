@@ -62,7 +62,7 @@
     msg += `*TOTAL:* ${formatCLP(getTotal())}%0A`;
     if (metodoPago === 'efectivo' && efectivoConCuanto > getTotal()) msg += `*Vuelto:* ${formatCLP(efectivoConCuanto - getTotal())}%0A`;
 
-    window.open(`https://wa.me/56966937327?text=${msg}`, '_blank');
+    window.open(`https://wa.me/56983329958?text=${msg}`, '_blank');
     orderSuccess = true; pedidoId = null; vuelto = 0; step = 'exito';
   }
 
