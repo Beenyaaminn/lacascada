@@ -153,7 +153,7 @@
     } else {
       cartItems = [...cartItems, { id: generateId(), producto: selectedProduct, cantidad: 1, baseAcomp: null, extras: [], precioTotal: selectedProduct.precio }];
     }
-    closeAcompModal(); showCart = true;
+    closeAcompModal();
   }
 
   function removeFromCart(id: string) { cartItems = cartItems.filter(i => i.id !== id); }
