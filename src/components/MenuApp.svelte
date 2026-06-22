@@ -165,9 +165,6 @@
 
   async function submitOrder() {
     if (cartItems.length === 0) return; orderError = '';
-    try {
-      await fetch('/api/mesas/ocupar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ piso, mesa_numero: mesa }) });
-    } catch { /* no crítico */ }
 
     let msg = `*La Cascada - Pedido en Mesa*%0A🍽️ *Autoatención* - Piso ${piso} Mesa ${mesa}%0A%0A`;
     if (nombreComensal.trim()) msg += `*Cliente:* ${nombreComensal.trim()}%0A%0A`;
