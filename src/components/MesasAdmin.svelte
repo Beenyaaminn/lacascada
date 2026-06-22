@@ -406,10 +406,6 @@
         body: JSON.stringify({ id: asignarReservaData.id, estado: 'confirmada', mesa_id: mesa.id }),
       });
       if (res.ok) {
-        await fetch('/api/admin/mesas', {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: mesa.id, estado: 'ocupada', tomada_por: asignarReservaData.nombre_cliente }),
-        });
         showAsignarReservaModal = false;
         loadData(true);
       } else { const d = await res.json(); alert(d.error || 'Error'); }
