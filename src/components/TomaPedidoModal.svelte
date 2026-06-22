@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { Mesa, Categoria, Producto } from '../lib/types';
+  import type { Mesa, Categoria, Producto, Acompanamiento, ProductoAcompanamiento } from '../lib/types';
   import { GRUPOS_MENU, METODOS_PAGO, MAX_CANTIDAD_POR_PRODUCTO } from '../lib/constants';
 
   function generateId(): string {
@@ -27,6 +27,8 @@
   let garzones: any[] = $state([]);
   let categorias: Categoria[] = $state([]);
   let productos: Producto[] = $state([]);
+  let acompanamientos: Acompanamiento[] = $state([]);
+  let productosAcomp: ProductoAcompanamiento[] = $state([]);
   let comensalesList: ComensalOrden[] = $state([]);
   let activeGrupo: string = $state('colaciones');
   let activeComensal: number = $state(0);
@@ -39,11 +41,16 @@
   let pedidosInfo: PedidoInfo[] = $state([]);
   let pagoComensalIdx: number = $state(-1);
   let itemsOriginalesIds: Set<string> = new Set();
+  let showAcompModal: boolean = $state(false);
+  let acompProducto: Producto | null = $state(null);
+  let selectedAcomps: number[] = $state([]);
+  let acompNombre: string = $state('');
 
   interface OrdenItem {
     id: string;
     producto: Producto;
     cantidad: number;
+    acompanamiento: string | null;
   }
 
   interface ComensalOrden {
@@ -79,6 +86,8 @@
       garzones = gData.garzones || [];
       categorias = mData.categorias || [];
       productos = mData.productos || [];
+      acompanamientos = mData.acompanamientos || [];
+      productosAcomp = mData.productos_acompanamientos || [];
 
       if (mesa.estado !== 'libre') {
         const pedidosMesa = (pData.pedidos || []).filter((p: any) =>
@@ -115,6 +124,7 @@
                   updated_at: '',
                 } as any,
                 cantidad: d.cantidad,
+                acompanamiento: d.acompanamiento || null,
               };
             });
             return { id: i + 1, label: `Pedido #${p.id}`, items };
@@ -145,12 +155,50 @@
     return productos.filter(p => catIds.includes(p.categoria_id));
   }
 
+  function getAcompForProducto(id: number): Acompanamiento[] {
+    const ids = productosAcomp.filter(pa => pa.producto_id === id).map(pa => pa.acompanamiento_id);
+    return acompanamientos.filter(a => ids.includes(a.id));
+  }
+
+  function openAcompModal(prod: Producto) {
+    acompProducto = prod;
+    selectedAcomps = [];
+    acompNombre = '';
+    showAcompModal = true;
+  }
+
+  function closeAcompModal() {
+    showAcompModal = false;
+    acompProducto = null;
+    selectedAcomps = [];
+  }
+
+  function confirmarAcomp() {
+    if (!acompProducto) return;
+    const names: string[] = [];
+    for (const id of selectedAcomps) {
+      const a = acompanamientos.find(x => x.id === id);
+      if (a) names.push(a.nombre);
+    }
+    acompNombre = names.length > 0 ? names.join(', ') : 'Sin acompañamiento';
+    addProductoWithAcomp(acompProducto, acompNombre);
+    closeAcompModal();
+  }
+
   function getActiveItems(): OrdenItem[] {
     const c = comensalesList[activeComensal];
     return c ? c.items : [];
   }
 
   function addProducto(prod: Producto) {
+    if (getAcompForProducto(prod.id).length > 0) {
+      openAcompModal(prod);
+      return;
+    }
+    addProductoWithAcomp(prod, null);
+  }
+
+  function addProductoWithAcomp(prod: Producto, acomp: string | null) {
     const comensal = comensalesList[activeComensal];
     if (!comensal) return;
     const existing = comensal.items.find(i => i.producto.id === prod.id);
@@ -158,7 +206,7 @@
       if (existing.cantidad >= MAX_CANTIDAD_POR_PRODUCTO) return;
       comensal.items = comensal.items.map(i => i.id === existing.id ? { ...i, cantidad: i.cantidad + 1 } : i);
     } else {
-      comensal.items = [...comensal.items, { id: generateId(), producto: prod, cantidad: 1 }];
+      comensal.items = [...comensal.items, { id: generateId(), producto: prod, cantidad: 1, acompanamiento: acomp }];
     }
     comensalesList = [...comensalesList];
   }
@@ -293,7 +341,7 @@
               items: itemsNuevos.map(i => ({
                 producto_id: i.producto.id,
                 cantidad: i.cantidad,
-                acompanamiento: null,
+                acompanamiento: i.acompanamiento || null,
                 subtotal: i.producto.precio * i.cantidad,
               })),
               total: itemsNuevos.reduce((s, i) => s + i.producto.precio * i.cantidad, 0),
@@ -595,6 +643,9 @@
                     <div class="flex-1 pr-2">
                       <p class="font-semibold text-gray-900 text-sm">{prod.nombre}</p>
                       {#if prod.ingredientes}<p class="text-xs text-gray-400 mt-0.5 line-clamp-2">{prod.ingredientes}</p>{/if}
+                      {#if prod.maneja_stock && prod.stock_actual <= 5}
+                        <p class="text-xs mt-1 font-medium {prod.stock_actual === 0 ? 'text-red-500' : 'text-amber-600'}">{prod.stock_actual === 0 ? 'Agotado' : `Solo ${prod.stock_actual} disp.`}</p>
+                      {/if}
                     </div>
                     <span class="text-brand-700 font-bold text-sm whitespace-nowrap">{formatCLP(prod.precio)}</span>
                   </div>
@@ -620,6 +671,9 @@
                     <div class="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
                       <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-gray-900 truncate">{item.producto.nombre}</p>
+                        {#if item.acompanamiento && item.acompanamiento !== 'Sin acompañamiento'}
+                          <p class="text-xs text-gray-400">{item.acompanamiento}</p>
+                        {/if}
                         <div class="flex items-center gap-2 mt-1">
                           <button class="w-5 h-5 rounded bg-gray-200 hover:bg-gray-300 text-gray-600 text-xs flex items-center justify-center" onclick={() => updateCantidad(item.id, -1)}>&minus;</button>
                           <span class="text-xs font-semibold w-5 text-center">{item.cantidad}</span>
@@ -669,7 +723,7 @@
                     <div class="space-y-1">
                       {#each c.items as item (item.id)}
                         <div class="flex justify-between text-xs pl-4">
-                          <span class="text-gray-500">{item.cantidad}x {item.producto.nombre}</span>
+                          <span class="text-gray-500">{item.cantidad}x {item.producto.nombre}{#if item.acompanamiento && item.acompanamiento !== 'Sin acompañamiento'} <span class="text-gray-400">({item.acompanamiento})</span>{/if}</span>
                           <span class="text-gray-600">{formatCLP(item.producto.precio * item.cantidad)}</span>
                         </div>
                       {/each}
@@ -840,6 +894,37 @@
     </div>
   {/if}
 </div>
+
+<!-- Acomp Modal -->
+{#if showAcompModal && acompProducto}
+  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick={closeAcompModal}></div>
+    <div class="relative w-full sm:max-w-md max-h-[80vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-6 z-10 shadow-2xl bg-white">
+      <div class="flex items-center gap-4 mb-5">
+        <div>
+          <h3 class="font-semibold text-lg text-gray-900">{acompProducto.nombre}</h3>
+          <p class="text-brand-700 font-bold">{formatCLP(acompProducto.precio)}</p>
+        </div>
+      </div>
+      {#if getAcompForProducto(acompProducto.id).length > 0}
+        <div class="mb-4">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Acompañamientos (máx. 2) {#if selectedAcomps.length === 0}<span class="text-red-400 font-normal normal-case">— Sin acompañamiento</span>{/if}</p>
+          <div class="space-y-2">
+            {#each getAcompForProducto(acompProducto.id) as acomp (acomp.id)}
+              {@const disabled = selectedAcomps.length >= 2 && !selectedAcomps.includes(acomp.id)}
+              <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedAcomps.includes(acomp.id) ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-brand-300'} {disabled ? 'opacity-40 pointer-events-none' : ''}">
+                <input type="checkbox" checked={selectedAcomps.includes(acomp.id)} disabled={disabled} onchange={(e) => { if (e.target.checked) selectedAcomps = [...selectedAcomps, acomp.id]; else selectedAcomps = selectedAcomps.filter(id => id !== acomp.id); }} style="accent-color:#c9a227;" />
+                <span class="flex-1 text-sm font-medium text-gray-800">{acomp.nombre}</span>
+                {#if acomp.recargo > 0}<span class="text-sm text-brand-700 font-bold">+{formatCLP(acomp.recargo)}</span>{/if}
+              </label>
+            {/each}
+          </div>
+        </div>
+      {/if}
+      <button class="w-full py-3.5 rounded-xl text-white font-semibold transition-all text-base bg-brand-600 hover:bg-brand-700" onclick={confirmarAcomp}>Agregar al pedido</button>
+    </div>
+  </div>
+{/if}
 
 <style>
   .scrollbar-hide {
