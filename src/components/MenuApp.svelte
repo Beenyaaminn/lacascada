@@ -146,6 +146,8 @@
 
   function addToCart() {
     if (!selectedProduct) return;
+    const maxAcomp = 2; const baseCount = selectedBaseAcomp ? 1 : 0;
+    if (baseCount + selectedExtras.length > maxAcomp) return;
     let precio = selectedProduct.precio; let bn: string | null = null; const en: string[] = [];
     if (selectedBaseAcomp) bn = acompanamientos.find(a => a.id === selectedBaseAcomp)?.nombre || null;
     for (const eid of selectedExtras) { const ex = acompanamientos.find(a => a.id === eid); if (ex) { precio += ex.recargo; en.push(ex.nombre); } }
@@ -356,11 +358,11 @@
 
       {#if getExtraAcomp(selectedProduct.id).length > 0}
         <div class="mb-4">
-          <p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Extras</p>
+          <p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Extras (máx. 2 en total)</p>
           <div class="space-y-2">
             {#each getExtraAcomp(selectedProduct.id) as extra (extra.id)}
-              <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedExtras.includes(extra.id) ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'}">
-                <input type="checkbox" checked={selectedExtras.includes(extra.id)} onchange={(e) => { if (e.target.checked) selectedExtras = [...selectedExtras, extra.id]; else selectedExtras = selectedExtras.filter(id => id !== extra.id); }} style="accent-color: #c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">{extra.nombre}</span><span class="text-sm text-[#c9a227] font-bold">+{formatCLP(extra.recargo)}</span></label>
+              <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedExtras.includes(extra.id) ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'} {((selectedBaseAcomp ? 1 : 0) + selectedExtras.length) >= 2 && !selectedExtras.includes(extra.id) ? 'opacity-40 pointer-events-none' : ''}">
+                <input type="checkbox" checked={selectedExtras.includes(extra.id)} disabled={((selectedBaseAcomp ? 1 : 0) + selectedExtras.length) >= 2 && !selectedExtras.includes(extra.id)} onchange={(e) => { if (e.target.checked) selectedExtras = [...selectedExtras, extra.id]; else selectedExtras = selectedExtras.filter(id => id !== extra.id); }} style="accent-color: #c9a227;" /><span class="flex-1 text-sm font-medium text-[#2d2418]">{extra.nombre}</span><span class="text-sm text-[#c9a227] font-bold">+{formatCLP(extra.recargo)}</span></label>
             {/each}
           </div>
         </div>
