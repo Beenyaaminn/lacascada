@@ -51,6 +51,7 @@
     producto: Producto;
     cantidad: number;
     acompanamiento: string | null;
+    subtotal: number;
   }
 
   interface ComensalOrden {
@@ -125,6 +126,7 @@
                 } as any,
                 cantidad: d.cantidad,
                 acompanamiento: d.acompanamiento || null,
+                subtotal: d.subtotal || d.producto_precio * d.cantidad,
               };
             });
             return { id: i + 1, label: `Pedido #${p.id}`, items };
@@ -201,12 +203,21 @@
   function addProductoWithAcomp(prod: Producto, acomp: string | null) {
     const comensal = comensalesList[activeComensal];
     if (!comensal) return;
+    let recargo = 0;
+    if (acomp && acomp !== 'Sin acompañamiento') {
+      const names = acomp.split(',').map(n => n.trim());
+      for (const name of names) {
+        const a = acompanamientos.find(x => x.nombre === name);
+        if (a) recargo += a.recargo;
+      }
+    }
+    const st = (prod.precio + recargo) * 1;
     const existing = comensal.items.find(i => i.producto.id === prod.id);
     if (existing) {
       if (existing.cantidad >= MAX_CANTIDAD_POR_PRODUCTO) return;
-      comensal.items = comensal.items.map(i => i.id === existing.id ? { ...i, cantidad: i.cantidad + 1 } : i);
+      comensal.items = comensal.items.map(i => i.id === existing.id ? { ...i, cantidad: i.cantidad + 1, subtotal: (i.producto.precio + recargo) * (i.cantidad + 1) } : i);
     } else {
-      comensal.items = [...comensal.items, { id: generateId(), producto: prod, cantidad: 1, acompanamiento: acomp }];
+      comensal.items = [...comensal.items, { id: generateId(), producto: prod, cantidad: 1, acompanamiento: acomp, subtotal: st }];
     }
     comensalesList = [...comensalesList];
   }
@@ -234,7 +245,7 @@
   function getComensalTotal(idx: number): number {
     const c = comensalesList[idx];
     if (!c) return 0;
-    return c.items.reduce((sum, i) => sum + i.producto.precio * i.cantidad, 0);
+    return c.items.reduce((sum, i) => sum + (i.subtotal || i.producto.precio * i.cantidad), 0);
   }
 
   function getComensalItemsCount(idx: number): number {
@@ -244,14 +255,14 @@
   }
 
   function getSubtotalGlobal(): number {
-    return comensalesList.reduce((sum, c) => sum + c.items.reduce((s, i) => s + i.producto.precio * i.cantidad, 0), 0);
+    return comensalesList.reduce((sum, c) => sum + c.items.reduce((s, i) => s + (i.subtotal || i.producto.precio * i.cantidad), 0), 0);
   }
 
   function getSubtotalPendiente(): number {
     return comensalesList.reduce((sum, c, idx) => {
       const pi = pedidosInfo.find(p => p.comensalIdx === idx);
       if (pi?.pagado) return sum;
-      return sum + c.items.reduce((s, i) => s + i.producto.precio * i.cantidad, 0);
+      return sum + c.items.reduce((s, i) => s + (i.subtotal || i.producto.precio * i.cantidad), 0);
     }, 0);
   }
 
@@ -342,9 +353,9 @@
                 producto_id: i.producto.id,
                 cantidad: i.cantidad,
                 acompanamiento: i.acompanamiento || null,
-                subtotal: i.producto.precio * i.cantidad,
+                subtotal: i.subtotal || i.producto.precio * i.cantidad,
               })),
-              total: itemsNuevos.reduce((s, i) => s + i.producto.precio * i.cantidad, 0),
+              total: itemsNuevos.reduce((s, i) => s + (i.subtotal || i.producto.precio * i.cantidad), 0),
             }),
           }).then(r => r.json())
         )
@@ -681,7 +692,7 @@
                         </div>
                       </div>
                       <div class="text-right">
-                        <p class="text-sm font-bold text-gray-900">{formatCLP(item.producto.precio * item.cantidad)}</p>
+                        <p class="text-sm font-bold text-gray-900">{formatCLP(item.subtotal || item.producto.precio * item.cantidad)}</p>
                         <button class="text-xs text-red-400 hover:text-red-600 mt-0.5" onclick={() => removeItem(item.id)}>Quitar</button>
                       </div>
                     </div>
@@ -724,7 +735,7 @@
                       {#each c.items as item (item.id)}
                         <div class="flex justify-between text-xs pl-4">
                           <span class="text-gray-500">{item.cantidad}x {item.producto.nombre}{#if item.acompanamiento && item.acompanamiento !== 'Sin acompañamiento'} <span class="text-gray-400">({item.acompanamiento})</span>{/if}</span>
-                          <span class="text-gray-600">{formatCLP(item.producto.precio * item.cantidad)}</span>
+                          <span class="text-gray-600">{formatCLP(item.subtotal || item.producto.precio * item.cantidad)}</span>
                         </div>
                       {/each}
                     </div>
