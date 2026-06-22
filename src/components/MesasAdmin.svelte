@@ -84,7 +84,7 @@
       reservas = reservasData.reservas || [];
       const deliveryData = await deliveryRes.json();
       const retiroData = await retiroRes.json();
-      deliveryOrders = [...(deliveryData.pedidos || []), ...(retiroData.pedidos || [])];
+      deliveryOrders = [...(deliveryData.pedidos || []), ...(retiroData.pedidos || [])].sort((a: any, b: any) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime());
       lastUpdate = new Date();
     } catch (e) {
       console.error('Error cargando datos:', e);
