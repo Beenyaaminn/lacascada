@@ -8,7 +8,7 @@
 
   let { piso: urlPiso = 0, mesa: urlMesa = 0, menuData = null } = $props<{ piso?: number; mesa?: number; menuData?: any }>();
 
-  let step: 'mesa' | 'menu' | 'verificando' = $state(urlPiso > 0 && urlMesa > 0 ? 'verificando' : 'mesa');
+  let step: 'confirmacion' | 'mesa' | 'menu' | 'verificando' = $state(urlPiso > 0 && urlMesa > 0 ? 'verificando' : 'confirmacion');
   let piso: number = $state(urlPiso || 1);
   let mesa: number = $state(urlMesa || 0);
   let mesaError: string = $state('');
@@ -187,6 +187,16 @@
 
       {#if step === 'verificando'}
         <div class="flex flex-col items-center py-12 gap-4"><div class="w-10 h-10 border-2 border-[#c9a22733] border-t-[#c9a227] rounded-full animate-spin"></div><p class="text-[#6b5d4f] text-sm">Verificando mesa...</p></div>
+      {:else if step === 'confirmacion'}
+        <div class="rounded-2xl p-8 shadow-lg border text-center" style="background-color:#fff; border-color:#e8e0d0;">
+          <p class="text-4xl mb-4">📍</p>
+          <h2 class="font-display text-2xl font-bold mb-3" style="color:#1a1410;">¿Estás en La Cascada?</h2>
+          <p class="text-[#6b5d4f] text-sm mb-6 leading-relaxed">La autoatención es solo para clientes <strong>dentro del restaurante</strong>. Si estás en tu casa o en otro lugar, usá el delivery.</p>
+          <div class="flex flex-col gap-3">
+            <button class="w-full py-3.5 rounded-xl text-white font-bold text-base transition-all" style="background-color:#c9a227;" onclick={() => { step = 'mesa'; piso = 1; cargarMesasDisponibles(1); }}>Sí, estoy en el local</button>
+            <a href="/delivery" class="w-full py-3.5 rounded-xl border-2 font-semibold text-base transition-all no-underline text-center" style="border-color:#e8e0d0; color:#6b5d4f;">No, quiero pedir delivery</a>
+          </div>
+        </div>
       {:else}
         {#if mesaError}<div class="bg-red-500/10 border border-red-400/30 rounded-xl p-4 text-sm mb-6 text-center" style="color: #a63d3d;">{mesaError}</div>{/if}
 
