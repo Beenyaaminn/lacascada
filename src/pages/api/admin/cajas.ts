@@ -24,9 +24,8 @@ export const GET: APIRoute = async ({ request }) => {
   try {
     if (activa === '1') {
       cajas = await sql`
-        SELECT c.*, t.tipo_turno, t.abierto_por as turno_abierto_por
+        SELECT c.*
         FROM cajas c
-        JOIN turnos t ON t.id = c.turno_id
         WHERE c.estado = 'abierta'
         ORDER BY c.abierta_desde DESC
       `;
@@ -42,9 +41,8 @@ export const GET: APIRoute = async ({ request }) => {
       }
     } else {
       cajas = await sql`
-        SELECT c.*, t.tipo_turno, t.abierto_por as turno_abierto_por
+        SELECT c.*
         FROM cajas c
-        JOIN turnos t ON t.id = c.turno_id
         ORDER BY c.abierta_desde DESC
         LIMIT 20
       `;
@@ -66,19 +64,14 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const { efectivo_inicial, comentarios } = await request.json();
 
-    const turnoActivo = await sql`SELECT id, abierto_por FROM turnos WHERE estado = 'abierto' LIMIT 1`;
-    if (turnoActivo.length === 0) {
-      return new Response(JSON.stringify({ error: 'No hay un turno abierto. Abra un turno primero.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    }
-
     const cajaAbierta = await sql`SELECT id FROM cajas WHERE estado = 'abierta' LIMIT 1`;
     if (cajaAbierta.length > 0) {
-      return new Response(JSON.stringify({ error: 'Ya hay una caja abierta (#${cajaAbierta[0].id}). Ciérrela primero.' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: `Ya hay una caja abierta (#${cajaAbierta[0].id}). Ciérrela primero.` }), { status: 409, headers: { 'Content-Type': 'application/json' } });
     }
 
     const result = await sql`
       INSERT INTO cajas (turno_id, nombre, usuario, efectivo_inicial, comentarios)
-      VALUES (${turnoActivo[0].id}, 'Caja Principal', ${session.nombre}, ${efectivo_inicial || 0}, ${comentarios || null})
+      VALUES (0, 'Caja Principal', ${session.nombre}, ${efectivo_inicial || 0}, ${comentarios || null})
       RETURNING *
     `;
 

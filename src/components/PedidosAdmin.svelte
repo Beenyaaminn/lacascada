@@ -10,7 +10,6 @@
   let showPaymentModal: boolean = $state(false);
   let metodoPago: string = $state('efectivo');
   let efectivoConCuanto: number = $state(0);
-  let turnoActivo: any | null = $state(null);
   let cajaActiva: any | null = $state(null);
   let totalHoy: number = $state(0);
 
@@ -25,13 +24,8 @@
 
   async function loadInfo() {
     try {
-      const [tRes, cRes] = await Promise.all([
-        fetch('/api/admin/turnos?activo=1'),
-        fetch('/api/admin/cajas?activa=1'),
-      ]);
-      const tData = await tRes.json();
+      const cRes = await fetch('/api/admin/cajas?activa=1');
       const cData = await cRes.json();
-      turnoActivo = tData.turnos?.[0] || null;
       cajaActiva = cData.cajas?.[0] || null;
     } catch (e) { /* ignore */ }
   }
@@ -133,9 +127,6 @@
   <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
     <h2 class="text-xl font-bold text-gray-900">Pedidos</h2>
     <div class="flex items-center gap-4 text-xs">
-      {#if turnoActivo}
-        <span class="text-gray-500">Turno: <span class="font-medium text-gray-700">#{turnoActivo.id} {turnoActivo.tipo_turno === 'manana' ? 'Mañana' : turnoActivo.tipo_turno === 'medio_dia' ? 'Medio Día' : 'Noche'}</span></span>
-      {/if}
       {#if cajaActiva}
         <span class="text-gray-500">Caja: <span class="font-medium text-gray-700">#{cajaActiva.id} ({formatCLP(cajaActiva.efectivo_inicial)})</span></span>
       {/if}

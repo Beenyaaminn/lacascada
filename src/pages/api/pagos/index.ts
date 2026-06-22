@@ -31,15 +31,15 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
-    const { pedido_id, metodo_pago, propina, descuento, efectivo_con_cuanto } = await request.json();
+    const { pedido_id, metodo_pago, descuento, efectivo_con_cuanto } = await request.json();
     const validMethods = ['efectivo', 'debito', 'credito', 'a_credito'];
 
     if (!pedido_id || !validMethods.includes(metodo_pago)) {
       return new Response(JSON.stringify({ error: 'Datos inválidos' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    if ((propina !== undefined && propina < 0) || (descuento !== undefined && descuento < 0)) {
-      return new Response(JSON.stringify({ error: 'Propina y descuento no pueden ser negativos' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    if ((descuento !== undefined && descuento < 0)) {
+      return new Response(JSON.stringify({ error: 'El descuento no puede ser negativo' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     const pedidoBefore = await sql`SELECT * FROM pedidos WHERE id = ${pedido_id} LIMIT 1`;
@@ -69,7 +69,6 @@ export const POST: APIRoute = async ({ request }) => {
         UPDATE pedidos SET
           metodo_pago = ${metodo_pago}::metodo_pago,
           estado = 'pagado'::estado_pedido,
-          propina = ${propina || 0},
           descuento = ${descuento || 0},
           efectivo_con_cuanto = ${efectivo_con_cuanto || 0}
         WHERE id = ${pedido_id} AND estado != 'pagado'

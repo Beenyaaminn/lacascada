@@ -1,7 +1,6 @@
 ---
 import '../styles/global.css';
 import { getSessionFromCookie } from '../lib/auth';
-import { sql } from '../lib/db';
 
 export interface Props {
   title?: string;
@@ -12,14 +11,6 @@ const { title = 'La Cascada - Panel', currentPage = '' } = Astro.props;
 
 const cookieHeader = Astro.request.headers.get('cookie');
 const session = getSessionFromCookie(cookieHeader);
-
-let hayTurnoAbierto = false;
-if (session) {
-  try {
-    const activos = await sql`SELECT id FROM turnos WHERE estado = 'abierto' LIMIT 1`;
-    hayTurnoAbierto = activos.length > 0;
-  } catch { /* si falla, asume que no hay */ }
-}
 
 interface MenuSection {
   label: string;
@@ -35,17 +26,11 @@ interface MenuItem {
 
 const isAdmin = session?.rol === 'admin';
 
-const operacionesItems: MenuItem[] = hayTurnoAbierto
-  ? [
-      { label: 'Abrir Caja', href: '/admin/caja?accion=abrir', icon: '🔓' },
-      { label: 'Cerrar Caja', href: '/admin/caja?accion=cerrar', icon: '🔒' },
-      { label: 'Cerrar Turno', href: '/admin/turno?cerrar=1', icon: '🛑' },
-      { label: 'Registro Contable', href: '/admin/stock?tab=contabilidad', icon: '📒' },
-    ]
-  : [
-      { label: 'Abrir Turno', href: '/admin/turno', icon: '🔓' },
-      { label: 'Reabrir Turno', href: '/admin/turno?reabrir=1', icon: '🔁' },
-    ];
+const operacionesItems: MenuItem[] = [
+  { label: 'Abrir Caja', href: '/admin/caja?accion=abrir', icon: '🔓' },
+  { label: 'Cerrar Caja', href: '/admin/caja?accion=cerrar', icon: '🔒' },
+  { label: 'Registro Contable', href: '/admin/stock?tab=contabilidad', icon: '📒' },
+];
 
 const adminExtras: MenuItem[] = isAdmin ? [
   { label: 'Usuarios', href: '/admin/usuarios', icon: '🔑' },

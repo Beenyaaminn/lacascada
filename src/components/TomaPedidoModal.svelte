@@ -34,8 +34,6 @@
   let saving: boolean = $state(false);
 
   let descuento: number = $state(0);
-  let propina: number = $state(0);
-  let propinaTipo: string = $state('monto');
   let metodoPago: string = $state('efectivo');
   let montoPagado: number = $state(0);
   let pedidosInfo: PedidoInfo[] = $state([]);
@@ -60,8 +58,6 @@
     pagado: boolean;
     voucher?: any;
     descuentoAplicado: number;
-    propinaAplicada: number;
-    propinaTipoAplicada: string;
     montoPagadoAplicado: number;
     metodoPagoAplicado: string;
   }
@@ -212,22 +208,7 @@
   }
 
   function getTotalFinal(): number {
-    const base = pagoComensalIdx === -1 ? getSubtotalPendiente() : getComensalTotal(pagoComensalIdx);
-    let total = base - descuento;
-    if (propinaTipo === 'porcentaje') {
-      total += Math.round(base * propina / 100);
-    } else {
-      total += propina;
-    }
-    return Math.max(0, total);
-  }
-
-  function getPropinaMonto(): number {
-    const base = pagoComensalIdx === -1 ? getSubtotalPendiente() : getComensalTotal(pagoComensalIdx);
-    if (propinaTipo === 'porcentaje') {
-      return Math.round(base * propina / 100);
-    }
-    return propina;
+    return Math.max(0, (pagoComensalIdx === -1 ? getSubtotalPendiente() : getComensalTotal(pagoComensalIdx)) - descuento);
   }
 
   function hasItems(): boolean {
@@ -239,7 +220,6 @@
     pedidosInfo = [];
     pagoComensalIdx = -1;
     descuento = 0;
-    propina = 0;
     montoPagado = 0;
     metodoPago = 'efectivo';
   }
@@ -373,14 +353,13 @@
           body: JSON.stringify({
             pedido_id: p.pedidoId,
             metodo_pago: metodoPago,
-            propina: propina,
             descuento: descuento,
           }),
         });
         if (res.ok) {
           const data = await res.json();
           pedidosInfo = pedidosInfo.map(pi => pi.pedidoId === p.pedidoId
-            ? { ...pi, pagado: true, voucher: data.voucher, descuentoAplicado: descuento, propinaAplicada: propina, propinaTipoAplicada: propinaTipo, montoPagadoAplicado: montoPagado, metodoPagoAplicado: metodoPago }
+            ? { ...pi, pagado: true, voucher: data.voucher, descuentoAplicado: descuento, montoPagadoAplicado: montoPagado, metodoPagoAplicado: metodoPago }
             : pi
           );
         } else {
@@ -391,7 +370,6 @@
       }
 
       descuento = 0;
-      propina = 0;
       montoPagado = 0;
       metodoPago = 'efectivo';
       pagoComensalIdx = -1;
@@ -406,7 +384,7 @@
   function imprimirTicket(p: PedidoInfo) {
     if (!p.voucher) return;
     const metodoLabel = metodosPago.find(m => m.id === p.metodoPagoAplicado)?.label || p.metodoPagoAplicado;
-    abrirVoucher([p.voucher], p.descuentoAplicado, p.propinaAplicada, p.propinaTipoAplicada, p.montoPagadoAplicado, metodoLabel);
+    abrirVoucher([p.voucher], p.descuentoAplicado, 0, 'monto', p.montoPagadoAplicado, metodoLabel);
   }
 
   function imprimirTicketGeneral() {
@@ -414,11 +392,10 @@
     if (pagados.length === 0) return;
     const vouchers = pagados.map(pi => pi.voucher);
     const descTotal = pagados.reduce((s, pi) => s + pi.descuentoAplicado, 0);
-    const propTotal = pagados.reduce((s, pi) => s + pi.propinaAplicada, 0);
     const montoTotal = pagados.reduce((s, pi) => s + pi.montoPagadoAplicado, 0);
     const metodos = [...new Set(pagados.map(pi => metodosPago.find(m => m.id === pi.metodoPagoAplicado)?.label || pi.metodoPagoAplicado))];
     const metodoStr = metodos.join(' + ');
-    abrirVoucher(vouchers, descTotal, propTotal, 'monto', montoTotal, metodoStr);
+    abrirVoucher(vouchers, descTotal, 0, 'monto', montoTotal, metodoStr);
   }
 
   function abrirVoucher(vouchers: any[], descAplicado: number, propAplicada: number, propTipo: string, montoPag: number, metodoStr: string) {
@@ -816,22 +793,6 @@
                   <span class="text-gray-400 text-sm">$</span>
                   <input type="number" class="input-field text-sm" min="0" bind:value={descuento} placeholder="0" />
                 </div>
-              </div>
-
-              <!-- Propina -->
-              <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Propina</label>
-                <div class="flex items-center gap-2 mb-1">
-                  <button class="text-xs px-2 py-1 rounded {propinaTipo === 'monto' ? 'bg-brand-100 text-brand-700 font-semibold' : 'bg-gray-100 text-gray-500'}" onclick={() => { propinaTipo = 'monto' }}>$</button>
-                  <button class="text-xs px-2 py-1 rounded {propinaTipo === 'porcentaje' ? 'bg-brand-100 text-brand-700 font-semibold' : 'bg-gray-100 text-gray-500'}" onclick={() => { propinaTipo = 'porcentaje' }}>%</button>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-gray-400 text-sm">{propinaTipo === 'porcentaje' ? '%' : '$'}</span>
-                  <input type="number" class="input-field text-sm" min="0" bind:value={propina} placeholder="0" />
-                </div>
-                {#if propinaTipo === 'porcentaje' && propina > 0}
-                  <p class="text-xs text-gray-400 mt-1">= {formatCLP(getPropinaMonto())}</p>
-                {/if}
               </div>
 
               <!-- Total a Pagar -->

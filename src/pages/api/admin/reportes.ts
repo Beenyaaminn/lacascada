@@ -25,9 +25,9 @@ export const GET: APIRoute = async ({ request }) => {
       let detallePagos;
       if (mes && filtroPago) {
         detallePagos = await sql`
-          SELECT p.id as pedido_id, p.fecha_hora, p.total, p.descuento, p.propina, p.metodo_pago,
+          SELECT p.id as pedido_id, p.fecha_hora, p.total, p.descuento, p.metodo_pago,
             p.tipo_pedido, p.nombre_cliente, p.direccion, p.telefono,
-            m.numero_mesa, m.piso as mesa_piso, c.id as caja_id, c.nombre as caja_nombre
+            m.numero_mesa, m.piso as mesa_piso, c.usuario as cajera
           FROM pedidos p
           LEFT JOIN mesas m ON m.id = p.mesa_id
           LEFT JOIN cajas c ON c.abierta_desde <= p.fecha_hora AND (c.cerrada_desde IS NULL OR c.cerrada_desde >= p.fecha_hora)
@@ -39,9 +39,9 @@ export const GET: APIRoute = async ({ request }) => {
         `;
       } else if (mes) {
         detallePagos = await sql`
-          SELECT p.id as pedido_id, p.fecha_hora, p.total, p.descuento, p.propina, p.metodo_pago,
+          SELECT p.id as pedido_id, p.fecha_hora, p.total, p.descuento, p.metodo_pago,
             p.tipo_pedido, p.nombre_cliente, p.direccion, p.telefono,
-            m.numero_mesa, m.piso as mesa_piso, c.id as caja_id, c.nombre as caja_nombre
+            m.numero_mesa, m.piso as mesa_piso, c.usuario as cajera
           FROM pedidos p
           LEFT JOIN mesas m ON m.id = p.mesa_id
           LEFT JOIN cajas c ON c.abierta_desde <= p.fecha_hora AND (c.cerrada_desde IS NULL OR c.cerrada_desde >= p.fecha_hora)
@@ -52,9 +52,9 @@ export const GET: APIRoute = async ({ request }) => {
         `;
       } else if (filtroPago) {
         detallePagos = await sql`
-          SELECT p.id as pedido_id, p.fecha_hora, p.total, p.descuento, p.propina, p.metodo_pago,
+          SELECT p.id as pedido_id, p.fecha_hora, p.total, p.descuento, p.metodo_pago,
             p.tipo_pedido, p.nombre_cliente, p.direccion, p.telefono,
-            m.numero_mesa, m.piso as mesa_piso, c.id as caja_id, c.nombre as caja_nombre
+            m.numero_mesa, m.piso as mesa_piso, c.usuario as cajera
           FROM pedidos p
           LEFT JOIN mesas m ON m.id = p.mesa_id
           LEFT JOIN cajas c ON c.abierta_desde <= p.fecha_hora AND (c.cerrada_desde IS NULL OR c.cerrada_desde >= p.fecha_hora)
@@ -63,9 +63,9 @@ export const GET: APIRoute = async ({ request }) => {
         `;
       } else {
         detallePagos = await sql`
-          SELECT p.id as pedido_id, p.fecha_hora, p.total, p.descuento, p.propina, p.metodo_pago,
+          SELECT p.id as pedido_id, p.fecha_hora, p.total, p.descuento, p.metodo_pago,
             p.tipo_pedido, p.nombre_cliente, p.direccion, p.telefono,
-            m.numero_mesa, m.piso as mesa_piso, c.id as caja_id, c.nombre as caja_nombre
+            m.numero_mesa, m.piso as mesa_piso, c.usuario as cajera
           FROM pedidos p
           LEFT JOIN mesas m ON m.id = p.mesa_id
           LEFT JOIN cajas c ON c.abierta_desde <= p.fecha_hora AND (c.cerrada_desde IS NULL OR c.cerrada_desde >= p.fecha_hora)
@@ -81,20 +81,15 @@ export const GET: APIRoute = async ({ request }) => {
 
     let hoy = await sql`
       SELECT
-        DATE(p.fecha_hora) as fecha,
+        p.fecha_hora::date::text as fecha,
         p.tipo_pedido,
         COUNT(*)::int as cantidad_pedidos,
         COALESCE(SUM(p.total), 0)::int as total_ventas,
-        COALESCE(SUM(p.propina), 0)::int as total_propinas,
         COALESCE(SUM(p.descuento), 0)::int as total_descuentos,
         COALESCE(SUM(CASE WHEN p.metodo_pago = 'efectivo' THEN p.total ELSE 0 END), 0)::int as efectivo,
         COALESCE(SUM(CASE WHEN p.metodo_pago = 'debito' THEN p.total ELSE 0 END), 0)::int as debito,
         COALESCE(SUM(CASE WHEN p.metodo_pago = 'credito' THEN p.total ELSE 0 END), 0)::int as credito,
-        COALESCE(SUM(CASE WHEN p.metodo_pago = 'a_credito' THEN p.total ELSE 0 END), 0)::int as a_credito,
-        COALESCE(SUM(CASE WHEN p.metodo_pago = 'efectivo' THEN p.propina ELSE 0 END), 0)::int as prop_efectivo,
-        COALESCE(SUM(CASE WHEN p.metodo_pago = 'debito' THEN p.propina ELSE 0 END), 0)::int as prop_debito,
-        COALESCE(SUM(CASE WHEN p.metodo_pago = 'credito' THEN p.propina ELSE 0 END), 0)::int as prop_credito,
-        COALESCE(SUM(CASE WHEN p.metodo_pago = 'a_credito' THEN p.propina ELSE 0 END), 0)::int as prop_a_credito
+        COALESCE(SUM(CASE WHEN p.metodo_pago = 'a_credito' THEN p.total ELSE 0 END), 0)::int as a_credito
       FROM pedidos p
       WHERE p.estado = 'pagado' AND DATE(p.fecha_hora) = CURRENT_DATE
       GROUP BY DATE(p.fecha_hora), p.tipo_pedido
@@ -102,20 +97,15 @@ export const GET: APIRoute = async ({ request }) => {
 
     let ultimos7dias = await sql`
       SELECT
-        DATE(p.fecha_hora) as fecha,
+        p.fecha_hora::date::text as fecha,
         p.tipo_pedido,
         COUNT(*)::int as cantidad_pedidos,
         COALESCE(SUM(p.total), 0)::int as total_ventas,
-        COALESCE(SUM(p.propina), 0)::int as total_propinas,
         COALESCE(SUM(p.descuento), 0)::int as total_descuentos,
         COALESCE(SUM(CASE WHEN p.metodo_pago = 'efectivo' THEN p.total ELSE 0 END), 0)::int as efectivo,
         COALESCE(SUM(CASE WHEN p.metodo_pago = 'debito' THEN p.total ELSE 0 END), 0)::int as debito,
         COALESCE(SUM(CASE WHEN p.metodo_pago = 'credito' THEN p.total ELSE 0 END), 0)::int as credito,
-        COALESCE(SUM(CASE WHEN p.metodo_pago = 'a_credito' THEN p.total ELSE 0 END), 0)::int as a_credito,
-        COALESCE(SUM(CASE WHEN p.metodo_pago = 'efectivo' THEN p.propina ELSE 0 END), 0)::int as prop_efectivo,
-        COALESCE(SUM(CASE WHEN p.metodo_pago = 'debito' THEN p.propina ELSE 0 END), 0)::int as prop_debito,
-        COALESCE(SUM(CASE WHEN p.metodo_pago = 'credito' THEN p.propina ELSE 0 END), 0)::int as prop_credito,
-        COALESCE(SUM(CASE WHEN p.metodo_pago = 'a_credito' THEN p.propina ELSE 0 END), 0)::int as prop_a_credito
+        COALESCE(SUM(CASE WHEN p.metodo_pago = 'a_credito' THEN p.total ELSE 0 END), 0)::int as a_credito
       FROM pedidos p
       WHERE p.estado = 'pagado' AND p.fecha_hora >= CURRENT_DATE - INTERVAL '7 days'
       GROUP BY DATE(p.fecha_hora), p.tipo_pedido
@@ -128,23 +118,19 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     let mensual: any[] = [];
+    let ventasPorCajera: any[] = [];
     if (mes) {
       mensual = await sql`
         SELECT
-          DATE(p.fecha_hora) as fecha,
+          p.fecha_hora::date::text as fecha,
           p.tipo_pedido,
           COUNT(*)::int as cantidad_pedidos,
           COALESCE(SUM(p.total), 0)::int as total_ventas,
-          COALESCE(SUM(p.propina), 0)::int as total_propinas,
           COALESCE(SUM(p.descuento), 0)::int as total_descuentos,
           COALESCE(SUM(CASE WHEN p.metodo_pago = 'efectivo' THEN p.total ELSE 0 END), 0)::int as efectivo,
           COALESCE(SUM(CASE WHEN p.metodo_pago = 'debito' THEN p.total ELSE 0 END), 0)::int as debito,
           COALESCE(SUM(CASE WHEN p.metodo_pago = 'credito' THEN p.total ELSE 0 END), 0)::int as credito,
           COALESCE(SUM(CASE WHEN p.metodo_pago = 'a_credito' THEN p.total ELSE 0 END), 0)::int as a_credito,
-          COALESCE(SUM(CASE WHEN p.metodo_pago = 'efectivo' THEN p.propina ELSE 0 END), 0)::int as prop_efectivo,
-          COALESCE(SUM(CASE WHEN p.metodo_pago = 'debito' THEN p.propina ELSE 0 END), 0)::int as prop_debito,
-          COALESCE(SUM(CASE WHEN p.metodo_pago = 'credito' THEN p.propina ELSE 0 END), 0)::int as prop_credito,
-          COALESCE(SUM(CASE WHEN p.metodo_pago = 'a_credito' THEN p.propina ELSE 0 END), 0)::int as prop_a_credito,
           STRING_AGG(DISTINCT m.tomada_por, ', ') as garzones
         FROM pedidos p
         LEFT JOIN mesas m ON m.id = p.mesa_id
@@ -157,6 +143,20 @@ export const GET: APIRoute = async ({ request }) => {
       if (tipoPedido) {
         mensual = mensual.filter((r: any) => r.tipo_pedido === tipoPedido);
       }
+
+      ventasPorCajera = await sql`
+        SELECT
+          c.usuario as cajera,
+          COUNT(p.id)::int as total_pedidos,
+          COALESCE(SUM(p.total), 0)::int as total_ventas
+        FROM pedidos p
+        JOIN cajas c ON c.abierta_desde <= p.fecha_hora AND (c.cerrada_desde IS NULL OR c.cerrada_desde >= p.fecha_hora)
+        WHERE p.estado = 'pagado'
+          AND p.fecha_hora >= ${mes + '-01'}::date
+          AND p.fecha_hora < (${mes + '-01'}::date + INTERVAL '1 month')
+        GROUP BY c.usuario
+        ORDER BY total_ventas DESC
+      `;
     }
 
     let topProductos = await sql`
@@ -180,7 +180,7 @@ export const GET: APIRoute = async ({ request }) => {
       topProductos = topProductos.slice(0, 8);
     }
 
-    return new Response(JSON.stringify({ hoy, ultimos7dias, mensual, topProductos }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ hoy, ultimos7dias, mensual, ventasPorCajera, topProductos }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error reportes:', error);
     return new Response(JSON.stringify({ error: 'Error al cargar reportes' }), { status: 500, headers: { 'Content-Type': 'application/json' } });

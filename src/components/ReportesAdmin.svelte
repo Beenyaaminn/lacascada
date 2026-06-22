@@ -9,6 +9,7 @@
   let hoy: any[] = $state([]);
   let ultimos7dias: any[] = $state([]);
   let mensual: any[] = $state([]);
+  let ventasPorCajera: any[] = $state([]);
   let topProductos: any[] = $state([]);
   let loading: boolean = $state(true);
   let mesSeleccionado: string = $state(new Date().toISOString().slice(0, 7));
@@ -50,21 +51,17 @@
       hoy = data.hoy || [];
       ultimos7dias = data.ultimos7dias || [];
       mensual = data.mensual || [];
+      ventasPorCajera = data.ventasPorCajera || [];
       topProductos = data.topProductos || [];
 
       if (mensual.length > 0) {
         totalesMes = {
           ventas: mensual.reduce((s: number, d: any) => s + d.total_ventas, 0),
-          propinas: mensual.reduce((s: number, d: any) => s + d.total_propinas, 0),
           descuentos: mensual.reduce((s: number, d: any) => s + d.total_descuentos, 0),
           efectivo: mensual.reduce((s: number, d: any) => s + d.efectivo, 0),
           debito: mensual.reduce((s: number, d: any) => s + d.debito, 0),
           credito: mensual.reduce((s: number, d: any) => s + d.credito, 0),
           a_credito: mensual.reduce((s: number, d: any) => s + d.a_credito, 0),
-          prop_efectivo: mensual.reduce((s: number, d: any) => s + d.prop_efectivo, 0),
-          prop_debito: mensual.reduce((s: number, d: any) => s + d.prop_debito, 0),
-          prop_credito: mensual.reduce((s: number, d: any) => s + d.prop_credito, 0),
-          prop_a_credito: mensual.reduce((s: number, d: any) => s + d.prop_a_credito, 0),
         };
       } else {
         totalesMes = null;
@@ -80,17 +77,18 @@
     const cd = delivery7dias.reduce((s, d) => s + d.cantidad_pedidos, 0);
     return cd > 0 ? formatCLP(Math.round(td / cd)) : '$0';
   }
-  function formatFecha(f: string): string {
-    return new Date(f + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
+
+  function formatFecha(f: any): string {
+    try {
+      if (f instanceof Date) return f.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
+      if (typeof f === 'string') return new Date(f.includes('T') ? f : f + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
+      return String(f);
+    } catch { return String(f); }
   }
+
   function getMesLabel(m: string): string {
     const [y, mo] = m.split('-');
     return new Date(+y, +mo - 1).toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
-  }
-
-  function pctPropina(d: any): string {
-    if (!d.total_ventas) return '0%';
-    return Math.round(d.total_propinas / d.total_ventas * 100) + '%';
   }
 
   async function loadDetalles() {
@@ -128,11 +126,15 @@
   }
 
   function formatFechaLarga(fechaHora: string): string {
-    return new Date(fechaHora).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    try {
+      return new Date(fechaHora).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    } catch { return fechaHora; }
   }
 
   function formatHora(fechaHora: string): string {
-    return new Date(fechaHora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    try {
+      return new Date(fechaHora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    } catch { return fechaHora; }
   }
 
   function formatMetodoLabel(m: string): string {
@@ -164,21 +166,14 @@
   });
 
   function imprimir() {
-    const fecha = new Date().toLocaleDateString('es-CL');
-
     let mensualRows = '';
     for (const d of mensual) {
-      mensualRows += `<tr><td>${formatFecha(d.fecha)}</td><td class="r">${esc(d.garzones || '—')}</td><td class="r">${formatCLP(d.total_ventas)}</td><td class="r">${formatCLP(d.total_propinas)}</td><td class="r">${pctPropina(d)}</td></tr>`;
+      mensualRows += `<tr><td>${formatFecha(d.fecha)}</td><td class="r">${esc(d.garzones || '—')}</td><td class="r">${formatCLP(d.total_ventas)}</td><td class="r">${formatCLP(d.total_descuentos)}</td></tr>`;
     }
 
-    let propMetodoRows = '';
-    if (totalesMes) {
-      propMetodoRows = `
-        <tr><td>Efectivo</td><td class="r">${formatCLP(totalesMes.prop_efectivo)}</td></tr>
-        <tr><td>Débito</td><td class="r">${formatCLP(totalesMes.prop_debito)}</td></tr>
-        <tr><td>Crédito</td><td class="r">${formatCLP(totalesMes.prop_credito)}</td></tr>
-        <tr><td>A crédito</td><td class="r">${formatCLP(totalesMes.prop_a_credito)}</td></tr>
-      `;
+    let cajeraRows = '';
+    for (const c of ventasPorCajera) {
+      cajeraRows += `<tr><td>${esc(c.cajera || '—')}</td><td class="r">${c.total_pedidos}</td><td class="r">${formatCLP(c.total_ventas)}</td></tr>`;
     }
 
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte Mensual La Cascada</title>
@@ -198,16 +193,17 @@
 ${totalesMes ? `
 <div style="font-size:9px;margin-bottom:3px">RESUMEN DEL MES</div>
 <div>Total Ventas: <span class="r bold" style="float:right">${formatCLP(totalesMes.ventas)}</span></div>
-<div>Propinas: <span class="r bold" style="float:right">${formatCLP(totalesMes.propinas)}</span></div>
 <div>Descuentos: <span class="r bold" style="float:right">${formatCLP(totalesMes.descuentos)}</span></div>
 <div class="divider"></div>
 ` : ''}
 <div style="font-size:9px;margin-bottom:3px">DETALLE POR DÍA</div>
-<table><thead><tr><th>Fecha</th><th>Garzón</th><th class="r">Ventas</th><th class="r">Propinas</th><th class="r">%</th></tr></thead><tbody>${mensualRows}</tbody></table>
+<table><thead><tr><th>Fecha</th><th>Garzón</th><th class="r">Ventas</th><th class="r">Desc.</th></tr></thead><tbody>${mensualRows}</tbody></table>
 <div class="divider"></div>
-<div style="font-size:9px;margin-bottom:3px">PROPINAS SEGÚN FORMA DE PAGO</div>
-<table><thead><tr><th>Método</th><th class="r">Propina</th></tr></thead><tbody>${propMetodoRows}</tbody></table>
+${ventasPorCajera.length > 0 ? `
+<div style="font-size:9px;margin-bottom:3px">VENTAS POR CAJERA</div>
+<table><thead><tr><th>Cajera</th><th class="r">Pedidos</th><th class="r">Ventas</th></tr></thead><tbody>${cajeraRows}</tbody></table>
 <div class="divider"></div>
+` : ''}
 <div class="center" style="font-size:8px">La Cascada &bull; Reporte interno</div>
 <script>window.onload=function(){window.print()}<` + `/script>
 </body></html>`;
@@ -250,13 +246,7 @@ ${totalesMes ? `
             <div class="card p-3 text-center"><p class="text-xs text-gray-500">Crédito</p><p class="text-lg font-bold text-gray-900">{formatCLP(d.credito)}</p></div>
             <div class="card p-3 text-center"><p class="text-xs text-gray-500">A Crédito</p><p class="text-lg font-bold text-gray-900">{formatCLP(d.a_credito)}</p></div>
           </div>
-          <div class="grid grid-cols-4 gap-2 mb-2">
-            <div class="card p-2 text-center"><p class="text-xs text-gray-500">Propinas</p><p class="text-sm font-bold text-amber-600">{formatCLP(d.total_propinas)}</p></div>
-            <div class="card p-2 text-center"><p class="text-xs text-gray-500">Prop Efect</p><p class="text-sm font-bold">{formatCLP(d.prop_efectivo)}</p></div>
-            <div class="card p-2 text-center"><p class="text-xs text-gray-500">Prop Déb</p><p class="text-sm font-bold">{formatCLP(d.prop_debito)}</p></div>
-            <div class="card p-2 text-center"><p class="text-xs text-gray-500">Prop Créd</p><p class="text-sm font-bold">{formatCLP(d.prop_credito)}</p></div>
-          </div>
-          <p class="text-xs text-gray-500">{d.cantidad_pedidos} pedidos &bull; {pctPropina(d)} propina</p>
+          <p class="text-xs text-gray-500">{d.cantidad_pedidos} pedidos &bull; {formatCLP(d.total_descuentos)} en descuentos</p>
         {/if}
       </div>
 
@@ -273,8 +263,7 @@ ${totalesMes ? `
                   <th class="text-left p-2 font-medium text-gray-600">Fecha</th>
                   <th class="text-right p-2 font-medium text-gray-600">Pedidos</th>
                   <th class="text-right p-2 font-medium text-gray-600">Ventas</th>
-                  <th class="text-right p-2 font-medium text-gray-600">Propinas</th>
-                  <th class="text-right p-2 font-medium text-gray-600">%</th>
+                  <th class="text-right p-2 font-medium text-gray-600">Desc.</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
@@ -283,8 +272,7 @@ ${totalesMes ? `
                     <td class="p-2 font-medium">{formatFecha(d.fecha)}</td>
                     <td class="p-2 text-right">{d.cantidad_pedidos}</td>
                     <td class="p-2 text-right">{formatCLP(d.total_ventas)}</td>
-                    <td class="p-2 text-right text-amber-600">{formatCLP(d.total_propinas)}</td>
-                    <td class="p-2 text-right">{pctPropina(d)}</td>
+                    <td class="p-2 text-right">{formatCLP(d.total_descuentos)}</td>
                   </tr>
                 {/each}
               </tbody>
@@ -305,8 +293,8 @@ ${totalesMes ? `
           {#if totalesMes}
             <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
               <div class="card p-3 text-center"><p class="text-xs text-gray-500">Total Ventas</p><p class="text-lg font-bold text-brand-700">{formatCLP(totalesMes.ventas)}</p></div>
-              <div class="card p-3 text-center"><p class="text-xs text-gray-500">Total Propinas</p><p class="text-lg font-bold text-amber-600">{formatCLP(totalesMes.propinas)}</p></div>
               <div class="card p-3 text-center"><p class="text-xs text-gray-500">Efectivo</p><p class="text-lg font-bold">{formatCLP(totalesMes.efectivo)}</p></div>
+              <div class="card p-3 text-center"><p class="text-xs text-gray-500">Débito</p><p class="text-lg font-bold">{formatCLP(totalesMes.debito)}</p></div>
               <div class="card p-3 text-center"><p class="text-xs text-gray-500">Descuentos</p><p class="text-lg font-bold">{formatCLP(totalesMes.descuentos)}</p></div>
             </div>
           {/if}
@@ -318,8 +306,7 @@ ${totalesMes ? `
                   <th class="text-left p-2 font-medium text-gray-600">Garzón</th>
                   <th class="text-right p-2 font-medium text-gray-600">Pedidos</th>
                   <th class="text-right p-2 font-medium text-gray-600">Ventas</th>
-                  <th class="text-right p-2 font-medium text-gray-600">Propinas</th>
-                  <th class="text-right p-2 font-medium text-gray-600">%</th>
+                  <th class="text-right p-2 font-medium text-gray-600">Desc.</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
@@ -329,30 +316,29 @@ ${totalesMes ? `
                     <td class="p-2 text-gray-500 text-xs">{d.garzones || '—'}</td>
                     <td class="p-2 text-right">{d.cantidad_pedidos}</td>
                     <td class="p-2 text-right">{formatCLP(d.total_ventas)}</td>
-                    <td class="p-2 text-right text-amber-600">{formatCLP(d.total_propinas)}</td>
-                    <td class="p-2 text-right">{pctPropina(d)}</td>
+                    <td class="p-2 text-right">{formatCLP(d.total_descuentos)}</td>
                   </tr>
                 {/each}
               </tbody>
             </table>
           </div>
 
-          <!-- Propinas según forma de pago -->
-          {#if totalesMes}
-            <h4 class="text-sm font-semibold text-gray-700 mb-2">Propinas según forma de pago</h4>
-            <div class="card overflow-hidden">
+          <!-- Ventas por Cajera -->
+          {#if ventasPorCajera.length > 0}
+            <h4 class="text-sm font-semibold text-gray-700 mb-2">Ventas por Cajera</h4>
+            <div class="card overflow-hidden mb-4">
               <table class="w-full text-sm">
                 <thead class="bg-gray-50 border-b">
                   <tr>
-                    <th class="text-left p-2 font-medium text-gray-600">Método de pago</th>
-                    <th class="text-right p-2 font-medium text-gray-600">Propina</th>
+                    <th class="text-left p-2 font-medium text-gray-600">Cajera</th>
+                    <th class="text-right p-2 font-medium text-gray-600">Pedidos</th>
+                    <th class="text-right p-2 font-medium text-gray-600">Ventas</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                  <tr><td class="p-2">Efectivo</td><td class="p-2 text-right font-medium">{formatCLP(totalesMes.prop_efectivo)}</td></tr>
-                  <tr><td class="p-2">Débito</td><td class="p-2 text-right font-medium">{formatCLP(totalesMes.prop_debito)}</td></tr>
-                  <tr><td class="p-2">Crédito</td><td class="p-2 text-right font-medium">{formatCLP(totalesMes.prop_credito)}</td></tr>
-                  <tr><td class="p-2">A crédito</td><td class="p-2 text-right font-medium">{formatCLP(totalesMes.prop_a_credito)}</td></tr>
+                  {#each ventasPorCajera as c}
+                    <tr><td class="p-2 font-medium">{c.cajera || '—'}</td><td class="p-2 text-right">{c.total_pedidos}</td><td class="p-2 text-right font-bold text-brand-700">{formatCLP(c.total_ventas)}</td></tr>
+                  {/each}
                 </tbody>
               </table>
             </div>
@@ -420,14 +406,13 @@ ${totalesMes ? `
             <table class="w-full text-sm">
               <thead class="bg-gray-50 border-b">
                 <tr>
-                  <th class="text-left p-2 font-medium text-gray-600">F.Cierre</th>
+                  <th class="text-left p-2 font-medium text-gray-600">Hora</th>
                   <th class="text-left p-2 font-medium text-gray-600">Comanda</th>
-                  <th class="text-left p-2 font-medium text-gray-600">Caja</th>
+                  <th class="text-left p-2 font-medium text-gray-600">Cajera</th>
                   <th class="text-left p-2 font-medium text-gray-600">Mesa</th>
-                  <th class="text-left p-2 font-medium text-gray-600">TipoDePago</th>
+                  <th class="text-left p-2 font-medium text-gray-600">Pago</th>
                   <th class="text-right p-2 font-medium text-gray-600">Total</th>
                   <th class="text-right p-2 font-medium text-gray-600">Desc.</th>
-                  <th class="text-right p-2 font-medium text-gray-600">Propina</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
@@ -435,12 +420,11 @@ ${totalesMes ? `
                   <tr class="hover:bg-gray-50">
                     <td class="p-2 text-xs text-gray-500">{formatHora(p.fecha_hora)}</td>
                     <td class="p-2 font-mono font-bold text-gray-900">#{p.pedido_id}</td>
-                    <td class="p-2 text-xs text-gray-500">{p.caja_nombre ? `#${p.caja_id}` : '—'}</td>
+                    <td class="p-2 text-xs text-gray-500">{p.cajera || '—'}</td>
                     <td class="p-2 font-medium">{p.numero_mesa ? `P${p.mesa_piso} M${p.numero_mesa}` : '—'}</td>
                     <td class="p-2"><span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{formatMetodoLabel(p.metodo_pago)}</span></td>
                     <td class="p-2 text-right font-medium">{formatCLP(p.total)}</td>
                     <td class="p-2 text-right text-red-500">{p.descuento > 0 ? formatCLP(p.descuento) : '—'}</td>
-                    <td class="p-2 text-right text-amber-600">{p.propina > 0 ? formatCLP(p.propina) : '—'}</td>
                   </tr>
                 {/each}
               </tbody>
