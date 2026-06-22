@@ -122,7 +122,7 @@
     try {
       const res = await fetch(`/api/mesas/disponibles?_t=${Date.now()}`, { cache: 'no-store' });
       const d = await res.json(); const actual = (d.mesas || []).find((t: any) => t.id === m.id);
-      if (actual && actual.estado === 'libre') { mesa = m.numero_mesa; piso = m.piso; step = 'menu'; ocuparMesa(); cargarMenuSiNecesario(); }
+      if (actual && actual.estado === 'libre') { mesa = m.numero_mesa; piso = m.piso; step = 'menu'; cargarMenuSiNecesario(); }
       else { mesaError = `Mesa ${m.numero_mesa} ya está ocupada.`; await cargarMesasDisponibles(piso); }
     } catch { mesaError = 'Error al verificar.'; }
     finally { cargandoMesas = false; }
