@@ -356,6 +356,7 @@
                 subtotal: i.subtotal || i.producto.precio * i.cantidad,
               })),
               total: itemsNuevos.reduce((s, i) => s + (i.subtotal || i.producto.precio * i.cantidad), 0),
+              comentarios: comentarios.trim() || null,
             }),
           }).then(r => r.json())
         )
@@ -576,10 +577,6 @@
         </div>
       </div>
       <div class="p-6 space-y-4">
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Comentarios</label>
-          <textarea class="input-field h-20 resize-none" placeholder="Ej: cliente pidió sin cebolla..." bind:value={comentarios}></textarea>
-        </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-1.5">Garzón</label>
@@ -628,13 +625,18 @@
         </div>
         <div class="flex items-center gap-3">
           {#if pedidosInfo.length === 0}
-            <div class="text-right">
-              <p class="text-xs text-gray-500">Total</p>
-              <p class="text-lg font-bold text-brand-700">{formatCLP(getSubtotalGlobal())}</p>
+            <div class="flex-1 space-y-2">
+              <textarea class="input-field h-16 resize-none text-xs w-full" placeholder="Comentarios del pedido (ej: sin cebolla, alérgico a...)" bind:value={comentarios}></textarea>
+              <div class="flex items-center gap-3">
+                <div class="text-right">
+                  <p class="text-xs text-gray-500">Total</p>
+                  <p class="text-lg font-bold text-brand-700">{formatCLP(getSubtotalGlobal())}</p>
+                </div>
+                <button class="btn-primary px-5 py-2 disabled:opacity-50" disabled={!hasItems() || saving} onclick={confirmarPedido}>
+                  {saving ? '...' : 'Confirmar Pedido'}
+                </button>
+              </div>
             </div>
-            <button class="btn-primary px-5 py-2 disabled:opacity-50" disabled={!hasItems() || saving} onclick={confirmarPedido}>
-              {saving ? '...' : 'Confirmar Pedido'}
-            </button>
           {:else if !todosPagados()}
             <span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full font-medium">{pedidosRestantes()} pendiente{pedidosRestantes() !== 1 ? 's' : ''}</span>
           {:else}

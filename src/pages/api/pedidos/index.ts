@@ -16,7 +16,7 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
   try {
-    const { piso, mesa: mesaNumero, items, total, nombre_cliente } = await request.json();
+    const { piso, mesa: mesaNumero, items, total, nombre_cliente, comentarios } = await request.json();
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return new Response(JSON.stringify({ error: 'El pedido debe tener al menos un producto' }), {
@@ -61,8 +61,8 @@ export const POST: APIRoute = async ({ request }) => {
       const estabaVacia = mesaInfo.length > 0 && mesaInfo[0].estado === 'libre';
 
       const pedido = await tx`
-        INSERT INTO pedidos (mesa_id, tipo_pedido, estado, total, nombre_cliente)
-        VALUES (${mesaId}, 'mesa', 'pendiente', ${total}, ${nombre_cliente || null})
+        INSERT INTO pedidos (mesa_id, tipo_pedido, estado, total, nombre_cliente, comentarios)
+        VALUES (${mesaId}, 'mesa', 'pendiente', ${total}, ${nombre_cliente || null}, ${comentarios || null})
         RETURNING id, fecha_hora
       `;
       const pedidoId = pedido[0].id;

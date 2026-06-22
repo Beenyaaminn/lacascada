@@ -229,6 +229,11 @@
               {#if !pedido.detalles || pedido.detalles.length === 0}
                 <p class="text-xs text-gray-600">Cargando items...</p>
               {/if}
+              {#if pedido.comentarios}
+                <div class="border-t border-white/10 mt-1.5 pt-1.5">
+                  <p class="text-[10px] text-yellow-400 italic">💬 {pedido.comentarios}</p>
+                </div>
+              {/if}
             </div>
 
             <!-- Footer -->
