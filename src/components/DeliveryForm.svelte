@@ -17,7 +17,7 @@
   let acompanamientos = $state.raw(menuData?.acompanamientos || []); let productosAcomp = $state.raw(menuData?.productos_acompanamientos || []);
   let activeCategoria = $state.raw(categorias[0]?.id || 0); let cart: CartItem[] = $state([]);
 
-  const CAT_ICONS: Record<string, string> = { 'Colaciones':'🍛','Extras':'🍟','Completos':'🌭','Sandwichs':'🥪','Bebidas':'🥤','Té':'🍵','Cafés':'☕','Alcoholes':'🍺' };
+  const CAT_ICONS: Record<string, string> = { 'Completos y Ases':'🌭','Sándwiches de la Casa':'🥪','Plant-Based (Vegano)':'🌱','Para Compartir':'🍽️','Promociones':'⭐','Colaciones':'🍛','Extras':'🍟','Completos':'🌭','Sandwichs':'🥪','Bebidas':'🥤','Té':'🍵','Cafés':'☕','Alcoholes':'🍺' };
   function catIcon(n: string) { return CAT_ICONS[n] || '📋'; }
 
   interface CartItem { id: string; producto: Producto; cantidad: number; acompanamiento: string; subtotal: number; }
@@ -78,150 +78,150 @@
   }
 </script>
 
-<div class="min-h-screen" style="background-color:#faf6f0; color:#2d2418;">
+<div class="min-h-screen" style="background-color:#F8FAF9; color:#1A373A;">
 
   <!-- Header -->
-  <header class="sticky top-0 z-30 border-b" style="background-color: rgba(250,246,240,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-color: #e8e0d0;">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+  <header class="sticky top-0 z-30 border-b" style="background-color: rgba(248,250,249,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-color: #D8E4E2;">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background-color: #c9a227;">LC</div>
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background-color: #205C66;">LC</div>
         <div>
-          <h1 class="font-display text-lg font-semibold leading-none" style="color: #1a1410;">La Cascada</h1>
-          <p class="text-[11px] tracking-wider uppercase" style="color: #6b5d4f;">{modo === 'retiro' ? 'Retiro en local' : 'Delivery'}</p>
+          <h1 class="font-display text-lg font-semibold leading-none" style="color: #205C66;">La Cascada</h1>
+          <p class="text-[11px] tracking-wider uppercase" style="color: #52737A;">{modo === 'retiro' ? 'Retiro en local' : 'Delivery'}</p>
         </div>
       </div>
       {#if step === 'menu' && cart.length > 0}
-        <button class="px-5 py-2.5 rounded-full text-sm font-semibold transition-all flex items-center gap-2" style="background-color:#c9a227; color:#1a1410;" onclick={goCheckout}>🛒 {cart.length} · {formatCLP(getTotal())}</button>
+        <button class="px-5 py-2.5 rounded-full text-sm font-semibold transition-all flex items-center gap-2" style="background-color:#205C66; color:#fff;" onclick={goCheckout}>🛒 {cart.length} · {formatCLP(getTotal())}</button>
       {/if}
     </div>
   </header>
 
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 pb-32">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 pb-32">
     <!-- STEP: MENU -->
     {#if step === 'menu'}
       <div class="pt-8 pb-6">
-        <p class="text-[#6b5d4f] text-xs tracking-[0.2em] uppercase mb-2">{modo === 'retiro' ? 'Retiro en local' : 'Delivery a domicilio'}</p>
-        <h2 class="font-display text-3xl md:text-4xl text-[#1a1410] font-bold leading-tight">{modo === 'retiro' ? 'Pide y retira en el local' : 'Pide desde tu casa'}</h2>
-        <p class="text-[#6b5d4f] text-sm mt-2 max-w-lg leading-relaxed">{modo === 'retiro' ? 'Hacé tu pedido y pasá a buscarlo por el restaurante.' : 'Elegí tus platos favoritos y te los llevamos.'}</p>
+        <p class="text-[#52737A] text-xs tracking-[0.2em] uppercase mb-2">{modo === 'retiro' ? 'Retiro en local' : 'Delivery a domicilio'}</p>
+        <h2 class="font-display text-3xl md:text-4xl text-[#205C66] font-bold leading-tight">{modo === 'retiro' ? 'Pide y retira en el local' : 'Pide desde tu casa'}</h2>
+        <p class="text-[#52737A] text-sm mt-2 max-w-lg leading-relaxed">{modo === 'retiro' ? 'Hacé tu pedido y pasá a buscarlo por el restaurante.' : 'Elegí tus platos favoritos y te los llevamos.'}</p>
       </div>
 
       <!-- Modo selector -->
       <div class="flex gap-2 mb-6">
-        <button class="flex-1 py-3 rounded-xl text-sm font-bold transition-all border-2 {modo === 'delivery' ? 'border-[#c9a227] bg-[#c9a227] text-white' : 'border-[#e8e0d0] bg-white text-[#6b5d4f]'}" onclick={() => { modo = 'delivery'; activeCategoria = categorias[0]?.id || 0; }}>🛵 Delivery</button>
-        <button class="flex-1 py-3 rounded-xl text-sm font-bold transition-all border-2 {modo === 'retiro' ? 'border-[#c9a227] bg-[#c9a227] text-white' : 'border-[#e8e0d0] bg-white text-[#6b5d4f]'}" onclick={() => { modo = 'retiro'; activeCategoria = categorias[0]?.id || 0; }}>🏃 Retiro en local</button>
+        <button class="flex-1 py-3 rounded-xl text-sm font-bold transition-all border-2 {modo === 'delivery' ? 'border-[#205C66] bg-[#205C66] text-white' : 'border-[#D8E4E2] bg-white text-[#52737A]'}" onclick={() => { modo = 'delivery'; activeCategoria = categorias[0]?.id || 0; }}>🛵 Delivery</button>
+        <button class="flex-1 py-3 rounded-xl text-sm font-bold transition-all border-2 {modo === 'retiro' ? 'border-[#205C66] bg-[#205C66] text-white' : 'border-[#D8E4E2] bg-white text-[#52737A]'}" onclick={() => { modo = 'retiro'; activeCategoria = categorias[0]?.id || 0; }}>🏃 Retiro en local</button>
       </div>
 
-      <nav class="flex gap-2 overflow-x-auto pb-1 mb-4 sm:mb-8 sticky top-[57px] z-20 pt-2 scrollbar-hide" style="background: linear-gradient(to bottom, #faf6f0 60%, transparent);">
+      <nav class="flex gap-2 overflow-x-auto pb-1 mb-4 sm:mb-8 sticky top-[57px] z-20 pt-2 scrollbar-hide" style="background: linear-gradient(to bottom, #F8FAF9 60%, transparent);">
         {#each categorias as cat (cat.id)}
-          <button class="shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border" style="{activeCategoria === cat.id ? 'background-color:#1a1410; color:#fff; border-color:#1a1410;' : 'background-color:#fff; color:#6b5d4f; border-color:#e8e0d0;'}" onclick={() => { activeCategoria = cat.id }}><span class="mr-1">{catIcon(cat.nombre)}</span> {cat.nombre}</button>
+          <button class="shrink-0 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border" style="{activeCategoria === cat.id ? 'background-color:#205C66; color:#fff; border-color:#205C66;' : 'background-color:#fff; color:#52737A; border-color:#D8E4E2;'}" onclick={() => { activeCategoria = cat.id }}><span class="mr-1">{catIcon(cat.nombre)}</span> {cat.nombre}</button>
         {/each}
       </nav>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {#each getFiltered() as producto (producto.id)}
-          <button class="text-left rounded-xl p-5 transition-all duration-300 w-full group border" style="background-color:#fff; border-color:#e8e0d0;" onmouseenter={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#c9a227'; el.style.boxShadow = '0 4px 24px rgba(201,162,39,0.1)'; }} onmouseleave={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#e8e0d0'; el.style.boxShadow = 'none'; }} onclick={() => clickProducto(producto)}>
+          <button class="text-left rounded-xl p-5 transition-all duration-300 w-full group border" style="background-color:#fff; border-color:#D8E4E2;" onmouseenter={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#205C66'; el.style.boxShadow = '0 4px 24px rgba(32,92,102,0.10)'; }} onmouseleave={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#D8E4E2'; el.style.boxShadow = 'none'; }} onclick={() => clickProducto(producto)}>
             <div class="flex justify-between items-start gap-4">
-              <div class="flex-1 min-w-0"><h3 class="font-semibold text-[#1a1410] text-base group-hover:text-[#c9a227] transition-colors leading-snug">{producto.nombre}</h3>{#if producto.ingredientes}<p class="text-[#6b5d4f] text-xs leading-relaxed mt-1 line-clamp-2">{producto.ingredientes}</p>{/if}</div>
-              <div class="text-right shrink-0"><span class="font-bold text-[#1a1410] text-base">{formatCLP(producto.precio)}</span>{#if producto.maneja_stock}<p class="text-[11px] text-[#6b5d4f] mt-0.5">{producto.stock_actual} disp.</p>{/if}</div>
+              <div class="flex-1 min-w-0"><h3 class="font-semibold text-[#1A373A] text-base group-hover:text-[#205C66] transition-colors leading-snug">{producto.nombre}</h3>{#if producto.ingredientes}<p class="text-[#52737A] text-xs leading-relaxed mt-1 line-clamp-2">{producto.ingredientes}</p>{/if}</div>
+              <div class="text-right shrink-0"><span class="font-bold text-[#C04A33] text-base">{formatCLP(producto.precio)}</span>{#if producto.maneja_stock}<p class="text-[11px] text-[#52737A] mt-0.5">{producto.stock_actual} disp.</p>{/if}</div>
             </div>
           </button>
         {/each}
       </div>
-      {#if getFiltered().length === 0}<div class="text-center py-20"><p class="text-4xl mb-3 opacity-30">📭</p><p class="text-[#6b5d4f]">No hay productos en esta categoría</p></div>{/if}
+      {#if getFiltered().length === 0}<div class="text-center py-20"><p class="text-4xl mb-3 opacity-30">📭</p><p class="text-[#52737A]">No hay productos en esta categoría</p></div>{/if}
 
     <!-- STEP: DATOS -->
     {:else if step === 'datos'}
       <div class="max-w-md mx-auto pt-8">
-        <button class="text-[#c9a227] text-sm mb-8 flex items-center gap-1.5 font-medium hover:underline" onclick={back}>← Volver al menú</button>
-        <div class="rounded-2xl p-6 sm:p-8 shadow-lg border" style="background-color:#fff; border-color:#e8e0d0;">
-          <h2 class="font-display text-2xl text-[#1a1410] font-bold mb-1">Tus datos</h2>
-          <p class="text-[#6b5d4f] text-sm mb-6">{modo === 'retiro' ? 'Completá para tu retiro en local' : 'Completá para recibir tu pedido'}</p>
+        <button class="text-[#205C66] text-sm mb-8 flex items-center gap-1.5 font-medium hover:underline" onclick={back}>← Volver al menú</button>
+        <div class="rounded-2xl p-6 sm:p-8 shadow-lg border" style="background-color:#fff; border-color:#D8E4E2;">
+          <h2 class="font-display text-2xl text-[#205C66] font-bold mb-1">Tus datos</h2>
+          <p class="text-[#52737A] text-sm mb-6">{modo === 'retiro' ? 'Completá para tu retiro en local' : 'Completá para recibir tu pedido'}</p>
 
           <div class="space-y-4 mb-6">
-            <div><label class="block text-xs font-semibold text-[#1a1410] uppercase tracking-wider mb-1.5">Nombre</label><input type="text" bind:value={nombre} placeholder="Tu nombre completo" class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all" style="border-color:#e8e0d0; background-color:#faf6f0;" onfocus={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#c9a227'; }} onblur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#e8e0d0'; }} /></div>
+            <div><label class="block text-xs font-semibold text-[#1A373A] uppercase tracking-wider mb-1.5">Nombre</label><input type="text" bind:value={nombre} placeholder="Tu nombre completo" class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all" style="border-color:#D8E4E2; background-color:#F8FAF9;" onfocus={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#205C66'; }} onblur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#D8E4E2'; }} /></div>
 
             {#if modo === 'delivery'}
               <div>
-                <label class="block text-xs font-semibold text-[#1a1410] uppercase tracking-wider mb-2">Zona de delivery</label>
+                <label class="block text-xs font-semibold text-[#1A373A] uppercase tracking-wider mb-2">Zona de delivery</label>
                 <div class="grid grid-cols-2 gap-2">
                   {#each Object.keys(costoZonas) as z}
-                    <label class="flex flex-col items-center p-3 rounded-xl border-2 cursor-pointer transition-all {zona === z ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0]'}">
+                    <label class="flex flex-col items-center p-3 rounded-xl border-2 cursor-pointer transition-all {zona === z ? 'border-[#205C66] bg-[#F8FAF9]' : 'border-[#D8E4E2]'}">
                       <input type="radio" bind:group={zona} value={z} class="sr-only" />
-                      <span class="text-sm font-semibold text-[#1a1410]">{z}</span>
-                      <span class="text-xs text-[#c9a227] font-bold mt-1">+{formatCLP(costoZonas[z])}</span>
+                      <span class="text-sm font-semibold text-[#1A373A]">{z}</span>
+                      <span class="text-xs text-[#C04A33] font-bold mt-1">+{formatCLP(costoZonas[z])}</span>
                     </label>
                   {/each}
                 </div>
               </div>
-              <div><label class="block text-xs font-semibold text-[#1a1410] uppercase tracking-wider mb-1.5">Dirección</label><input type="text" bind:value={direccion} placeholder="Calle, número, depto" class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all" style="border-color:#e8e0d0; background-color:#faf6f0;" onfocus={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#c9a227'; }} onblur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#e8e0d0'; }} /></div>
+              <div><label class="block text-xs font-semibold text-[#1A373A] uppercase tracking-wider mb-1.5">Dirección</label><input type="text" bind:value={direccion} placeholder="Calle, número, depto" class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all" style="border-color:#D8E4E2; background-color:#F8FAF9;" onfocus={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#205C66'; }} onblur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#D8E4E2'; }} /></div>
             {/if}
 
-            <div><label class="block text-xs font-semibold text-[#1a1410] uppercase tracking-wider mb-1.5">Teléfono</label><input type="tel" value={telefono} oninput={handleTelefonoInput} placeholder="+569 XXXXXXXX" maxlength="14" class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all" style="border-color:#e8e0d0; background-color:#faf6f0;" onfocus={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#c9a227'; }} onblur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#e8e0d0'; }} /></div>
+            <div><label class="block text-xs font-semibold text-[#1A373A] uppercase tracking-wider mb-1.5">Teléfono</label><input type="tel" value={telefono} oninput={handleTelefonoInput} placeholder="+569 XXXXXXXX" maxlength="14" class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all" style="border-color:#D8E4E2; background-color:#F8FAF9;" onfocus={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#205C66'; }} onblur={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#D8E4E2'; }} /></div>
             <div>
-              <label class="block text-xs font-semibold text-[#1a1410] uppercase tracking-wider mb-2">Método de pago</label>
+              <label class="block text-xs font-semibold text-[#1A373A] uppercase tracking-wider mb-2">Método de pago</label>
               <div class="grid grid-cols-3 gap-2">
                 {#each ['efectivo', 'debito', 'credito'] as m}
-                  <label class="flex items-center justify-center gap-1 p-3 rounded-xl border-2 cursor-pointer text-sm transition-all" style="{metodoPago === m ? 'border-color:#c9a227; background-color:#faf6f0; color:#1a1410; font-weight:600;' : 'border-color:#e8e0d0; color:#6b5d4f;'}"><input type="radio" bind:group={metodoPago} value={m} class="sr-only" /><span>{m === 'efectivo' ? '💵 Efectivo' : m === 'debito' ? '💳 Débito' : '💳 Crédito'}</span></label>
+                  <label class="flex items-center justify-center gap-1 p-3 rounded-xl border-2 cursor-pointer text-sm transition-all" style="{metodoPago === m ? 'border-color:#205C66; background-color:#F8FAF9; color:#1A373A; font-weight:600;' : 'border-color:#D8E4E2; color:#52737A;'}"><input type="radio" bind:group={metodoPago} value={m} class="sr-only" /><span>{m === 'efectivo' ? '💵 Efectivo' : m === 'debito' ? '💳 Débito' : '💳 Crédito'}</span></label>
                 {/each}
               </div>
             </div>
             {#if metodoPago === 'efectivo'}
-              <div><label class="block text-xs font-semibold text-[#1a1410] uppercase tracking-wider mb-1.5">¿Con cuánto cancela?</label><input type="number" bind:value={efectivoConCuanto} min={getTotal()} class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all" style="border-color:#e8e0d0; background-color:#faf6f0;" /><div>{#if efectivoConCuanto > getTotal()}<p class="text-sm font-medium mt-1.5" style="color:#16a34a;">Vuelto: {formatCLP(efectivoConCuanto - getTotal())}</p>{/if}</div></div>
+              <div><label class="block text-xs font-semibold text-[#1A373A] uppercase tracking-wider mb-1.5">¿Con cuánto cancela?</label><input type="number" bind:value={efectivoConCuanto} min={getTotal()} class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all" style="border-color:#D8E4E2; background-color:#F8FAF9;" /><div>{#if efectivoConCuanto > getTotal()}<p class="text-sm font-medium mt-1.5" style="color:#2E7D5B;">Vuelto: {formatCLP(efectivoConCuanto - getTotal())}</p>{/if}</div></div>
             {/if}
           </div>
 
-          <div class="rounded-xl p-4 mb-6" style="background-color:#faf6f0;">
-            <h3 class="font-semibold text-[#1a1410] mb-3 text-sm uppercase tracking-wider">Resumen</h3>
+          <div class="rounded-xl p-4 mb-6" style="background-color:#F8FAF9;">
+            <h3 class="font-semibold text-[#1A373A] mb-3 text-sm uppercase tracking-wider">Resumen</h3>
             <div class="space-y-2 mb-3">
               {#each cart as item (item.id)}
                 <div class="flex justify-between items-center text-sm">
                   <div class="flex-1 min-w-0">
-                    <span class="text-[#2d2418]">{item.cantidad}x {item.producto.nombre}</span>
+                    <span class="text-[#1A373A]">{item.cantidad}x {item.producto.nombre}</span>
                     {#if item.acompanamiento && item.acompanamiento !== 'Sin acompañamiento'}<p class="text-xs opacity-50">+ {item.acompanamiento}</p>{/if}
                   </div>
-                  <span class="font-semibold text-[#1a1410] shrink-0 mr-2">{formatCLP(item.subtotal)}</span>
+                  <span class="font-semibold text-[#1A373A] shrink-0 mr-2">{formatCLP(item.subtotal)}</span>
                   <button class="text-red-400 hover:text-red-600 text-lg leading-none px-1" onclick={() => remove(item.id)} title="Eliminar">&times;</button>
                 </div>
               {/each}
             </div>
             {#if getCostoEnvio() > 0}
-              <div class="flex justify-between text-sm border-t pt-2 mb-2" style="border-color:#e8e0d0;">
-                <span class="text-[#6b5d4f]">Envío ({zona})</span>
-                <span class="font-semibold text-[#c9a227]">{formatCLP(getCostoEnvio())}</span>
+              <div class="flex justify-between text-sm border-t pt-2 mb-2" style="border-color:#D8E4E2;">
+                <span class="text-[#52737A]">Envío ({zona})</span>
+                <span class="font-semibold text-[#C04A33]">{formatCLP(getCostoEnvio())}</span>
               </div>
             {/if}
-            <div class="border-t pt-3 flex justify-between items-center" style="border-color:#e8e0d0;"><span class="font-bold text-[#1a1410]">Total</span><span class="text-xl font-bold" style="color:#c9a227;">{formatCLP(getTotal())}</span></div>
-            {#if modo === 'retiro'}<p class="text-xs text-[#6b5d4f] mt-2 text-center">📍 Retirás en Rioseco #267, Lebu</p>{/if}
+            <div class="border-t pt-3 flex justify-between items-center" style="border-color:#D8E4E2;"><span class="font-bold text-[#1A373A]">Total</span><span class="text-xl font-bold" style="color:#C04A33;">{formatCLP(getTotal())}</span></div>
+            {#if modo === 'retiro'}<p class="text-xs text-[#52737A] mt-2 text-center">📍 Retirás en Rioseco #267, Lebu</p>{/if}
           </div>
 
           {#if orderError}<div class="rounded-xl p-3 mb-4 text-sm font-medium" style="background-color:#fef2f2; color:#dc2626; border:1px solid #fecaca;">{orderError}</div>{/if}
 
-          <button class="w-full py-3.5 rounded-xl text-white font-bold text-lg transition-all shadow-lg" style="background-color:#c9a227;" onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#b8922a'; }} onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#c9a227'; }} onclick={submitOrder}>Confirmar · {formatCLP(getTotal())}</button>
+          <button class="w-full py-3.5 rounded-xl text-white font-bold text-lg transition-all shadow-lg" style="background-color:#205C66;" onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#184A52'; }} onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#205C66'; }} onclick={submitOrder}>Confirmar · {formatCLP(getTotal())}</button>
         </div>
       </div>
 
     <!-- STEP: ÉXITO -->
     {:else if step === 'exito'}
       <div class="max-w-md mx-auto pt-12 text-center">
-        <div class="rounded-3xl p-8 sm:p-10 shadow-lg border animate-fade-in" style="background-color:#fff; border-color:#e8e0d0;">
-          <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style="background-color:#f0fdf4;"><span class="text-3xl">✅</span></div>
-          <h2 class="font-display text-2xl text-[#1a1410] font-bold mb-2">¡Pedido enviado!</h2>
-          <p class="text-[#6b5d4f] text-sm mb-4">Tu pedido fue enviado por WhatsApp. Te contactaremos para confirmar.</p>
+        <div class="rounded-3xl p-8 sm:p-10 shadow-lg border animate-fade-in" style="background-color:#fff; border-color:#D8E4E2;">
+          <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style="background-color:#EDF3F2;"><span class="text-3xl">✅</span></div>
+          <h2 class="font-display text-2xl text-[#205C66] font-bold mb-2">¡Pedido enviado!</h2>
+          <p class="text-[#52737A] text-sm mb-4">Tu pedido fue enviado por WhatsApp. Te contactaremos para confirmar.</p>
           {#if modo === 'retiro'}
-            <p class="text-[#6b5d4f] text-sm mt-6 leading-relaxed">Revisaremos tu pedido y te contactaremos al <span class="font-semibold text-[#1a1410]">{telefono}</span> para coordinar{modo === 'retiro' ? ' el retiro' : ' el despacho'}.</p>
+            <p class="text-[#52737A] text-sm mt-6 leading-relaxed">Revisaremos tu pedido y te contactaremos al <span class="font-semibold text-[#1A373A]">{telefono}</span> para coordinar{modo === 'retiro' ? ' el retiro' : ' el despacho'}.</p>
           {/if}
-          <button class="w-full py-3.5 rounded-xl text-white font-bold mt-8 transition-all" style="background-color:#c9a227;" onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#b8922a'; }} onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#c9a227'; }} onclick={nuevoPedido}>Hacer otro pedido</button>
+          <button class="w-full py-3.5 rounded-xl text-white font-bold mt-8 transition-all" style="background-color:#205C66;" onmouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#184A52'; }} onmouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#205C66'; }} onclick={nuevoPedido}>Hacer otro pedido</button>
         </div>
       </div>
     {/if}
   </div>
 
   <!-- Footer -->
-  <footer class="border-t py-10 px-4 mt-8" style="border-color:#e8e0d0; background-color:#fff;">
-    <div class="max-w-5xl mx-auto text-center">
-      <p class="font-display text-xl text-[#c9a227] font-bold">La Cascada</p>
-      <p class="text-[#6b5d4f] text-xs mt-1">{modo === 'retiro' ? 'Retiro en local' : 'Delivery'} &bull; Rioseco #267, Lebu</p>
-      <p class="text-[#6b5d4f] text-xs">+569 66937327</p>
+  <footer class="border-t py-10 px-4 mt-8" style="border-color:#D8E4E2; background-color:#fff;">
+    <div class="max-w-6xl mx-auto text-center">
+      <p class="font-display text-xl text-[#205C66] font-bold">La Cascada</p>
+      <p class="text-[#52737A] text-xs mt-1">{modo === 'retiro' ? 'Retiro en local' : 'Delivery'} &bull; Rioseco #267, Lebu</p>
+      <p class="text-[#52737A] text-xs">+569 66937327</p>
     </div>
   </footer>
 </div>
@@ -231,17 +231,17 @@
   <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick={closeModal}></div>
     <div class="relative w-full sm:max-w-md max-h-[80vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-6 z-10 shadow-2xl animate-slide-up" style="background-color:#fff;">
-      <div class="flex items-center gap-4 mb-5"><span class="text-3xl">{catIcon(selectedProduct.categoria_nombre || '')}</span><div><h3 class="font-semibold text-lg text-[#1a1410]">{selectedProduct.nombre}</h3><p class="text-[#c9a227] font-bold">{formatCLP(selectedProduct.precio)}</p></div></div>
+      <div class="flex items-center gap-4 mb-5"><span class="text-3xl">{catIcon(selectedProduct.categoria_nombre || '')}</span><div><h3 class="font-semibold text-lg text-[#1A373A]">{selectedProduct.nombre}</h3><p class="text-[#C04A33] font-bold">{formatCLP(selectedProduct.precio)}</p></div></div>
       {#if getAcomps(selectedProduct.id).length > 0}
         <div class="mb-4">
-          <p class="text-xs font-semibold text-[#6b5d4f] uppercase tracking-wider mb-2">Acompañamientos (máx. 2) {#if selectedAcomps.length === 0}<span class="text-red-400 font-normal normal-case">— Sin acompañamiento</span>{/if}</p>
+          <p class="text-xs font-semibold text-[#52737A] uppercase tracking-wider mb-2">Acompañamientos (máx. 2) {#if selectedAcomps.length === 0}<span class="text-red-400 font-normal normal-case">— Sin acompañamiento</span>{/if}</p>
           <div class="space-y-2">
             {#each getAcomps(selectedProduct.id) as acomp (acomp.id)}
               {@const disabled = selectedAcomps.length >= 2 && !selectedAcomps.includes(acomp.id)}
-              <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedAcomps.includes(acomp.id) ? 'border-[#c9a227] bg-[#faf6f0]' : 'border-[#e8e0d0] hover:border-[#c9a227]/50'} {disabled ? 'opacity-40 pointer-events-none' : ''}">
-                <input type="checkbox" checked={selectedAcomps.includes(acomp.id)} disabled={disabled} onchange={(e) => { if (e.target.checked) selectedAcomps = [...selectedAcomps, acomp.id]; else selectedAcomps = selectedAcomps.filter(id => id !== acomp.id); }} style="accent-color:#c9a227;" />
-                <span class="flex-1 text-sm font-medium text-[#2d2418]">{acomp.nombre}</span>
-                {#if acomp.recargo > 0}<span class="text-sm text-[#c9a227] font-bold">+{formatCLP(acomp.recargo)}</span>{/if}
+              <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all {selectedAcomps.includes(acomp.id) ? 'border-[#205C66] bg-[#F8FAF9]' : 'border-[#D8E4E2] hover:border-[#205C66]/50'} {disabled ? 'opacity-40 pointer-events-none' : ''}">
+                <input type="checkbox" checked={selectedAcomps.includes(acomp.id)} disabled={disabled} onchange={(e) => { if (e.target.checked) selectedAcomps = [...selectedAcomps, acomp.id]; else selectedAcomps = selectedAcomps.filter(id => id !== acomp.id); }} style="accent-color:#205C66;" />
+                <span class="flex-1 text-sm font-medium text-[#1A373A]">{acomp.nombre}</span>
+                {#if acomp.recargo > 0}<span class="text-sm text-[#C04A33] font-bold">+{formatCLP(acomp.recargo)}</span>{/if}
               </label>
             {/each}
           </div>
@@ -252,11 +252,11 @@
           <p class="text-sm font-medium text-gray-700 mb-3">Agregar {selectedProduct?.nombre} al carro?</p>
           <div class="flex gap-3">
             <button class="flex-1 py-3 rounded-xl border-2 border-gray-300 text-gray-600 font-semibold transition-all text-base" onclick={() => { confirmStep = false }}>No, cancelar</button>
-            <button class="flex-1 py-3 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#c9a227;" onclick={confirmarYAgregar}>Si, agregar</button>
+            <button class="flex-1 py-3 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#205C66;" onclick={confirmarYAgregar}>Si, agregar</button>
           </div>
         </div>
       {:else}
-        <button class="w-full py-3.5 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#c9a227;" onclick={prepararAddToCart}>Agregar al pedido</button>
+        <button class="w-full py-3.5 rounded-xl text-white font-semibold transition-all text-base" style="background-color:#205C66;" onclick={prepararAddToCart}>Agregar al pedido</button>
       {/if}
     </div>
   </div>

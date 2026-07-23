@@ -15,18 +15,15 @@ INSERT INTO mesas (numero_mesa, piso, estado) VALUES
   (5, 2, 'libre'), (6, 2, 'libre'), (7, 2, 'libre'), (8, 2, 'libre'),
   (9, 2, 'libre'), (10, 2, 'libre');
 
--- Categorías
+-- Categorías principales de la carta
 INSERT INTO categorias (nombre, orden) VALUES
-  ('Colaciones', 1),
-  ('Extras', 2),
-  ('Completos', 3),
-  ('Sandwichs', 4),
-  ('Bebidas', 5),
-  ('Té', 6),
-  ('Cafés', 7),
-  ('Alcoholes', 8);
+  ('Completos y Ases', 1),
+  ('Sándwiches de la Casa', 2),
+  ('Plant-Based (Vegano)', 3),
+  ('Para Compartir', 4),
+  ('Promociones', 5);
 
--- Acompañamientos para colaciones (máx. 2 por plato, Papas Fritas con recargo)
+-- Acompañamientos (base para colaciones y extras configurables desde el admin)
 INSERT INTO acompanamientos (nombre, es_extra, recargo) VALUES
   ('Arroz', FALSE, 0),
   ('Puré', FALSE, 0),
@@ -36,26 +33,28 @@ INSERT INTO acompanamientos (nombre, es_extra, recargo) VALUES
   ('Arroz Primavera', FALSE, 0),
   ('Papas Fritas', FALSE, 2000);
 
--- Vincular acompañamientos a las colaciones
-INSERT INTO productos_acompanamientos (producto_id, acompanamiento_id) VALUES
-  (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7),
-  (2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7),
-  (3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (3, 7);
-
--- Productos de ejemplo (colaciones - sin stock)
+-- Productos: Completos y Ases
 INSERT INTO productos (categoria_id, nombre, descripcion, precio, ingredientes, maneja_stock, disponible_dia) VALUES
-  (1, 'Pollo al Jugo', 'Pechuga de pollo al jugo con acompañamiento a elección', 6500, 'Pollo, cebolla, zanahoria, papas, caldo de ave', FALSE, TRUE),
-  (1, 'Carne al Jugo', 'Carne de vacuno al jugo con acompañamiento a elección', 7000, 'Carne de vacuno, cebolla, zanahoria, papas, caldo de carne', FALSE, TRUE),
-  (1, 'Costillar al Jugo', 'Costillar de cerdo al jugo con acompañamiento a elección', 7500, 'Costillar de cerdo, cebolla, ajo, especias', FALSE, TRUE);
+  (1, 'Italiano', 'Vienesa, palta, tomate y mayonesa casera', 4650, 'Pan, vienesa, palta, tomate, mayonesa', FALSE, TRUE),
+  (1, 'As a la Chilena', 'Carne asada con tomate, palta y mayonesa', 5490, 'Pan, carne asada, tomate, palta, mayonesa', FALSE, TRUE);
 
--- Productos de ejemplo (bebidas - con stock)
-INSERT INTO productos (categoria_id, nombre, descripcion, precio, maneja_stock, stock_actual, disponible_dia) VALUES
-  (5, 'Coca-Cola 350cc', 'Bebida Coca-Cola 350cc en lata', 1500, TRUE, 50, TRUE),
-  (5, 'Pepsi 350cc', 'Bebida Pepsi 350cc en lata', 1500, TRUE, 40, TRUE),
-  (5, 'Sprite 350cc', 'Bebida Sprite 350cc en lata', 1500, TRUE, 35, TRUE),
-  (5, 'Fanta 350cc', 'Bebida Fanta 350cc en lata', 1500, TRUE, 30, TRUE);
+-- Productos: Sándwiches de la Casa
+INSERT INTO productos (categoria_id, nombre, descripcion, precio, ingredientes, maneja_stock, disponible_dia) VALUES
+  (2, 'Chacarero', 'Carne con porotos verdes, ají verde y mayonesa', 4650, 'Pan, carne, porotos verdes, ají verde, mayonesa', FALSE, TRUE),
+  (2, 'Luco', 'Carne con queso fundido', 4650, 'Pan, carne, queso', FALSE, TRUE),
+  (2, 'Smash Burger Clásica', 'Hamburguesa smash con queso cheddar, pepinillos y salsa de la casa', 7490, 'Pan, hamburguesa smash, queso cheddar, pepinillos, salsa de la casa', FALSE, TRUE);
 
--- Productos de ejemplo (alcohol - con stock)
-INSERT INTO productos (categoria_id, nombre, descripcion, precio, maneja_stock, stock_actual, disponible_dia) VALUES
-  (6, 'Cerveza Cristal Litro', 'Cerveza Cristal botella 1 litro', 3500, TRUE, 30, TRUE),
-  (6, 'Cerveza Escudo Litro', 'Cerveza Escudo botella 1 litro', 3500, TRUE, 25, TRUE);
+-- Productos: Plant-Based (Vegano)
+INSERT INTO productos (categoria_id, nombre, descripcion, precio, ingredientes, maneja_stock, disponible_dia) VALUES
+  (3, 'Veggie de la Casa', 'Hamburguesa de legumbres con palta, tomate y mayo vegana', 5990, 'Pan, hamburguesa de legumbres, palta, tomate, mayo vegana', FALSE, TRUE),
+  (3, 'Italiano Vegano', 'Vienesa vegana con palta, tomate y mayo vegana', 4990, 'Pan, vienesa vegana, palta, tomate, mayo vegana', FALSE, TRUE);
+
+-- Productos: Para Compartir
+INSERT INTO productos (categoria_id, nombre, descripcion, precio, ingredientes, maneja_stock, disponible_dia) VALUES
+  (4, 'Tabla La Cascada', 'Papas rústicas, churrascos, pollo crocante y salsas de la casa', 12990, 'Papas rústicas, churrasco, pollo crocante, salsas de la casa', FALSE, TRUE),
+  (4, 'Papas de la Casa', 'Papas rústicas con mayo casera y pebre', 4990, 'Papas, mayo casera, pebre', FALSE, TRUE);
+
+-- Productos: Promociones
+INSERT INTO productos (categoria_id, nombre, descripcion, precio, ingredientes, maneja_stock, disponible_dia) VALUES
+  (5, 'Promo Veggie Doble', '2 sandwiches Veggie de la Casa + 2 bebidas', 14590, '2 Veggie de la Casa, 2 bebidas', FALSE, TRUE),
+  (5, 'Promo Smash + Papas', 'Smash Burger Clásica + Papas de la Casa', 9990, 'Smash Burger Clásica, Papas de la Casa', FALSE, TRUE);

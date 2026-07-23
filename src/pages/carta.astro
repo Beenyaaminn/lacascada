@@ -1,0 +1,139 @@
+---
+import '../styles/global.css';
+import { sql } from '../lib/db';
+
+const categorias = await sql`SELECT * FROM categorias ORDER BY orden ASC`;
+const productos = await sql`
+  SELECT p.*, c.nombre as categoria_nombre
+  FROM productos p
+  JOIN categorias c ON c.id = p.categoria_id
+  WHERE p.disponible_dia = TRUE
+    AND (p.maneja_stock = FALSE OR p.stock_actual > 0)
+  ORDER BY p.nombre ASC
+`;
+
+const porCategoria = categorias.map((c: any) => ({
+  ...c,
+  items: productos.filter((p: any) => p.categoria_id === c.id),
+})).filter((c: any) => c.items.length > 0);
+
+function formatCLP(n: number) { return '$' + n.toLocaleString('es-CL'); }
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content="Carta de La Cascada — lista para imprimir y exhibir en mesa." />
+    <title>Carta — La Cascada</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet" />
+  </head>
+  <body style="background-color: var(--color-surface-dark);">
+
+    <!-- Barra de acciones (solo pantalla) -->
+    <div class="no-print sticky top-0 z-10 px-4 py-3 flex items-center justify-between" style="background-color: var(--color-primary);">
+      <p class="text-white text-sm font-medium">Vista previa de la carta</p>
+      <button onclick="window.print()" class="px-5 py-2 rounded-full text-sm font-bold text-white transition-all" style="background-color: var(--color-accent);">
+        🖨️ Imprimir / Guardar PDF
+      </button>
+    </div>
+
+    <!-- Hoja A4 -->
+    <div class="sheet mx-auto relative" style="background-color: var(--color-background);">
+
+      <!-- Encabezado -->
+      <header class="text-center pt-10 pb-6 px-10">
+        <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-soft) 100%);">
+          <span class="font-display text-white font-bold text-lg">LC</span>
+        </div>
+        <h1 class="font-display text-4xl font-bold tracking-tight" style="color: var(--color-primary);">La Cascada</h1>
+        <div class="flex items-center justify-center gap-3 mt-2">
+          <div class="h-px w-10" style="background: linear-gradient(90deg, transparent, var(--color-accent));"></div>
+          <span class="text-[11px] tracking-[0.3em] uppercase font-semibold" style="color: var(--color-accent);">Carta</span>
+          <div class="h-px w-10" style="background: linear-gradient(90deg, var(--color-accent), transparent);"></div>
+        </div>
+        <p class="text-xs mt-3" style="color: var(--color-text-muted);">Rioseco #267, Lebu &middot; +569 66937327</p>
+      </header>
+
+      <!-- Categorías y productos -->
+      <main class="px-10 pb-40">
+        {porCategoria.map((cat: any) => (
+          <section class="mb-8 break-inside-avoid">
+            <h2 class="font-display text-xl font-bold pb-2 mb-4 border-b-2" style="color: var(--color-primary); border-color: var(--color-primary);">
+              {cat.nombre}
+            </h2>
+            <ul class="space-y-3.5">
+              {cat.items.map((p: any) => (
+                <li class="break-inside-avoid">
+                  <div class="flex items-baseline gap-2">
+                    <span class="font-semibold text-[15px]" style="color: var(--color-text);">{p.nombre}</span>
+                    <span class="flex-1 border-b border-dotted translate-y-[-4px]" style="border-color: var(--color-text-light);"></span>
+                    <span class="font-bold text-[15px] whitespace-nowrap" style="color: var(--color-accent);">{formatCLP(p.precio)}</span>
+                  </div>
+                  {p.descripcion && (
+                    <p class="text-xs mt-0.5 pr-16 leading-relaxed" style="color: var(--color-text-muted);">{p.descripcion}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </main>
+
+      <!-- QR en la esquina inferior derecha -->
+      <div class="qr-corner absolute text-center">
+        <div class="rounded-2xl p-3 inline-block" style="background-color: #fff; border: 1.5px solid var(--color-border);">
+          <img src="/assets/qr-menu-lacascada.png" alt="QR Menú Digital La Cascada" class="w-24 h-24 mx-auto" />
+          <p class="text-[10px] font-bold mt-2 tracking-wide uppercase" style="color: var(--color-primary);">Escanea aquí</p>
+          <p class="text-[9px] mt-0.5" style="color: var(--color-text-muted);">y pide desde tu mesa</p>
+        </div>
+      </div>
+
+      <!-- Pie -->
+      <footer class="absolute bottom-0 left-0 right-0 pb-6 px-10">
+        <div class="flex items-center gap-3 justify-center opacity-60">
+          <div class="h-px w-8" style="background: linear-gradient(90deg, transparent, var(--color-accent));"></div>
+          <span class="font-display italic text-xs" style="color: var(--color-accent);">Sabores que fluyen, momentos que quedan</span>
+          <div class="h-px w-8" style="background: linear-gradient(90deg, var(--color-accent), transparent);"></div>
+        </div>
+      </footer>
+    </div>
+
+    <style>
+      * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .sheet {
+        max-width: 210mm;
+        min-height: 297mm;
+        box-shadow: var(--shadow-xl);
+        margin-top: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+      .qr-corner {
+        right: 2.5rem;
+        bottom: 4.5rem;
+      }
+      @page {
+        size: A4;
+        margin: 0;
+      }
+      @media print {
+        body { background-color: #fff !important; }
+        .no-print { display: none !important; }
+        .sheet {
+          box-shadow: none;
+          margin: 0;
+          max-width: none;
+          width: 210mm;
+          min-height: 297mm;
+        }
+        .break-inside-avoid { break-inside: avoid; }
+      }
+    </style>
+  </body>
+</html>

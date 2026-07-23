@@ -2,10 +2,10 @@
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout title="Iniciar Sesión — La Cascada">
-  <main class="min-h-[90vh] flex items-center justify-center p-4 relative overflow-hidden" style="background: linear-gradient(160deg, #1a1410 0%, #2d2418 40%, #1a1410 100%);">
+  <main class="min-h-[90vh] flex items-center justify-center p-4 relative overflow-hidden" style="background: linear-gradient(160deg, #102F34 0%, #1B4E56 40%, #102F34 100%);">
 
-    <!-- Subtle wood-grain pattern overlay -->
-    <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(201,162,39,0.3) 2px, rgba(201,162,39,0.3) 3px), repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(201,162,39,0.15) 8px, rgba(201,162,39,0.15) 9px);"></div>
+    <!-- Subtle pattern overlay -->
+    <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(92,154,160,0.3) 2px, rgba(92,154,160,0.3) 3px), repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(92,154,160,0.15) 8px, rgba(92,154,160,0.15) 9px);"></div>
 
     <!-- Warm glows -->
     <div class="absolute top-1/4 -left-20 w-80 h-80 rounded-full opacity-[0.08] pointer-events-none" style="background: radial-gradient(circle, var(--color-accent) 0%, transparent 70%); filter: blur(60px);"></div>
@@ -16,12 +16,12 @@ import Layout from '../layouts/Layout.astro';
       <!-- Brand emblem -->
       <div class="text-center mb-8 animate-fade-in">
         <div class="inline-flex items-center justify-center mb-6">
-          <div class="w-24 h-24 rounded-full flex items-center justify-center relative" style="background: linear-gradient(135deg, #c9a227 0%, #a8841c 100%); box-shadow: 0 8px 40px rgba(201, 162, 39, 0.25);">
+          <div class="w-24 h-24 rounded-full flex items-center justify-center relative" style="background: linear-gradient(135deg, #3B7B84 0%, #205C66 100%); box-shadow: 0 8px 40px rgba(32, 92, 102, 0.35);">
             <div class="text-center">
               <span class="font-display text-4xl text-white font-bold leading-none">LC</span>
             </div>
             <!-- Ring around emblem -->
-            <div class="absolute inset-0 rounded-full pointer-events-none" style="border: 1.5px solid rgba(201, 162, 39, 0.35); box-shadow: 0 0 0 6px rgba(26, 20, 16, 0.9), 0 0 0 7px rgba(201, 162, 39, 0.15);"></div>
+            <div class="absolute inset-0 rounded-full pointer-events-none" style="border: 1.5px solid rgba(92, 154, 160, 0.35); box-shadow: 0 0 0 6px rgba(16, 47, 52, 0.9), 0 0 0 7px rgba(92, 154, 160, 0.15);"></div>
           </div>
         </div>
         <h1 class="font-display text-4xl sm:text-5xl font-bold tracking-tight" style="color: var(--color-surface);">La Cascada</h1>
@@ -33,7 +33,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- Form card (solid, no glass) -->
-      <div class="rounded-2xl p-8 sm:p-10 animate-fade-in delay-200" style="background-color: rgba(45, 36, 24, 0.7); border: 1px solid rgba(201, 162, 39, 0.15); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+      <div class="rounded-2xl p-8 sm:p-10 animate-fade-in delay-200" style="background-color: rgba(16, 47, 52, 0.7); border: 1px solid rgba(92, 154, 160, 0.15); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
         <h2 class="font-display text-2xl text-center mb-1" style="color: var(--color-surface);">Bienvenido</h2>
         <p class="text-center text-sm mb-7" style="color: var(--color-text-muted);">Accede al panel de administración</p>
 
@@ -41,14 +41,14 @@ import Layout from '../layouts/Layout.astro';
           <div>
             <label for="login" class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color: var(--color-accent);">Usuario o correo</label>
             <div class="relative">
-              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color: #8a7a68;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color: #8AA6AA;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
               <input type="text" id="login" name="login" required
                 class="w-full pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition-all duration-300"
-                style="background-color: rgba(255,255,255,0.06); border: 1.5px solid rgba(201,162,39,0.18); color: var(--color-surface); font-family: var(--font-body);"
+                style="background-color: rgba(255,255,255,0.06); border: 1.5px solid rgba(92,154,160,0.25); color: var(--color-surface); font-family: var(--font-body);"
                 placeholder="Tu nombre o correo"
                 autocomplete="username"
-                onfocus="this.style.borderColor='#c9a227';this.style.boxShadow='0 0 0 3px rgba(201,162,39,0.12)'"
-                onblur="this.style.borderColor='rgba(201,162,39,0.18)';this.style.boxShadow='none'"
+                onfocus="this.style.borderColor='#5C9AA0';this.style.boxShadow='0 0 0 3px rgba(92,154,160,0.15)'"
+                onblur="this.style.borderColor='rgba(92,154,160,0.25)';this.style.boxShadow='none'"
               />
             </div>
           </div>
@@ -56,16 +56,16 @@ import Layout from '../layouts/Layout.astro';
           <div>
             <label for="password" class="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color: var(--color-accent);">Contraseña</label>
             <div class="relative">
-              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color: #8a7a68;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color: #8AA6AA;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
               <input type="password" id="password" name="password" required
                 class="w-full pl-10 pr-12 py-3 rounded-xl text-sm outline-none transition-all duration-300"
-                style="background-color: rgba(255,255,255,0.06); border: 1.5px solid rgba(201,162,39,0.18); color: var(--color-surface); font-family: var(--font-body);"
+                style="background-color: rgba(255,255,255,0.06); border: 1.5px solid rgba(92,154,160,0.25); color: var(--color-surface); font-family: var(--font-body);"
                 placeholder="••••••••"
                 autocomplete="current-password"
-                onfocus="this.style.borderColor='#c9a227';this.style.boxShadow='0 0 0 3px rgba(201,162,39,0.12)'"
-                onblur="this.style.borderColor='rgba(201,162,39,0.18)';this.style.boxShadow='none'"
+                onfocus="this.style.borderColor='#5C9AA0';this.style.boxShadow='0 0 0 3px rgba(92,154,160,0.15)'"
+                onblur="this.style.borderColor='rgba(92,154,160,0.25)';this.style.boxShadow='none'"
               />
-              <button type="button" onclick="const p=document.getElementById('password');p.type=p.type==='password'?'text':'password';this.querySelector('svg').style.opacity=p.type==='password'?'1':'0.4'" class="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity" style="color: #8a7a68;">
+              <button type="button" onclick="const p=document.getElementById('password');p.type=p.type==='password'?'text':'password';this.querySelector('svg').style.opacity=p.type==='password'?'1':'0.4'" class="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity" style="color: #8AA6AA;">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
               </button>
             </div>
@@ -75,9 +75,9 @@ import Layout from '../layouts/Layout.astro';
 
           <button type="submit" id="submit-btn"
             class="w-full py-3.5 rounded-xl font-bold text-base shadow-lg transition-all duration-300 disabled:opacity-70 disabled:cursor-wait mt-2"
-            style="background: linear-gradient(135deg, #c9a227 0%, #a8841c 100%); color: var(--color-primary); box-shadow: 0 4px 20px rgba(201,162,39,0.3);"
-            onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 24px rgba(201,162,39,0.4)'"
-            onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(201,162,39,0.3)'"
+            style="background: linear-gradient(135deg, #2E7080 0%, #205C66 100%); color: #fff; box-shadow: 0 4px 20px rgba(32,92,102,0.4);"
+            onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 24px rgba(32,92,102,0.5)'"
+            onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(32,92,102,0.4)'"
           >
             <span id="btn-text">Iniciar Sesión</span>
             <span id="btn-loading" class="hidden items-center justify-center gap-2">
@@ -89,7 +89,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- Footer hint -->
-      <p class="text-center text-xs mt-6 animate-fade-in delay-300" style="color: #5a4d3e;">&copy; {new Date().getFullYear()} La Cascada &middot; Est. 2014</p>
+      <p class="text-center text-xs mt-6 animate-fade-in delay-300" style="color: #52737A;">&copy; {new Date().getFullYear()} La Cascada &middot; Est. 2014</p>
     </div>
   </main>
 

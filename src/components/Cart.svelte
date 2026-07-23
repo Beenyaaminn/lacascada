@@ -73,7 +73,7 @@
       <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4">
         <div class="flex justify-between items-center mb-3">
           <span class="text-gray-700 font-medium">Total</span>
-          <span class="text-xl font-bold text-brand-700">${total.toLocaleString('es-CL')}</span>
+          <span class="text-xl font-bold" style="color:#C04A33;">${total.toLocaleString('es-CL')}</span>
         </div>
 
         {#if orderError}
@@ -82,9 +82,9 @@
 
         <button
           class="w-full py-3 text-base font-semibold rounded-xl mb-2 transition-all"
-          style="background-color:#16a34a; color:#fff;"
-          on:mouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#15803d'; }}
-          on:mouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#16a34a'; }}
+          style="background-color:#205C66; color:#fff;"
+          on:mouseenter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#184A52'; }}
+          on:mouseleave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#205C66'; }}
           on:click={() => dispatch('close')}
         >
           Seguir pidiendo
