@@ -28,7 +28,7 @@
   let acompanamientos: Acompanamiento[] = $state([]);
   let productosAcomp: ProductoAcompanamiento[] = $state([]);
   let comensalesList: ComensalOrden[] = $state([]);
-  let activeGrupo: string = $state('colaciones');
+  let activeGrupo: string = $state('completos_ases');
   let activeComensal: number = $state(0);
   let loading: boolean = $state(true);
   let saving: boolean = $state(false);
