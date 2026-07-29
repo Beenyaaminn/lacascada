@@ -42,7 +42,12 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
 
     const users = await sql`SELECT * FROM usuarios WHERE email = ${login} OR nombre = ${login} LIMIT 1`;
 
-    if (users.length === 0) {
+    // Comparación dummy para igualar tiempos de respuesta (evita enumerar usuarios por timing)
+    const DUMMY_HASH = '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
+    const user = users[0] || null;
+    const validPassword = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
+
+    if (!user) {
       await sql`INSERT INTO login_attempts (email, ip, exito) VALUES (${login}, ${ip}, FALSE)`;
       await registrarAuditoria('LOGIN_FALLIDO', 'usuarios', null, login, `Usuario no encontrado: ${login}`, ip);
       return new Response(JSON.stringify({ error: 'Credenciales inválidas' }), {
@@ -50,9 +55,6 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-
-    const user = users[0];
-    const validPassword = await bcrypt.compare(password, user.password_hash);
 
     if (!validPassword) {
       await sql`INSERT INTO login_attempts (email, ip, exito) VALUES (${login}, ${ip}, FALSE)`;

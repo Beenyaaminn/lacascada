@@ -10,17 +10,22 @@
   let password: string = $state('');
   let rol: string = $state('garzon');
   let error: string = $state('');
+  let loadError: string = $state('');
   let saving: boolean = $state(false);
 
   onMount(() => { loadUsuarios(); });
 
   async function loadUsuarios() {
     loading = true;
+    loadError = '';
     try {
       const res = await fetch('/api/admin/usuarios');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       usuarios = data.usuarios || [];
-    } catch (e) { /* */ }
+    } catch (e) {
+      loadError = 'No se pudieron cargar los usuarios. Verifica tu conexión.';
+    }
     finally { loading = false; }
   }
 
@@ -71,6 +76,11 @@
 
   {#if loading}
     <div class="text-center py-12 text-gray-500">Cargando...</div>
+  {:else if loadError}
+    <div class="text-center py-12">
+      <p class="text-red-400 mb-3">{loadError}</p>
+      <button class="btn-primary text-xs" onclick={loadUsuarios}>Reintentar</button>
+    </div>
   {:else}
     <div class="card overflow-hidden">
       <table class="w-full text-sm">

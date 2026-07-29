@@ -72,7 +72,7 @@ export const PUT: APIRoute = async ({ request }) => {
     if (!id) {
       return new Response(JSON.stringify({ error: 'ID requerido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
-    if (rol && !['admin', 'garzon', 'cliente'].includes(rol)) {
+    if (rol && !['admin', 'garzon'].includes(rol)) {
       return new Response(JSON.stringify({ error: 'Rol inválido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
     if (password) {

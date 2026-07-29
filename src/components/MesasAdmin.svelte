@@ -252,12 +252,12 @@
 
   async function cerrarModal() {
     if (modalMesa) {
-      mesas = mesas.map(m => m.id === modalMesa!.id ? { ...m, estado: 'libre' as any, tomada_por: null as any, tomada_desde: null as any } : m);
       timers.delete(modalMesa.id);
       await fetch(`/api/admin/mesas/bloquear?id=${modalMesa.id}`, { method: 'DELETE' }).catch(() => {});
     }
     showModal = false;
     modalMesa = null;
+    // El servidor es la fuente de verdad: no tocar estado local, solo recargar
     loadData(true);
   }
 

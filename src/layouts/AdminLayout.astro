@@ -14,59 +14,64 @@ const session = getSessionFromCookie(cookieHeader);
 
 interface MenuSection {
   label: string;
-  icon: string;
+  svg: string;
   items: MenuItem[];
 }
 
 interface MenuItem {
   label: string;
   href: string;
-  icon: string;
+  svg: string;
 }
 
 const isAdmin = session?.rol === 'admin';
 
 const operacionesItems: MenuItem[] = [
-  { label: 'Abrir Caja', href: '/admin/caja?accion=abrir', icon: '🔓' },
-  { label: 'Cerrar Caja', href: '/admin/caja?accion=cerrar', icon: '🔒' },
-  { label: 'Registro Contable', href: '/admin/stock?tab=contabilidad', icon: '📒' },
+  { label: 'Abrir Caja', href: '/admin/caja?accion=abrir', svg: '<path d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>' },
+  { label: 'Cerrar Caja', href: '/admin/caja?accion=cerrar', svg: '<path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>' },
+  { label: 'Registro Contable', href: '/admin/stock?tab=contabilidad', svg: '<path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>' },
 ];
 
 const adminExtras: MenuItem[] = isAdmin ? [
-  { label: 'Usuarios', href: '/admin/usuarios', icon: '🔑' },
+  { label: 'Usuarios', href: '/admin/usuarios', svg: '<path d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>' },
 ] : [];
 
 const restauranteItems: MenuItem[] = [
-  { label: 'Toma de Pedidos', href: '/admin/mesas', icon: '🍽️' },
-  { label: 'Cocina', href: '/admin/cocina', icon: '👨‍🍳' },
-  { label: 'Pedidos', href: '/admin/pedidos', icon: '📦' },
-  { label: 'Productos', href: '/admin/productos', icon: '📋' },
-  ...(isAdmin ? [{ label: 'Créditos', href: '/admin/clientes', icon: '👥' }] : []),
+  { label: 'Toma de Pedidos', href: '/admin/mesas', svg: '<path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>' },
+  { label: 'Cocina', href: '/admin/cocina', svg: '<path d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z"/><path d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1.001A3.75 3.75 0 0012 18z"/>' },
+  { label: 'Pedidos', href: '/admin/pedidos', svg: '<path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>' },
+  { label: 'Productos', href: '/admin/productos', svg: '<path d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path d="M6 6h.008v.008H6V6z"/>' },
+  ...(isAdmin ? [{ label: 'Creditos', href: '/admin/clientes', svg: '<path d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/>' }] : []),
   ...adminExtras,
 ];
 
 const allMenuSections: MenuSection[] = [
-  { label: 'Restaurante', icon: '🍽️', items: restauranteItems },
-  { label: 'Operaciones', icon: '🔧', items: operacionesItems },
+  { label: 'Restaurante', svg: '<path d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25v-1.5m-6 1.5v-1.5m12 9.75l-1.5.75a3.354 3.354 0 01-3 0 3.354 3.354 0 00-3 0 3.354 3.354 0 01-3 0 3.354 3.354 0 00-3 0 3.354 3.354 0 01-3 0L3 16.5m15-3.379a48.474 48.474 0 00-6-.371c-2.032 0-4.034.126-6 .371m12 0c.39.049.777.102 1.163.16 1.07.16 1.837 1.094 1.837 2.175v5.169c0 .621-.504 1.125-1.125 1.125H4.125A1.125 1.125 0 013 20.625v-5.17c0-1.08.768-2.014 1.837-2.174A47.78 47.78 0 016 13.12M16.5 8.25V4.125a2.625 2.625 0 00-5.25 0v.003c0 .067.01.13.027.194"', items: restauranteItems },
+  { label: 'Operaciones', svg: '<path d="M11.42 15.17l-5.1-5.1m0 0L11.42 4.97m-5.1 5.1H21M3 3v18"/>', items: operacionesItems },
   {
-    label: 'Reportes', icon: '📊', items: [
-      { label: 'Historial de Clientes', href: '/admin/reportes?tab=clientes', icon: '👤' },
-      { label: 'Resumen de ventas', href: '/admin/reportes?tab=ventas', icon: '💰' },
-      { label: 'Indicadores', href: '/admin/reportes?tab=indicadores', icon: '📈' },
-      { label: 'Venta Jerarquías', href: '/admin/reportes?tab=jerarquias', icon: '🏢' },
-      { label: 'Reportes delivery', href: '/admin/reportes?tab=delivery', icon: '🛵' },
+    label: 'Reportes', svg: '<path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>',
+    items: [
+      { label: 'Historial Clientes', href: '/admin/reportes?tab=clientes', svg: '<path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>' },
+      { label: 'Resumen Ventas', href: '/admin/reportes?tab=ventas', svg: '<path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>' },
+      { label: 'Indicadores', href: '/admin/reportes?tab=indicadores', svg: '<path d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>' },
+      { label: 'Reportes Delivery', href: '/admin/reportes?tab=delivery', svg: '<path d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>' },
     ],
   },
   {
-    label: 'Stock Control', icon: '📦', items: [
-      { label: 'Proveedores', href: '/admin/stock', icon: '🏭' },
-      { label: 'Jerarquía de bodegas', href: '/admin/stock?tab=bodegas', icon: '🏗️' },
-      { label: 'Contabilidad', href: '/admin/stock?tab=contabilidad', icon: '📒' },
+    label: 'Stock Control', svg: '<path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>',
+    items: [
+      { label: 'Proveedores', href: '/admin/stock', svg: '<path d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>' },
+      { label: 'Bodegas', href: '/admin/stock?tab=bodegas', svg: '<path d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3H21m-3.75 3H21"/>' },
+      { label: 'Contabilidad', href: '/admin/stock?tab=contabilidad', svg: '<path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>' },
     ],
   },
 ];
 
 const menuSections = isAdmin ? allMenuSections : allMenuSections.filter(s => s.label === 'Restaurante' || s.label === 'Operaciones');
+
+function isActive(href: string) {
+  return currentPage === href || currentPage.startsWith(href.split('?')[0]);
+}
 ---
 <!doctype html>
 <html lang="es">
@@ -77,108 +82,372 @@ const menuSections = isAdmin ? allMenuSections : allMenuSections.filter(s => s.l
     <link rel="icon" href="/favicon.ico" />
     <meta name="description" content="Panel de Administración - La Cascada" />
     <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet" />
   </head>
-  <body class="min-h-screen flex" style="background-color: var(--color-background);">
+  <body class="admin-body">
     <!-- Mobile overlay -->
-    <div id="sidebar-overlay" class="fixed inset-0 z-30 hidden lg:hidden" style="background-color: rgba(26, 20, 16, 0.6);" onclick="document.getElementById('sidebar').classList.add('-translate-x-full'); this.classList.add('hidden')"></div>
+    <div id="sidebar-overlay" class="sidebar-overlay hidden" onclick="document.getElementById('sidebar').classList.remove('open'); this.classList.remove('open')"></div>
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="w-64 flex flex-col shrink-0 min-h-screen overflow-y-auto fixed lg:relative z-40 inset-y-0 left-0 transition-transform duration-300 -translate-x-full lg:translate-x-0" style="background: linear-gradient(180deg, #1a1410 0%, #2d2418 100%); border-right: 1px solid rgba(201, 162, 39, 0.15);">
-      <!-- Mobile close -->
-      <button class="lg:hidden absolute top-3 right-3 text-xl p-1" style="color: #b9a690;" onclick="document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('sidebar-overlay').classList.add('hidden')">&times;</button>
-
+    <aside id="sidebar" class="sidebar">
       <!-- Brand -->
-      <div class="px-5 py-5" style="border-bottom: 1px solid rgba(201, 162, 39, 0.15);">
-        <a href="/admin" class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style="background: linear-gradient(135deg, #c9a227 0%, #a8841c 100%); box-shadow: 0 2px 8px rgba(201, 162, 39, 0.3);">
-            <span class="font-display text-white font-bold text-sm">LC</span>
-          </div>
+      <div class="sidebar-brand">
+        <a href="/admin" class="sidebar-brand-link">
+          <img src="/lacascadapro.png" alt="La Cascada" class="sidebar-logo" />
           <div>
-            <h1 class="font-display text-base font-bold" style="color: #f5efe4;">La Cascada</h1>
-            <p class="text-[10px] tracking-[0.2em] uppercase" style="color: #c9a227;">Panel</p>
+            <h1 class="sidebar-title">La Cascada</h1>
+            <p class="sidebar-subtitle">Panel Admin</p>
           </div>
         </a>
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav class="sidebar-nav">
         {menuSections.map((section) => {
-          const isExpanded = section.items.some(item => currentPage.startsWith(item.href));
+          const expanded = section.items.some(item => isActive(item.href));
           return (
-            <div class="mb-1">
+            <div class="nav-section">
               <button
-                class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-left transition-colors"
-                style="color: #d4c5a8;"
-                onmouseover="this.style.color='#f5efe4';this.style.backgroundColor='rgba(201, 162, 39, 0.08)'"
-                onmouseout="this.style.color='#d4c5a8';this.style.backgroundColor='transparent'"
-                onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-90')"
+                class="nav-section-btn"
+                onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.nav-chevron').classList.toggle('rotated')"
               >
-                <span>{section.icon}</span>
-                <span class="flex-1">{section.label}</span>
-                {section.items.length > 0 && (
-                  <svg class={`chevron w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} style="color: #8a7a68;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                )}
+                <svg class="nav-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" set:html={section.svg} />
+                <span class="nav-section-label">{section.label}</span>
+                <svg class={`nav-chevron ${expanded ? 'rotated' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 5l7 7-7 7"/>
+                </svg>
               </button>
-              {section.items.length > 0 && (
-                <div class={`mt-0.5 space-y-0.5 ${isExpanded ? '' : 'hidden'}`}>
-                  {section.items.map((item) => {
-                    const isActive = currentPage === item.href;
-                    return (
-                      <a
-                        href={item.href}
-                        class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm ml-4 transition-colors"
-                        style={isActive
-                          ? 'background-color: #c9a227; color: #1a1410; font-weight: 500;'
-                          : 'color: #b9a690;'}
-                        onmouseover={!isActive ? "this.style.color='#f5efe4';this.style.backgroundColor='rgba(201, 162, 39, 0.08)'" : ''}
-                        onmouseout={!isActive ? "this.style.color='#b9a690';this.style.backgroundColor='transparent'" : ''}
-                      >
-                        <span>{item.icon}</span>
-                        <span>{item.label}</span>
-                      </a>
-                    );
-                  })}
-                </div>
-              )}
+              <div class={`nav-items ${expanded ? '' : 'hidden'}`}>
+                {section.items.map((item) => {
+                  const active = isActive(item.href);
+                  return (
+                    <a href={item.href} class={`nav-item ${active ? 'active' : ''}`}>
+                      <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" set:html={item.svg} />
+                      <span>{item.label}</span>
+                    </a>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
       </nav>
 
-      <!-- User + Logout -->
+      <!-- User -->
       {session && (
-        <div class="px-4 py-3" style="border-top: 1px solid rgba(201, 162, 39, 0.15);">
-          <div class="flex items-center gap-2.5 mb-3">
-            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style="background: linear-gradient(135deg, #c9a227 0%, #a8841c 100%); color: #1a1410;">
-              {session.nombre.charAt(0).toUpperCase()}
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium truncate" style="color: #f5efe4;">{session.nombre}</p>
-              <p class="text-[10px] tracking-wider uppercase" style="color: #c9a227;">{session.rol}</p>
+        <div class="sidebar-user">
+          <div class="user-info">
+            <div class="user-avatar">{session.nombre.charAt(0).toUpperCase()}</div>
+            <div class="user-details">
+              <p class="user-name">{session.nombre}</p>
+              <p class="user-role">{session.rol}</p>
             </div>
           </div>
           <form action="/api/auth/logout" method="POST">
-            <button type="submit" class="w-full text-xs py-1.5 px-3 rounded-md transition-colors" style="color: #b9a690; background-color: transparent; border: 1px solid rgba(201, 162, 39, 0.2);" onmouseover="this.style.color='#f5efe4';this.style.borderColor='rgba(201, 162, 39, 0.4)'" onmouseout="this.style.color='#b9a690';this.style.borderColor='rgba(201, 162, 39, 0.2)'">
-              Cerrar Sesión
+            <button type="submit" class="logout-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/>
+              </svg>
+              <span>Salir</span>
             </button>
           </form>
         </div>
       )}
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto w-full lg:w-auto">
-      <!-- Mobile hamburger -->
-      <button class="lg:hidden fixed top-3 left-3 z-20 p-2 rounded-lg shadow-lg" style="background: #1a1410; color: #f5efe4;" onclick="document.getElementById('sidebar').classList.remove('-translate-x-full'); document.getElementById('sidebar-overlay').classList.remove('hidden')">
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
-      </button>
+    <!-- Main -->
+    <main class="admin-main">
+      <!-- Mobile header -->
+      <div class="mobile-header">
+        <button class="hamburger-btn" onclick="document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('open')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+          </svg>
+        </button>
+        <div class="mobile-brand">
+          <img src="/lacascadapro.png" alt="LC" class="mobile-logo" />
+          <span class="mobile-title">La Cascada</span>
+        </div>
+      </div>
       <slot />
     </main>
   </body>
 </html>
 
 <style>
-  .rotate-90 { transform: rotate(90deg); }
+  .admin-body {
+    min-height: 100vh;
+    display: flex;
+    background: var(--admin-bg);
+    color: var(--admin-text);
+    margin: 0;
+    font-family: var(--font-body);
+  }
+
+  /* Sidebar Overlay */
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .sidebar-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 272px;
+    height: 100vh;
+    position: fixed;
+    left: 0; top: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    background: var(--admin-surface);
+    border-right: 1px solid var(--admin-border);
+    transform: translateX(-100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+  @media (min-width: 1024px) {
+    .sidebar {
+      position: sticky;
+      transform: none;
+    }
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Brand */
+  .sidebar-brand {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--admin-border);
+  }
+  .sidebar-brand-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-decoration: none;
+  }
+  .sidebar-logo {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    border-radius: 12px;
+    filter: drop-shadow(0 2px 8px rgba(201,169,110,0.15));
+  }
+  .sidebar-title {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--admin-text);
+    margin: 0;
+    line-height: 1.2;
+  }
+  .sidebar-subtitle {
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--admin-gold);
+    margin: 2px 0 0;
+  }
+
+  /* Nav */
+  .sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sidebar-nav::-webkit-scrollbar { width: 4px; }
+  .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-nav::-webkit-scrollbar-thumb { background: var(--admin-border); border-radius: 4px; }
+
+  .nav-section { margin-bottom: 4px; }
+  .nav-section-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    color: var(--admin-text-muted);
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  .nav-section-btn:hover {
+    color: var(--admin-text);
+    background: rgba(255,255,255,0.02);
+  }
+  .nav-section-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  .nav-section-label { flex: 1; }
+  .nav-chevron {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.25s;
+    opacity: 0.5;
+  }
+  .nav-chevron.rotated { transform: rotate(90deg); }
+
+  .nav-items {
+    padding: 2px 0 2px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .nav-item-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+  .nav-item.active .nav-item-icon { opacity: 1; }
+
+  /* User */
+  .sidebar-user {
+    padding: 16px 16px 20px;
+    border-top: 1px solid var(--admin-border);
+  }
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--admin-gold), #b8942e);
+    color: #0a0a0f;
+    flex-shrink: 0;
+  }
+  .user-details { flex: 1; min-width: 0; }
+  .user-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--admin-text);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .user-role {
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--admin-gold);
+    margin: 2px 0 0;
+  }
+  .logout-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--admin-border);
+    background: transparent;
+    color: var(--admin-text-dim);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .logout-btn:hover {
+    color: var(--admin-text);
+    border-color: var(--admin-border-hover);
+    background: rgba(255,255,255,0.02);
+  }
+  .logout-btn svg { width: 16px; height: 16px; }
+
+  /* Main */
+  .admin-main {
+    flex: 1;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+
+  /* Mobile header */
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--admin-surface);
+    border-bottom: 1px solid var(--admin-border);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    backdrop-filter: blur(12px);
+  }
+  @media (min-width: 1024px) {
+    .mobile-header { display: none; }
+  }
+  .hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--admin-border);
+    background: transparent;
+    color: var(--admin-text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .hamburger-btn:hover {
+    background: rgba(255,255,255,0.03);
+    color: var(--admin-text);
+  }
+  .hamburger-btn svg { width: 20px; height: 20px; }
+  .mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .mobile-logo {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    border-radius: 6px;
+  }
+  .mobile-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--admin-text);
+  }
 </style>

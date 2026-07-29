@@ -17,6 +17,19 @@ const { title = 'La Cascada', description = 'Restaurante La Cascada — Cocina h
     <link rel="icon" href="/favicon.ico" />
     <meta name="description" content={description} />
     <title>{title}</title>
+    <meta name="theme-color" content="#205C66" />
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content="/lacascadapro.png" />
+    <meta property="og:site_name" content="La Cascada" />
+    <meta property="og:locale" content="es_CL" />
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content="/lacascadapro.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet" />
@@ -34,9 +47,9 @@ const { title = 'La Cascada', description = 'Restaurante La Cascada — Cocina h
         </div>
       </a>
       <nav class="flex items-center gap-1 sm:gap-2">
-        <a href="/menu" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors" style="color: var(--color-text-muted);" onmouseover="this.style.color='var(--color-primary)';this.style.backgroundColor='var(--color-surface-dark)'" onmouseout="this.style.color='var(--color-text-muted)';this.style.backgroundColor='transparent'">Carta</a>
-        <a href="/delivery" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors" style="color: var(--color-text-muted);" onmouseover="this.style.color='var(--color-primary)';this.style.backgroundColor='var(--color-surface-dark)'" onmouseout="this.style.color='var(--color-text-muted)';this.style.backgroundColor='transparent'">Delivery</a>
-        <a href="/login" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors" style="color: var(--color-text-muted);" onmouseover="this.style.color='var(--color-primary)';this.style.backgroundColor='var(--color-surface-dark)'" onmouseout="this.style.color='var(--color-text-muted)';this.style.backgroundColor='transparent'">Login</a>
+        <a href="/menu" class="nav-link">Carta</a>
+        <a href="/delivery" class="nav-link">Delivery</a>
+        <a href="/login" class="nav-link">Login</a>
       </nav>
     </header>
     <div class="flex-1 flex flex-col">
@@ -44,3 +57,19 @@ const { title = 'La Cascada', description = 'Restaurante La Cascada — Cocina h
     </div>
   </body>
 </html>
+
+<style>
+  .nav-link {
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .nav-link:hover {
+    color: var(--color-primary);
+    background-color: var(--color-surface-dark);
+  }
+</style>

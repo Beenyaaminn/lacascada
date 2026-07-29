@@ -40,25 +40,40 @@
     }
   }
 
+  function reiniciarTimerInactividad() {
+    if (inactividadTimeout) clearTimeout(inactividadTimeout);
+    inactividadTimeout = setTimeout(() => {
+      inactividadTimeout = null;
+      if (!pedidoRealizado && step === 'menu') {
+        fetch('/api/mesas/liberar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ piso, mesa_numero: mesa }),
+        });
+      }
+    }, 10 * 60 * 1000);
+  }
+
+  function onActividadUsuario() {
+    if (step === 'menu') reiniciarTimerInactividad();
+  }
+
   $effect(() => {
     if (step === 'menu') {
       window.addEventListener('beforeunload', liberarMesaSiNoPidio);
       window.addEventListener('pagehide', liberarMesaSiNoPidio);
-      if (!inactividadTimeout) {
-        inactividadTimeout = setTimeout(() => {
-          if (!pedidoRealizado && step === 'menu') {
-            fetch('/api/mesas/liberar', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ piso, mesa_numero: mesa }),
-            });
-          }
-        }, 10 * 60 * 1000);
-      }
+      window.addEventListener('click', onActividadUsuario);
+      window.addEventListener('touchstart', onActividadUsuario);
+      window.addEventListener('keydown', onActividadUsuario);
+      reiniciarTimerInactividad();
     }
     return () => {
       window.removeEventListener('beforeunload', liberarMesaSiNoPidio);
       window.removeEventListener('pagehide', liberarMesaSiNoPidio);
+      window.removeEventListener('click', onActividadUsuario);
+      window.removeEventListener('touchstart', onActividadUsuario);
+      window.removeEventListener('keydown', onActividadUsuario);
+      if (inactividadTimeout) { clearTimeout(inactividadTimeout); inactividadTimeout = null; }
     };
   });
 
@@ -104,7 +119,25 @@
   }
 
   async function cargarMenuSiNecesario() {
-    if (!menuData) { loading = true; const mr = await fetch('/api/menu'); const md = await mr.json(); categorias = md.categorias || []; productos = md.productos || []; acompanamientos = md.acompanamientos || []; productosAcomp = md.productos_acompanamientos || []; if (categorias.length > 0) activeCategoria = categorias[0].id; loading = false; }
+    if (!menuData) {
+      loading = true;
+      try {
+        const mr = await fetch('/api/menu');
+        if (!mr.ok) throw new Error('HTTP ' + mr.status);
+        const md = await mr.json();
+        categorias = md.categorias || [];
+        productos = md.productos || [];
+        acompanamientos = md.acompanamientos || [];
+        productosAcomp = md.productos_acompanamientos || [];
+        if (categorias.length > 0) activeCategoria = categorias[0].id;
+        mesaError = '';
+      } catch {
+        mesaError = 'No se pudo cargar el menú. Verifica tu conexión y vuelve a intentar.';
+      } finally {
+        loading = false;
+      }
+      if (mesaError) return;
+    }
   }
 
   async function ocuparMesa() {
@@ -166,16 +199,16 @@
   async function submitOrder() {
     if (cartItems.length === 0) return; orderError = '';
 
-    let msg = `*La Cascada - Pedido en Mesa*%0A🍽️ *Autoatención* - Piso ${piso} Mesa ${mesa}%0A%0A`;
-    if (nombreComensal.trim()) msg += `*Cliente:* ${nombreComensal.trim()}%0A%0A`;
-    msg += `*Pedido:*%0A`;
+    let msg = `*La Cascada - Pedido en Mesa*\n🍽️ *Autoatención* - Piso ${piso} Mesa ${mesa}\n\n`;
+    if (nombreComensal.trim()) msg += `*Cliente:* ${nombreComensal.trim()}\n\n`;
+    msg += `*Pedido:*\n`;
     for (const i of cartItems) {
-      msg += `${i.cantidad}x ${i.producto.nombre} - ${formatCLP(i.precioTotal * i.cantidad)}%0A`;
-      if (i.baseAcomp) msg += `  + ${i.baseAcomp}%0A`;
+      msg += `${i.cantidad}x ${i.producto.nombre} - ${formatCLP(i.precioTotal * i.cantidad)}\n`;
+      if (i.baseAcomp) msg += `  + ${i.baseAcomp}\n`;
     }
-    msg += `%0A*TOTAL:* ${formatCLP(getCartTotal())}%0A`;
+    msg += `\n*TOTAL:* ${formatCLP(getCartTotal())}\n`;
 
-    window.open(`https://wa.me/56983329958?text=${msg}`, '_blank');
+    window.open(`https://wa.me/56983329958?text=${encodeURIComponent(msg)}`, '_blank');
     cartItems = []; showCart = false; showSuccess = true; pedidoRealizado = true; setTimeout(() => { showSuccess = false; }, 5000);
   }
 
@@ -270,7 +303,12 @@
 
   {#if mesaError}
     <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-2">
-      <div class="rounded-xl p-3 text-sm text-center font-medium flex items-center justify-center gap-2 cursor-pointer" style="background-color:#fef3c7; color:#92400e; border:1px solid #fcd34d;" onclick={() => { mesaError = ''; }}>{mesaError} <span class="text-xs opacity-60">(tocá para cerrar)</span></div>
+      <div class="rounded-xl p-3 text-sm text-center font-medium flex items-center justify-center gap-3" style="background-color:#fef3c7; color:#92400e; border:1px solid #fcd34d;">
+        <span class="cursor-pointer" onclick={() => { mesaError = ''; }}>{mesaError} <span class="text-xs opacity-60">(tocá para cerrar)</span></span>
+        {#if categorias.length === 0 && !loading}
+          <button class="px-3 py-1 rounded-full text-xs font-bold text-white shrink-0" style="background-color:#92400e;" onclick={() => { mesaError = ''; cargarMenuSiNecesario(); }}>Reintentar</button>
+        {/if}
+      </div>
     </div>
   {/if}
 

@@ -5,9 +5,10 @@ import { sql } from '../../../lib/db';
 import { registrarAuditoria } from '../../../lib/audit';
 import { checkRateLimit } from '../../../lib/ratelimit';
 import { logError } from '../../../lib/logger';
+import { calcularPedido, devolverStock, PricingError } from '../../../lib/pricing';
 
-export const POST: APIRoute = async ({ request }) => {
-  const ip = request.headers.get('x-forwarded-for') || '0.0.0.0';
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  const ip = clientAddress || request.headers.get('x-forwarded-for')?.split(',').pop()?.trim() || '0.0.0.0';
 
   const rl = checkRateLimit(`pedidos:${ip}`, 20, 60000);
   if (!rl.allowed) {
@@ -16,12 +17,15 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
   try {
-    const { piso, mesa: mesaNumero, items, total, nombre_cliente, comentarios } = await request.json();
+    const { piso, mesa: mesaNumero, items, nombre_cliente, comentarios } = await request.json();
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return new Response(JSON.stringify({ error: 'El pedido debe tener al menos un producto' }), {
         status: 400, headers: { 'Content-Type': 'application/json' },
       });
+    }
+    if (!Number.isInteger(piso) || !Number.isInteger(mesaNumero)) {
+      return new Response(JSON.stringify({ error: 'Mesa inválida' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     const mesaResult = await sql`
@@ -33,70 +37,63 @@ export const POST: APIRoute = async ({ request }) => {
 
     const mesaId = mesaResult[0].id;
 
-    let calculatedTotal = 0;
-    for (const item of items) {
-      const prod = await sql`SELECT id, nombre, maneja_stock, stock_actual FROM productos WHERE id = ${item.producto_id} LIMIT 1`;
-      if (prod.length === 0) {
-        return new Response(JSON.stringify({ error: `Producto #${item.producto_id} no encontrado` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    // Precios calculados 100% server-side (nunca confiar en el cliente)
+    let calculado;
+    try {
+      calculado = await calcularPedido(items);
+    } catch (e) {
+      if (e instanceof PricingError) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
-      const cantidad = item.cantidad || 1;
-      if (cantidad < 1 || cantidad > 99) {
-        return new Response(JSON.stringify({ error: `Cantidad inválida (1-99) para ${prod[0].nombre}` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-      }
-      if (prod[0].maneja_stock && prod[0].stock_actual < cantidad) {
-        return new Response(JSON.stringify({ error: `Stock insuficiente: ${prod[0].nombre} (disponible: ${prod[0].stock_actual})` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-      }
-      if (typeof item.subtotal !== 'number' || item.subtotal < 0) {
-        return new Response(JSON.stringify({ error: `Subtotal inválido para ${prod[0].nombre}` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-      }
-      calculatedTotal += item.subtotal;
+      throw e;
     }
 
-    if (typeof total !== 'number' || total < 0 || Math.abs(total - calculatedTotal) > Math.max(calculatedTotal * 0.01, 1)) {
-      return new Response(JSON.stringify({ error: `Total inválido. Esperado: $${calculatedTotal}, Recibido: $${total}` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    }
+    try {
+      // Claim atómico de la mesa: solo UNA petición concurrente logra tomar una mesa libre.
+      const claim = await sql`
+        UPDATE mesas SET estado = 'ocupada', tomada_desde = NOW()
+        WHERE id = ${mesaId} AND estado = 'libre'
+        RETURNING id
+      `;
+      const reclamoMesa = claim.length > 0;
 
-    const result = await sql.begin(async (tx) => {
-      const mesaInfo = await tx`SELECT estado FROM mesas WHERE id = ${mesaId} LIMIT 1`;
-      const estabaVacia = mesaInfo.length > 0 && mesaInfo[0].estado === 'libre';
+      if (reclamoMesa) {
+        // Solo el que reclamó la mesa cancela pedidos viejos sin pagar.
+        // El umbral de 2 minutos protege pedidos recién creados por otros comensales
+        // de la misma mesa en peticiones concurrentes.
+        await sql`
+          UPDATE pedidos SET estado = 'cancelado'
+          WHERE mesa_id = ${mesaId}
+            AND estado NOT IN ('pagado', 'cancelado')
+            AND fecha_hora < NOW() - INTERVAL '2 minutes'
+        `;
+      }
 
-      const pedido = await tx`
+      const pedido = await sql`
         INSERT INTO pedidos (mesa_id, tipo_pedido, estado, total, nombre_cliente, comentarios)
-        VALUES (${mesaId}, 'mesa', 'pendiente', ${total}, ${nombre_cliente || null}, ${comentarios || null})
+        VALUES (${mesaId}, 'mesa', 'pendiente', ${calculado.total}, ${typeof nombre_cliente === 'string' ? nombre_cliente.slice(0, 100) : null}, ${typeof comentarios === 'string' ? comentarios.slice(0, 500) : null})
         RETURNING id, fecha_hora
       `;
       const pedidoId = pedido[0].id;
 
-      for (const item of items) {
-        await tx`
+      for (const item of calculado.items) {
+        await sql`
           INSERT INTO detalle_pedidos (pedido_id, producto_id, acompanamiento, cantidad, subtotal)
-          VALUES (${pedidoId}, ${item.producto_id}, ${item.acompanamiento || null}, ${item.cantidad || 1}, ${item.subtotal})
+          VALUES (${pedidoId}, ${item.producto_id}, ${item.acompanamiento}, ${item.cantidad}, ${item.subtotal})
         `;
       }
 
-      if (estabaVacia) {
-        await tx`
-          UPDATE pedidos SET estado = 'cancelado'
-          WHERE mesa_id = ${mesaId}
-            AND estado NOT IN ('pagado', 'cancelado')
-            AND id != ${pedidoId}
-        `;
-        await tx`
-          UPDATE mesas SET estado = 'ocupada', tomada_desde = NOW() WHERE id = ${mesaId}
-        `;
-      }
+      await registrarAuditoria('PEDIDO_CREADO', 'pedidos', pedidoId, 'cliente',
+        `Mesa #${mesaId} | ${calculado.items.length} items | Total: $${calculado.total}`, ip);
 
-      return pedidoId;
-    });
-
-    const pedidoId = result;
-
-    await registrarAuditoria('PEDIDO_CREADO', 'pedidos', pedidoId, 'cliente',
-      `Mesa #${mesaId} | ${items.length} items | Total: $${total}`, ip);
-
-    return new Response(JSON.stringify({ success: true, pedido_id: pedidoId, fecha_hora: new Date().toISOString() }), {
-      status: 201, headers: { 'Content-Type': 'application/json' },
-    });
+      return new Response(JSON.stringify({ success: true, pedido_id: pedidoId, fecha_hora: pedido[0].fecha_hora }), {
+        status: 201, headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (e) {
+      // Si falla a mitad de camino, devolver el stock reservado
+      await devolverStock(calculado.items);
+      throw e;
+    }
   } catch (error) {
     logError('Creando pedido', error);
     return new Response(JSON.stringify({ error: 'Error al crear el pedido' }), { status: 500, headers: { 'Content-Type': 'application/json' } });

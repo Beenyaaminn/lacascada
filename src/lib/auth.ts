@@ -30,7 +30,7 @@ export function signToken(user: Usuario): string {
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    return jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as JWTPayload;
   } catch {
     return null;
   }

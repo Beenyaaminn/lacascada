@@ -2,20 +2,27 @@
 import '../styles/global.css';
 import { sql } from '../lib/db';
 
-const categorias = await sql`SELECT * FROM categorias ORDER BY orden ASC`;
-const productos = await sql`
-  SELECT p.*, c.nombre as categoria_nombre
-  FROM productos p
-  JOIN categorias c ON c.id = p.categoria_id
-  WHERE p.disponible_dia = TRUE
-    AND (p.maneja_stock = FALSE OR p.stock_actual > 0)
-  ORDER BY p.nombre ASC
-`;
+let porCategoria: any[] = [];
+let cartaError = false;
 
-const porCategoria = categorias.map((c: any) => ({
-  ...c,
-  items: productos.filter((p: any) => p.categoria_id === c.id),
-})).filter((c: any) => c.items.length > 0);
+try {
+  const categorias = await sql`SELECT * FROM categorias ORDER BY orden ASC`;
+  const productos = await sql`
+    SELECT p.*, c.nombre as categoria_nombre
+    FROM productos p
+    JOIN categorias c ON c.id = p.categoria_id
+    WHERE p.disponible_dia = TRUE
+      AND (p.maneja_stock = FALSE OR p.stock_actual > 0)
+    ORDER BY p.nombre ASC
+  `;
+
+  porCategoria = categorias.map((c: any) => ({
+    ...c,
+    items: productos.filter((p: any) => p.categoria_id === c.id),
+  })).filter((c: any) => c.items.length > 0);
+} catch (e) {
+  cartaError = true;
+}
 
 function formatCLP(n: number) { return '$' + n.toLocaleString('es-CL'); }
 ---
@@ -33,6 +40,14 @@ function formatCLP(n: number) { return '$' + n.toLocaleString('es-CL'); }
   </head>
   <body style="background-color: var(--color-surface-dark);">
 
+    {cartaError ? (
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:2rem;">
+        <div>
+          <h1 style="font-family:var(--font-display);font-size:1.5rem;color:var(--color-primary);margin-bottom:0.5rem;">Carta temporalmente no disponible</h1>
+          <p style="color:var(--color-text-muted);font-size:0.875rem;">Estamos teniendo problemas técnicos. Intenta nuevamente en unos minutos.</p>
+        </div>
+      </div>
+    ) : (
     <!-- Barra de acciones (solo pantalla) -->
     <div class="no-print sticky top-0 z-10 px-4 py-3 flex items-center justify-between" style="background-color: var(--color-primary);">
       <p class="text-white text-sm font-medium">Vista previa de la carta</p>
@@ -101,6 +116,7 @@ function formatCLP(n: number) { return '$' + n.toLocaleString('es-CL'); }
         </div>
       </footer>
     </div>
+    )}
 
     <style>
       * {

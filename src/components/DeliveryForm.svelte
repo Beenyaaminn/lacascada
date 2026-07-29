@@ -37,33 +37,39 @@
   function back() { step = 'menu'; }
 
   async function submitOrder() {
+    if (submitting) return;
     if (!nombre.trim() || !telefono.trim()) { orderError = 'Nombre y teléfono son obligatorios'; return; }
     if (modo === 'delivery') {
       if (!zona) { orderError = 'Seleccioná una zona de delivery'; return; }
       if (!direccion.trim()) { orderError = 'La dirección es obligatoria'; return; }
     }
 
-    const tipo = modo === 'retiro' ? '🏃 *Retiro en local*' : `🛵 *Delivery* - ${zona}`;
-    const metodoStr = metodoPago === 'efectivo' ? `Efectivo${efectivoConCuanto > getTotal() ? ` (paga con ${formatCLP(efectivoConCuanto)})` : ''}` : metodoPago === 'debito' ? 'Débito' : 'Crédito';
-    
-    let msg = `*La Cascada - Nuevo Pedido*%0A${tipo}%0A%0A`;
-    msg += `*Cliente:* ${nombre.trim()}%0A`;
-    msg += `*Tel:* ${telefono.trim()}%0A`;
-    if (modo === 'delivery') msg += `*Dir:* ${direccion.trim()}%0A`;
-    msg += `*Pago:* ${metodoStr}%0A%0A`;
-    msg += `*Pedido:*%0A`;
-    for (const item of cart) {
-      msg += `${item.cantidad}x ${item.producto.nombre} - ${formatCLP(item.subtotal)}%0A`;
-      if (item.acompanamiento && item.acompanamiento !== 'Sin acompañamiento') msg += `  + ${item.acompanamiento}%0A`;
-    }
-    msg += `%0A`;
-    msg += `*Subtotal:* ${formatCLP(getSubtotalProductos())}%0A`;
-    if (getCostoEnvio() > 0) msg += `*Envío (${zona}):* ${formatCLP(getCostoEnvio())}%0A`;
-    msg += `*TOTAL:* ${formatCLP(getTotal())}%0A`;
-    if (metodoPago === 'efectivo' && efectivoConCuanto > getTotal()) msg += `*Vuelto:* ${formatCLP(efectivoConCuanto - getTotal())}%0A`;
+    submitting = true;
+    try {
+      const tipo = modo === 'retiro' ? '🏃 *Retiro en local*' : `🛵 *Delivery* - ${zona}`;
+      const metodoStr = metodoPago === 'efectivo' ? `Efectivo${efectivoConCuanto > getTotal() ? ` (paga con ${formatCLP(efectivoConCuanto)})` : ''}` : metodoPago === 'debito' ? 'Débito' : 'Crédito';
 
-    window.open(`https://wa.me/56983329958?text=${msg}`, '_blank');
-    orderSuccess = true; pedidoId = null; vuelto = 0; step = 'exito';
+      let msg = `*La Cascada - Nuevo Pedido*\n${tipo}\n\n`;
+      msg += `*Cliente:* ${nombre.trim()}\n`;
+      msg += `*Tel:* ${telefono.trim()}\n`;
+      if (modo === 'delivery') msg += `*Dir:* ${direccion.trim()}\n`;
+      msg += `*Pago:* ${metodoStr}\n\n`;
+      msg += `*Pedido:*\n`;
+      for (const item of cart) {
+        msg += `${item.cantidad}x ${item.producto.nombre} - ${formatCLP(item.subtotal)}\n`;
+        if (item.acompanamiento && item.acompanamiento !== 'Sin acompañamiento') msg += `  + ${item.acompanamiento}\n`;
+      }
+      msg += `\n`;
+      msg += `*Subtotal:* ${formatCLP(getSubtotalProductos())}\n`;
+      if (getCostoEnvio() > 0) msg += `*Envío (${zona}):* ${formatCLP(getCostoEnvio())}\n`;
+      msg += `*TOTAL:* ${formatCLP(getTotal())}\n`;
+      if (metodoPago === 'efectivo' && efectivoConCuanto > getTotal()) msg += `*Vuelto:* ${formatCLP(efectivoConCuanto - getTotal())}\n`;
+
+      window.open(`https://wa.me/56983329958?text=${encodeURIComponent(msg)}`, '_blank');
+      orderSuccess = true; pedidoId = null; vuelto = 0; step = 'exito';
+    } finally {
+      submitting = false;
+    }
   }
 
   function nuevoPedido() { cart = []; nombre = ''; direccion = ''; telefono = ''; zona = ''; modo = 'delivery'; metodoPago = 'efectivo'; efectivoConCuanto = 0; orderSuccess = false; orderError = ''; step = 'menu'; }

@@ -62,8 +62,11 @@
 
   function closeForm() { showForm = false; editingId = null; }
 
+  let saving: boolean = $state(false);
+
   async function saveProveedor() {
-    if (!formNombre.trim()) return;
+    if (!formNombre.trim() || saving) return;
+    saving = true;
     const body: any = { nombre: formNombre.trim(), activo: formActivo, contacto: formContacto, telefono: formTelefono, email: formEmail, direccion: formDireccion, notas: formNotas };
 
     try {
@@ -89,6 +92,8 @@
     } catch (e) {
       console.error(e);
       alert('Error de conexión al guardar');
+    } finally {
+      saving = false;
     }
   }
 
@@ -243,7 +248,7 @@
           </div>
           <div class="flex gap-3 mt-5">
             <button class="flex-1 btn-secondary py-2" onclick={closeForm}>Cancelar</button>
-            <button class="flex-1 btn-primary py-2" onclick={saveProveedor}>Guardar</button>
+            <button class="flex-1 btn-primary py-2" disabled={saving} onclick={saveProveedor}>{saving ? 'Guardando...' : 'Guardar'}</button>
           </div>
         </div>
       </div>

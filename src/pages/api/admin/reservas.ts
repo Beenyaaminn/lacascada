@@ -68,26 +68,44 @@ export const PUT: APIRoute = async ({ request }) => {
 
   try {
     const { id, estado, mesa_id } = await request.json();
+    const reservaId = Number(id);
     const validStates = ['pendiente', 'confirmada', 'cancelada'];
-    if (!validStates.includes(estado)) {
-      return new Response(JSON.stringify({ error: 'Estado inválido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    if (!Number.isInteger(reservaId) || reservaId <= 0 || !validStates.includes(estado)) {
+      return new Response(JSON.stringify({ error: 'Datos inválidos' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
     let result;
     if (mesa_id) {
+      const mesaId = Number(mesa_id);
+      if (!Number.isInteger(mesaId) || mesaId <= 0) {
+        return new Response(JSON.stringify({ error: 'Mesa inválida' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
       result = await sql`
-        UPDATE reservas_platos SET estado = ${estado}::estado_reserva, mesa_id = ${mesa_id} WHERE id = ${id} RETURNING *
+        UPDATE reservas_platos SET estado = ${estado}::estado_reserva, mesa_id = ${mesaId} WHERE id = ${reservaId} RETURNING *
       `;
       if (result.length > 0) {
         const nombre = result[0].nombre_cliente;
+        const fechaReserva = result[0].fecha;
+        // Vincular solo pedidos de reserva del mismo día, sin mesa asignada y no finalizados.
+        // Evita mezclar clientes distintos que comparten nombre.
         await sql`
-          UPDATE pedidos SET mesa_id = ${mesa_id}
-          WHERE tipo_pedido = 'reserva' AND nombre_cliente = ${nombre} AND mesa_id IS NULL
+          UPDATE pedidos SET mesa_id = ${mesaId}
+          WHERE id IN (
+            SELECT p.id FROM pedidos p
+            WHERE p.tipo_pedido = 'reserva'
+              AND p.nombre_cliente = ${nombre}
+              AND p.mesa_id IS NULL
+              AND p.estado NOT IN ('pagado', 'cancelado')
+              AND p.fecha_hora::date = ${fechaReserva}::date
+          )
         `;
       }
     } else {
       result = await sql`
-        UPDATE reservas_platos SET estado = ${estado}::estado_reserva WHERE id = ${id} RETURNING *
+        UPDATE reservas_platos SET estado = ${estado}::estado_reserva WHERE id = ${reservaId} RETURNING *
       `;
+    }
+    if (result.length === 0) {
+      return new Response(JSON.stringify({ error: 'Reserva no encontrada' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
     return new Response(JSON.stringify({ reserva: result[0] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {

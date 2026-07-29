@@ -6,7 +6,8 @@ import { getSessionFromCookie } from '../../../lib/auth';
 
 export const GET: APIRoute = async ({ request }) => {
   const session = getSessionFromCookie(request.headers.get('cookie'));
-  if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
+  // Reportes financieros con datos sensibles de clientes: solo admin
+  if (!session || session.rol !== 'admin') {
     return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
   }
 
@@ -30,7 +31,11 @@ export const GET: APIRoute = async ({ request }) => {
             m.numero_mesa, m.piso as mesa_piso, c.usuario as cajera
           FROM pedidos p
           LEFT JOIN mesas m ON m.id = p.mesa_id
-          LEFT JOIN cajas c ON c.abierta_desde <= p.fecha_hora AND (c.cerrada_desde IS NULL OR c.cerrada_desde >= p.fecha_hora)
+          LEFT JOIN LATERAL (
+            SELECT cj.usuario FROM cajas cj
+            WHERE cj.abierta_desde <= p.fecha_hora AND (cj.cerrada_desde IS NULL OR cj.cerrada_desde >= p.fecha_hora)
+            ORDER BY cj.abierta_desde DESC LIMIT 1
+          ) c ON TRUE
           WHERE p.estado = 'pagado'
             AND p.fecha_hora >= ${mes + '-01'}::date
             AND p.fecha_hora < (${mes + '-01'}::date + INTERVAL '1 month')
@@ -44,7 +49,11 @@ export const GET: APIRoute = async ({ request }) => {
             m.numero_mesa, m.piso as mesa_piso, c.usuario as cajera
           FROM pedidos p
           LEFT JOIN mesas m ON m.id = p.mesa_id
-          LEFT JOIN cajas c ON c.abierta_desde <= p.fecha_hora AND (c.cerrada_desde IS NULL OR c.cerrada_desde >= p.fecha_hora)
+          LEFT JOIN LATERAL (
+            SELECT cj.usuario FROM cajas cj
+            WHERE cj.abierta_desde <= p.fecha_hora AND (cj.cerrada_desde IS NULL OR cj.cerrada_desde >= p.fecha_hora)
+            ORDER BY cj.abierta_desde DESC LIMIT 1
+          ) c ON TRUE
           WHERE p.estado = 'pagado'
             AND p.fecha_hora >= ${mes + '-01'}::date
             AND p.fecha_hora < (${mes + '-01'}::date + INTERVAL '1 month')
@@ -57,7 +66,11 @@ export const GET: APIRoute = async ({ request }) => {
             m.numero_mesa, m.piso as mesa_piso, c.usuario as cajera
           FROM pedidos p
           LEFT JOIN mesas m ON m.id = p.mesa_id
-          LEFT JOIN cajas c ON c.abierta_desde <= p.fecha_hora AND (c.cerrada_desde IS NULL OR c.cerrada_desde >= p.fecha_hora)
+          LEFT JOIN LATERAL (
+            SELECT cj.usuario FROM cajas cj
+            WHERE cj.abierta_desde <= p.fecha_hora AND (cj.cerrada_desde IS NULL OR cj.cerrada_desde >= p.fecha_hora)
+            ORDER BY cj.abierta_desde DESC LIMIT 1
+          ) c ON TRUE
           WHERE p.estado = 'pagado' AND p.metodo_pago = ${filtroPago}::metodo_pago
           ORDER BY p.fecha_hora DESC
         `;
@@ -68,7 +81,11 @@ export const GET: APIRoute = async ({ request }) => {
             m.numero_mesa, m.piso as mesa_piso, c.usuario as cajera
           FROM pedidos p
           LEFT JOIN mesas m ON m.id = p.mesa_id
-          LEFT JOIN cajas c ON c.abierta_desde <= p.fecha_hora AND (c.cerrada_desde IS NULL OR c.cerrada_desde >= p.fecha_hora)
+          LEFT JOIN LATERAL (
+            SELECT cj.usuario FROM cajas cj
+            WHERE cj.abierta_desde <= p.fecha_hora AND (cj.cerrada_desde IS NULL OR cj.cerrada_desde >= p.fecha_hora)
+            ORDER BY cj.abierta_desde DESC LIMIT 1
+          ) c ON TRUE
           WHERE p.estado = 'pagado'
           ORDER BY p.fecha_hora DESC
         `;
@@ -145,16 +162,17 @@ export const GET: APIRoute = async ({ request }) => {
       }
 
       ventasPorCajera = await sql`
-        SELECT
-          c.usuario as cajera,
-          COUNT(p.id)::int as total_pedidos,
-          COALESCE(SUM(p.total), 0)::int as total_ventas
-        FROM pedidos p
-        JOIN cajas c ON c.abierta_desde <= p.fecha_hora AND (c.cerrada_desde IS NULL OR c.cerrada_desde >= p.fecha_hora)
-        WHERE p.estado = 'pagado'
-          AND p.fecha_hora >= ${mes + '-01'}::date
-          AND p.fecha_hora < (${mes + '-01'}::date + INTERVAL '1 month')
-        GROUP BY c.usuario
+        SELECT cajera, COUNT(*)::int as total_pedidos, COALESCE(SUM(total), 0)::int as total_ventas
+        FROM (
+          SELECT DISTINCT ON (p.id) p.id, p.total, c.usuario as cajera
+          FROM pedidos p
+          JOIN cajas c ON c.abierta_desde <= p.fecha_hora AND (c.cerrada_desde IS NULL OR c.cerrada_desde >= p.fecha_hora)
+          WHERE p.estado = 'pagado'
+            AND p.fecha_hora >= ${mes + '-01'}::date
+            AND p.fecha_hora < (${mes + '-01'}::date + INTERVAL '1 month')
+          ORDER BY p.id, c.abierta_desde DESC
+        ) sub
+        GROUP BY cajera
         ORDER BY total_ventas DESC
       `;
     }

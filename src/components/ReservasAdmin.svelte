@@ -23,7 +23,11 @@
     finally { loading = false; }
   }
 
+  let saving: boolean = $state(false);
+
   async function handleCreate() {
+    if (saving) return;
+    saving = true;
     try {
       const res = await fetch('/api/admin/reservas', {
         method: 'POST',
@@ -41,6 +45,8 @@
     } catch (e) {
       console.error(e);
       alert('Error de conexión');
+    } finally {
+      saving = false;
     }
   }
 
@@ -185,7 +191,7 @@
         </div>
         <div class="flex gap-3 pt-3">
           <button class="btn-secondary flex-1" onclick={() => { showModal = false }}>Cancelar</button>
-          <button class="btn-primary flex-1" onclick={handleCreate}>Reservar</button>
+          <button class="btn-primary flex-1" disabled={saving} onclick={handleCreate}>{saving ? 'Guardando...' : 'Reservar'}</button>
         </div>
       </div>
     </div>

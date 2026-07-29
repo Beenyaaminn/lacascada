@@ -35,14 +35,16 @@ if (pedidoId > 0) {
       } else {
         mesaInfo = p.tipo_pedido || '';
       }
-      const costoEnvio = ((p.tipo_pedido === 'delivery') || (p.tipo_pedido === 'retiro')) ? (p.descuento || 0) : 0;
+      const costoEnvio = p.costo_envio || 0;
+      const descuento = p.descuento || 0;
+      const totalFinal = (p.total || 0) - descuento;
       voucherData = {
         pedido_id: p.id,
         fecha: new Date(p.fecha_hora).toLocaleString('es-CL'),
         mesaInfo,
         metodoPago: (p.metodo_pago || '').toUpperCase().replace('_', ' '),
-        total: p.total || 0,
-        vuelto: p.efectivo_con_cuanto > p.total ? (p.efectivo_con_cuanto - p.total) : 0,
+        total: totalFinal,
+        vuelto: p.efectivo_con_cuanto > totalFinal ? (p.efectivo_con_cuanto - totalFinal) : 0,
         nombreCliente: p.nombre_cliente || '',
         direccion: p.direccion || '',
         telefono: p.telefono || '',

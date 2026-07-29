@@ -67,9 +67,13 @@
     showModal = true;
   }
 
+  let saving: boolean = $state(false);
+
   async function handleSave() {
+    if (saving) return;
     error = '';
     message = '';
+    saving = true;
 
     const url = '/api/admin/productos';
     const method = editingId ? 'PUT' : 'POST';
@@ -94,6 +98,8 @@
       setTimeout(() => { message = ''; }, 3000);
     } catch (e) {
       error = 'Error de conexión';
+    } finally {
+      saving = false;
     }
   }
 
@@ -268,7 +274,7 @@
 
         <div class="flex gap-3 pt-3">
           <button type="button" class="btn-secondary flex-1" on:click={() => { showModal = false }}>Cancelar</button>
-          <button type="submit" class="btn-primary flex-1">{editingId ? 'Actualizar' : 'Crear'}</button>
+          <button type="submit" class="btn-primary flex-1" disabled={saving}>{saving ? 'Guardando...' : editingId ? 'Actualizar' : 'Crear'}</button>
         </div>
       </form>
     </div>

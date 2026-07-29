@@ -5,9 +5,10 @@ import { sql } from '../../../lib/db';
 import { registrarAuditoria } from '../../../lib/audit';
 import { checkRateLimit } from '../../../lib/ratelimit';
 import { logError } from '../../../lib/logger';
+import { calcularPedido, devolverStock, getCostoEnvio, COSTO_ZONAS, PricingError } from '../../../lib/pricing';
 
-export const POST: APIRoute = async ({ request }) => {
-  const ip = request.headers.get('x-forwarded-for') || '0.0.0.0';
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  const ip = clientAddress || request.headers.get('x-forwarded-for')?.split(',').pop()?.trim() || '0.0.0.0';
 
   const rl = checkRateLimit(`delivery:${ip}`, 10, 60000);
   if (!rl.allowed) {
@@ -19,20 +20,26 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const {
       nombre, direccion, telefono, metodo_pago,
-      efectivo_con_cuanto, items, total, tipo, zona, costo_envio
+      efectivo_con_cuanto, items, tipo, zona, hora_reserva
     } = await request.json();
 
     const esRetiro = tipo === 'retiro';
     const esReserva = tipo === 'reserva';
 
-    if (!nombre || !telefono) {
+    if (typeof nombre !== 'string' || !nombre.trim() || typeof telefono !== 'string' || !telefono.trim()) {
       return new Response(JSON.stringify({ error: 'Nombre y teléfono son obligatorios' }), {
         status: 400, headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    if (!esRetiro && !direccion) {
+    if (!esRetiro && !esReserva && (typeof direccion !== 'string' || !direccion.trim())) {
       return new Response(JSON.stringify({ error: 'La dirección es obligatoria' }), {
+        status: 400, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!esRetiro && !esReserva && zona && !(zona in COSTO_ZONAS)) {
+      return new Response(JSON.stringify({ error: 'Zona de delivery inválida' }), {
         status: 400, headers: { 'Content-Type': 'application/json' },
       });
     }
@@ -49,80 +56,66 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    if (metodo_pago === 'efectivo' && (efectivo_con_cuanto == null || efectivo_con_cuanto <= 0)) {
-      return new Response(JSON.stringify({ error: 'Debe ingresar monto en efectivo' }), {
-        status: 400, headers: { 'Content-Type': 'application/json' },
-      });
+    // Costo de envío calculado server-side (nunca confiar en el cliente)
+    const envio = esRetiro || esReserva ? 0 : getCostoEnvio(zona);
+
+    // Precios calculados 100% server-side
+    let calculado;
+    try {
+      calculado = await calcularPedido(items);
+    } catch (e) {
+      if (e instanceof PricingError) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+      throw e;
+    }
+    const total = calculado.total + envio;
+
+    if (metodo_pago === 'efectivo') {
+      const ef = Number(efectivo_con_cuanto);
+      if (!Number.isFinite(ef) || ef < total) {
+        return new Response(JSON.stringify({ error: `El monto en efectivo ($${Number.isFinite(ef) ? ef : 0}) debe ser igual o mayor al total ($${total})` }), {
+          status: 400, headers: { 'Content-Type': 'application/json' },
+        });
+      }
     }
 
-    const envio = (typeof costo_envio === 'number' && costo_envio > 0) ? costo_envio : 0;
-
-    let calculatedTotal = 0;
-    for (const item of items) {
-      const prod = await sql`SELECT id, nombre, maneja_stock, stock_actual FROM productos WHERE id = ${item.producto_id} LIMIT 1`;
-      if (prod.length === 0) {
-        return new Response(JSON.stringify({ error: `Producto #${item.producto_id} no encontrado` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-      }
-      const cantidad = item.cantidad || 1;
-      if (cantidad < 1 || cantidad > 99) {
-        return new Response(JSON.stringify({ error: `Cantidad inválida (1-99) para ${prod[0].nombre}` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-      }
-      if (prod[0].maneja_stock && prod[0].stock_actual < cantidad) {
-        return new Response(JSON.stringify({ error: `Stock insuficiente: ${prod[0].nombre} (disponible: ${prod[0].stock_actual})` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-      }
-      if (typeof item.subtotal !== 'number' || item.subtotal < 0) {
-        return new Response(JSON.stringify({ error: `Subtotal inválido para ${prod[0].nombre}` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-      }
-      calculatedTotal += item.subtotal;
-    }
-    calculatedTotal += envio;
-
-    if (typeof total !== 'number' || total < 0 || Math.abs(total - calculatedTotal) > Math.max(calculatedTotal * 0.01, 1)) {
-      return new Response(JSON.stringify({ error: `Total inválido. Esperado: $${calculatedTotal}, Recibido: $${total}` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    }
-
-    if (metodo_pago === 'efectivo' && efectivo_con_cuanto < total) {
-      return new Response(JSON.stringify({ error: `El monto en efectivo ($${efectivo_con_cuanto || 0}) debe cubrir el total ($${total})` }), {
-        status: 400, headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const efConCuanto = metodo_pago === 'efectivo' ? (efectivo_con_cuanto || 0) : 0;
-    const dirFinal = esReserva ? direccion : (esRetiro ? 'Retiro en local' : (zona ? `[${zona}] ${direccion}` : direccion));
+    const efConCuanto = metodo_pago === 'efectivo' ? Number(efectivo_con_cuanto) : 0;
+    const dirFinal = esReserva
+      ? (hora_reserva ? `Reserva - ${hora_reserva}` : String(direccion || 'Reserva').slice(0, 200))
+      : (esRetiro ? 'Retiro en local' : (zona ? `[${zona}] ${String(direccion).slice(0, 200)}` : String(direccion).slice(0, 200)));
     const tipoPedido = esReserva ? 'reserva' : (esRetiro ? 'retiro' : 'delivery');
-    const zonaInfo = zona || '';
 
-    const result = await sql.begin(async (tx) => {
-      const pedido = await tx`
-        INSERT INTO pedidos (tipo_pedido, estado, total, nombre_cliente, direccion, telefono, efectivo_con_cuanto, descuento)
-        VALUES (${tipoPedido}, 'pendiente', ${total}, ${nombre}, ${dirFinal}, ${telefono}, ${efConCuanto}, ${envio})
+    try {
+      const pedido = await sql`
+        INSERT INTO pedidos (tipo_pedido, estado, total, nombre_cliente, direccion, telefono, efectivo_con_cuanto, costo_envio)
+        VALUES (${tipoPedido}::tipo_pedido, 'pendiente', ${total}, ${nombre.trim().slice(0, 100)}, ${dirFinal}, ${telefono.trim().slice(0, 30)}, ${efConCuanto}, ${envio})
         RETURNING id, fecha_hora
       `;
       const pedidoId = pedido[0].id;
 
-      for (const item of items) {
-        await tx`
+      for (const item of calculado.items) {
+        await sql`
           INSERT INTO detalle_pedidos (pedido_id, producto_id, acompanamiento, cantidad, subtotal)
-          VALUES (${pedidoId}, ${item.producto_id}, ${item.acompanamiento || null}, ${item.cantidad || 1}, ${item.subtotal})
+          VALUES (${pedidoId}, ${item.producto_id}, ${item.acompanamiento}, ${item.cantidad}, ${item.subtotal})
         `;
       }
 
-      return pedidoId;
-    });
+      await registrarAuditoria('PEDIDO_DELIVERY_CREADO', 'pedidos', pedidoId, nombre.trim(),
+        `${esRetiro ? 'Retiro' : esReserva ? 'Reserva' : 'Delivery'}${zona ? ' ' + zona : ''} | ${calculado.items.length} items | Total: $${total}${envio > 0 ? ' (envio: $' + envio + ')' : ''}`, ip);
 
-    const pedidoId = result;
-
-    await registrarAuditoria('PEDIDO_DELIVERY_CREADO', 'pedidos', pedidoId, nombre,
-      `${esRetiro ? 'Retiro' : 'Delivery'}${zonaInfo ? ' ' + zonaInfo : ''} | ${items.length} items | Total: $${total}${envio > 0 ? ' (envio: $' + envio + ')' : ''}`, ip);
-
-    return new Response(JSON.stringify({
-      success: true,
-      pedido_id: pedidoId,
-      fecha_hora: new Date().toISOString(),
-      vuelto: metodo_pago === 'efectivo' ? (efectivo_con_cuanto || 0) - total : 0,
-    }), {
-      status: 201, headers: { 'Content-Type': 'application/json' },
-    });
+      return new Response(JSON.stringify({
+        success: true,
+        pedido_id: pedidoId,
+        fecha_hora: pedido[0].fecha_hora,
+        vuelto: metodo_pago === 'efectivo' ? efConCuanto - total : 0,
+      }), {
+        status: 201, headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (e) {
+      await devolverStock(calculado.items);
+      throw e;
+    }
   } catch (error) {
     logError('Creando pedido delivery', error);
     return new Response(JSON.stringify({ error: 'Error al crear el pedido' }), { status: 500, headers: { 'Content-Type': 'application/json' } });

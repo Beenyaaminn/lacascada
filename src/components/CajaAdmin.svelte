@@ -28,7 +28,9 @@
       if (data.cajas?.length > 0) {
         cajaActiva = data.cajas[0];
       }
-    } catch (e) { /* */ }
+    } catch (e) {
+      error = 'No se pudo verificar el estado de la caja. Recarga la página antes de continuar.';
+    }
   });
 
   async function abrirCaja() {

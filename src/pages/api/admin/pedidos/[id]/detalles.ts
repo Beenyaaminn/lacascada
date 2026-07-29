@@ -10,14 +10,17 @@ export const GET: APIRoute = async ({ request, params }) => {
     return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
   }
 
-  const { id } = params;
+  const pedidoId = parseInt(params.id || '');
+  if (!Number.isInteger(pedidoId) || pedidoId <= 0) {
+    return new Response(JSON.stringify({ error: 'ID de pedido inválido' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+  }
 
   try {
     const detalles = await sql`
       SELECT dp.*, pr.nombre as producto_nombre, pr.precio as producto_precio
       FROM detalle_pedidos dp
       JOIN productos pr ON pr.id = dp.producto_id
-      WHERE dp.pedido_id = ${id}
+      WHERE dp.pedido_id = ${pedidoId}
     `;
 
     return new Response(JSON.stringify({ detalles }), { status: 200, headers: { 'Content-Type': 'application/json' } });

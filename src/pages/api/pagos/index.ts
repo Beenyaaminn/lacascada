@@ -15,13 +15,13 @@ class PagoError extends Error {
   }
 }
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
   const session = getSessionFromCookie(request.headers.get('cookie'));
   if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
     return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
   }
 
-  const ip = request.headers.get('x-forwarded-for') || '';
+  const ip = clientAddress || request.headers.get('x-forwarded-for')?.split(',').pop()?.trim() || '';
 
   const rl = checkRateLimit(`pagos:${ip}`, 60, 60000);
   if (!rl.allowed) {
@@ -31,80 +31,121 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
-    const { pedido_id, metodo_pago, descuento, efectivo_con_cuanto } = await request.json();
+    const { pedido_id, metodo_pago, descuento, efectivo_con_cuanto, cliente_credito_id } = await request.json();
     const validMethods = ['efectivo', 'debito', 'credito', 'a_credito'];
 
-    if (!pedido_id || !validMethods.includes(metodo_pago)) {
+    const pedidoId = Number(pedido_id);
+    if (!Number.isInteger(pedidoId) || pedidoId <= 0 || !validMethods.includes(metodo_pago)) {
       return new Response(JSON.stringify({ error: 'Datos inválidos' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    if ((descuento !== undefined && descuento < 0)) {
+    const desc = Number(descuento) || 0;
+    if (desc < 0) {
       return new Response(JSON.stringify({ error: 'El descuento no puede ser negativo' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const pedidoBefore = await sql`SELECT * FROM pedidos WHERE id = ${pedido_id} LIMIT 1`;
+    const pedidoBefore = await sql`SELECT * FROM pedidos WHERE id = ${pedidoId} LIMIT 1`;
     if (pedidoBefore.length === 0) {
       return new Response(JSON.stringify({ error: 'Pedido no encontrado' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
-    if (pedidoBefore[0].estado === 'pagado') {
+    const pedido = pedidoBefore[0];
+    if (pedido.estado === 'pagado') {
       return new Response(JSON.stringify({ error: 'Este pedido ya fue pagado' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const pedido = pedidoBefore[0];
+    // El descuento no puede superar el total del pedido
+    if (desc > pedido.total) {
+      return new Response(JSON.stringify({ error: `El descuento ($${desc}) no puede ser mayor al total ($${pedido.total})` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
 
-    const result = await sql.begin(async (tx) => {
-      if (metodo_pago === 'a_credito' && pedido.usuario_id) {
-        const cliente = await tx`SELECT * FROM clientes_credito WHERE id = ${pedido.usuario_id} LIMIT 1`;
-        if (cliente.length > 0) {
-          const nuevoSaldo = cliente[0].saldo_deudor + pedido.total;
-          if (nuevoSaldo > cliente[0].limite_credito) {
-            throw new PagoError('El cliente excede su límite de crédito', 400);
-          }
-          await tx`UPDATE clientes_credito SET saldo_deudor = ${nuevoSaldo} WHERE id = ${cliente[0].id}`;
-        }
+    const totalAPagar = pedido.total - desc;
+
+    // VALIDACIÓN CRÍTICA: el efectivo recibido debe cubrir el total
+    if (metodo_pago === 'efectivo') {
+      const ef = Number(efectivo_con_cuanto);
+      if (!Number.isFinite(ef) || ef <= 0) {
+        return new Response(JSON.stringify({ error: 'Debe ingresar con cuánto paga el cliente' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
+      if (ef < totalAPagar) {
+        return new Response(JSON.stringify({ error: `El efectivo recibido ($${ef}) es menor al total a cobrar ($${totalAPagar})` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+    }
 
-      const updated = await tx`
-        UPDATE pedidos SET
-          metodo_pago = ${metodo_pago}::metodo_pago,
-          estado = 'pagado'::estado_pedido,
-          descuento = ${descuento || 0},
-          efectivo_con_cuanto = ${efectivo_con_cuanto || 0}
-        WHERE id = ${pedido_id} AND estado != 'pagado'
-        RETURNING *
+    // Crédito: el cliente es obligatorio
+    let clienteCreditoId: number | null = null;
+    if (metodo_pago === 'a_credito') {
+      clienteCreditoId = Number(cliente_credito_id);
+      if (!Number.isInteger(clienteCreditoId) || clienteCreditoId <= 0) {
+        return new Response(JSON.stringify({ error: 'Debe seleccionar un cliente para pago a crédito' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+
+    const efFinal = metodo_pago === 'efectivo' ? Number(efectivo_con_cuanto) : 0;
+
+    // 1) Crédito: incremento atómico del saldo con guard de límite
+    if (metodo_pago === 'a_credito' && clienteCreditoId) {
+      const credito = await sql`
+        UPDATE clientes_credito
+        SET saldo_deudor = saldo_deudor + ${totalAPagar}
+        WHERE id = ${clienteCreditoId}
+          AND activo = TRUE
+          AND saldo_deudor + ${totalAPagar} <= limite_credito
+        RETURNING id, saldo_deudor
       `;
-
-      if (updated.length === 0) {
-        throw new PagoError('Error al procesar pago', 500);
+      if (credito.length === 0) {
+        return new Response(JSON.stringify({ error: 'El cliente no existe, está inactivo o excede su límite de crédito' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
+    }
 
-      if (pedido.mesa_id) {
-        const tienePendientes = await tx`
-          SELECT COUNT(*) as cnt FROM pedidos
-          WHERE mesa_id = ${pedido.mesa_id} AND estado != 'pagado' AND estado != 'cancelado'
-        `;
-        if (Number(tienePendientes[0].cnt) === 0) {
-          await tx`UPDATE mesas SET estado = 'libre' WHERE id = ${pedido.mesa_id}`;
-        } else {
-          await tx`UPDATE mesas SET estado = 'esperando_pago' WHERE id = ${pedido.mesa_id}`;
-        }
+    // 2) Marcar pedido como pagado (guard anti doble-pago) y atribuir a la caja abierta
+    const cajaAbierta = await sql`SELECT id FROM cajas WHERE estado = 'abierta' ORDER BY abierta_desde DESC LIMIT 1`;
+    const cajaId = cajaAbierta.length > 0 ? cajaAbierta[0].id : null;
+
+    const updated = await sql`
+      UPDATE pedidos SET
+        metodo_pago = ${metodo_pago}::metodo_pago,
+        estado = 'pagado'::estado_pedido,
+        descuento = ${desc},
+        efectivo_con_cuanto = ${efFinal},
+        cliente_credito_id = ${clienteCreditoId},
+        caja_id = ${cajaId}
+      WHERE id = ${pedidoId} AND estado != 'pagado'
+      RETURNING *
+    `;
+
+    if (updated.length === 0) {
+      // Revertir el cargo de crédito si el pago no se aplicó
+      if (metodo_pago === 'a_credito' && clienteCreditoId) {
+        await sql`UPDATE clientes_credito SET saldo_deudor = GREATEST(saldo_deudor - ${totalAPagar}, 0) WHERE id = ${clienteCreditoId}`;
       }
+      return new Response(JSON.stringify({ error: 'Este pedido ya fue pagado' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+    }
 
-      return updated[0];
-    });
+    // 3) Actualizar estado de la mesa
+    if (pedido.mesa_id) {
+      const tienePendientes = await sql`
+        SELECT COUNT(*)::int as cnt FROM pedidos
+        WHERE mesa_id = ${pedido.mesa_id} AND estado != 'pagado' AND estado != 'cancelado'
+      `;
+      if (tienePendientes[0].cnt === 0) {
+        await sql`UPDATE mesas SET estado = 'libre', tomada_por = NULL, tomada_desde = NULL WHERE id = ${pedido.mesa_id}`;
+      } else {
+        await sql`UPDATE mesas SET estado = 'esperando_pago' WHERE id = ${pedido.mesa_id}`;
+      }
+    }
 
     const mesaInfo = pedido.mesa_id ? `Mesa #${pedido.mesa_id}` : 'sin mesa';
-    await registrarAuditoria('PAGO_PROCESADO', 'pedidos', pedido_id, session.nombre,
-      `Método: ${metodo_pago} | Total: $${pedido.total} | ${mesaInfo}`, ip);
+    await registrarAuditoria('PAGO_PROCESADO', 'pedidos', pedidoId, session.nombre,
+      `Método: ${metodo_pago} | Total: $${pedido.total}${desc > 0 ? ' | Descuento: $' + desc : ''} | Cobrado: $${totalAPagar} | ${mesaInfo}`, ip);
 
     let voucherData = null;
     try {
-      voucherData = await generarVoucher(pedido_id, metodo_pago);
+      voucherData = await generarVoucher(pedidoId, metodo_pago);
     } catch (e) {
       console.error('Error generando voucher:', e);
     }
-    return new Response(JSON.stringify({ pedido: result, voucher: voucherData }), {
+    return new Response(JSON.stringify({ pedido: updated[0], voucher: voucherData }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
@@ -137,12 +178,14 @@ async function generarVoucher(pedidoId: number, metodoPago: string) {
   } else {
     mesaInfo = p.tipo_pedido;
   }
+  const totalFinal = p.total - (p.descuento || 0);
   const efConCuanto = p.efectivo_con_cuanto || 0;
-  const vuelto = metodoPago === 'efectivo' && efConCuanto > p.total ? efConCuanto - p.total : 0;
+  const vuelto = metodoPago === 'efectivo' && efConCuanto > totalFinal ? efConCuanto - totalFinal : 0;
   return {
     pedido_id: p.id, fecha_hora: p.fecha_hora, mesa_info: mesaInfo,
     detalles: detalles.map((d: any) => ({ nombre: d.producto_nombre, acompanamiento: d.acompanamiento, cantidad: d.cantidad, subtotal: d.subtotal })),
-    subtotal: p.total, metodo_pago: metodoPago, total: p.total,
+    subtotal: totalFinal, metodo_pago: metodoPago, total: totalFinal,
+    descuento: p.descuento || 0, costo_envio: p.costo_envio || 0,
     vuelto, nombre_cliente: p.nombre_cliente, direccion: p.direccion, telefono: p.telefono,
     efectivo_con_cuanto: efConCuanto,
   };

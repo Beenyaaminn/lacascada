@@ -13,90 +13,456 @@ const isAdmin = session.rol === 'admin';
 
 let totalHoy = 0;
 let mesasOcupadas = 0;
+let pedidosHoy = 0;
+let totalMesas = 0;
 try {
   const hoy = new Date().toISOString().split('T')[0];
-  const ventas = await sql`SELECT COALESCE(SUM(total), 0)::int as total FROM pedidos WHERE estado = 'pagado' AND fecha_hora >= ${hoy}::date`;
+  const [ventas, mesas, pedidos, todas] = await Promise.all([
+    sql`SELECT COALESCE(SUM(total), 0)::int as total FROM pedidos WHERE estado = 'pagado' AND fecha_hora >= ${hoy}::date`,
+    sql`SELECT COUNT(*)::int as cnt FROM mesas WHERE estado != 'libre'`,
+    sql`SELECT COUNT(*)::int as cnt FROM pedidos WHERE fecha_hora >= ${hoy}::date`,
+    sql`SELECT COUNT(*)::int as cnt FROM mesas`,
+  ]);
   totalHoy = ventas[0]?.total || 0;
-  const mesas = await sql`SELECT COUNT(*)::int as cnt FROM mesas WHERE estado != 'libre'`;
   mesasOcupadas = mesas[0]?.cnt || 0;
+  pedidosHoy = pedidos[0]?.cnt || 0;
+  totalMesas = todas[0]?.cnt || 0;
 } catch { /* */ }
 
 function formatCLP(n: number) { return '$' + n.toLocaleString('es-CL'); }
+
+const hour = new Date().getHours();
+const greeting = hour < 12 ? 'Buenos dias' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
 ---
 
 <AdminLayout title="Panel - La Cascada" currentPage="/admin">
-  <div class="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
-    <!-- Welcome -->
-    <div class="mb-8">
-      <p class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Panel de Control</p>
-      <h1 class="font-display text-3xl md:text-4xl text-[#1a1a1a] font-bold mt-1">La Cascada</h1>
-      <p class="text-[#6b6b6b] text-sm mt-2">Bienvenido, <span class="font-semibold text-[#1a1a1a]">{session.nombre}</span> · <span class="capitalize">{session.rol}</span></p>
+  <div class="dashboard">
+    <!-- Header -->
+    <header class="dash-header animate-fade-in">
+      <div>
+        <p class="dash-greeting">{greeting},</p>
+        <h1 class="dash-title">{session.nombre}</h1>
+      </div>
+      <div class="dash-header-meta">
+        <span class="dash-role-badge">{session.rol}</span>
+        <span class="dash-date">{new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+      </div>
+    </header>
+
+    <!-- Stats Row -->
+    <div class="stats-grid">
+      <div class="stat-card animate-fade-in-up delay-100">
+        <div class="stat-header">
+          <span class="stat-label">Ventas de Hoy</span>
+          <div class="stat-icon stat-icon-gold">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+        </div>
+        <p class="stat-value stat-value-gold">{formatCLP(totalHoy)}</p>
+        <div class="stat-bar">
+          <div class="stat-bar-fill" style="width: {Math.min((totalHoy / 500000) * 100, 100)}%; background: var(--admin-gold);"></div>
+        </div>
+        <p class="stat-footer">Meta: $500.000</p>
+      </div>
+
+      <div class="stat-card animate-fade-in-up delay-200">
+        <div class="stat-header">
+          <span class="stat-label">Mesas Activas</span>
+          <div class="stat-icon stat-icon-emerald">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+            </svg>
+          </div>
+        </div>
+        <p class="stat-value">{mesasOcupadas}<span class="stat-unit">/{totalMesas}</span></p>
+        <div class="stat-bar">
+          <div class="stat-bar-fill" style="width: {totalMesas > 0 ? (mesasOcupadas / totalMesas) * 100 : 0}%; background: var(--admin-emerald);"></div>
+        </div>
+        <p class="stat-footer">{totalMesas > 0 ? Math.round((mesasOcupadas / totalMesas) * 100) : 0}% de ocupacion</p>
+      </div>
+
+      <div class="stat-card animate-fade-in-up delay-300">
+        <div class="stat-header">
+          <span class="stat-label">Pedidos Hoy</span>
+          <div class="stat-icon stat-icon-wine">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
+            </svg>
+          </div>
+        </div>
+        <p class="stat-value">{pedidosHoy}</p>
+        <div class="stat-bar">
+          <div class="stat-bar-fill" style="width: {Math.min(pedidosHoy * 5, 100)}%; background: var(--admin-wine);"></div>
+        </div>
+        <p class="stat-footer">pedidos registrados</p>
+      </div>
     </div>
 
-    <!-- Stats -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-      <div class="rounded-2xl p-5 border" style="background-color:#fff; border-color:#e0dcd4;">
-        <p class="text-xs text-[#6b6b6b] uppercase tracking-wider font-semibold">Ventas Hoy</p>
-        <p class="text-3xl font-extrabold mt-1" style="color:#c9a227;">{formatCLP(totalHoy)}</p>
-      </div>
-      <div class="rounded-2xl p-5 border" style="background-color:#fff; border-color:#e0dcd4;">
-        <p class="text-xs text-[#6b6b6b] uppercase tracking-wider font-semibold">Mesas Ocupadas</p>
-        <p class="text-3xl font-extrabold mt-1 text-[#1a1a1a]">{mesasOcupadas}</p>
-      </div>
-      <div class="rounded-2xl p-5 border" style="background-color:#fff; border-color:#e0dcd4;">
-        <p class="text-xs text-[#6b6b6b] uppercase tracking-wider font-semibold">Rol</p>
-        <p class="text-xl font-bold mt-1 text-[#1a1a1a] capitalize">{session.rol}</p>
-      </div>
-    </div>
+    <!-- Quick Access -->
+    <section class="quick-access animate-fade-in-up delay-400">
+      <h2 class="section-heading">Accesos Rapidos</h2>
+      <div class="access-grid">
+        <a href="/admin/mesas" class="access-card">
+          <div class="access-icon access-icon-gold">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+            </svg>
+          </div>
+          <div class="access-content">
+            <h3>Toma de Pedidos</h3>
+            <p>Mesas, reservas y delivery</p>
+          </div>
+          <svg class="access-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </a>
 
-    <!-- Navigation Cards -->
-    <p class="text-xs text-[#6b6b6b] uppercase tracking-widest font-semibold mb-4">Accesos Rápidos</p>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      <a href="/admin/mesas" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
-        <span class="text-3xl shrink-0">🍽️</span>
-        <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Toma de Pedidos</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Mesas, reservas y delivery</p></div>
-      </a>
-      <a href="/admin/cocina" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
-        <span class="text-3xl shrink-0">👨‍🍳</span>
-        <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Cocina</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Vista de tickets y pedidos activos</p></div>
-      </a>
-      <a href="/admin/pedidos" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
-        <span class="text-3xl shrink-0">📦</span>
-        <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Pedidos</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Gestión de pedidos activos</p></div>
-      </a>
-      <a href="/admin/productos" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
-        <span class="text-3xl shrink-0">📋</span>
-        <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Productos</h3><p class="text-[#6b6b6b] text-xs mt-0.5">CRUD de productos, precios y stock</p></div>
-      </a>
-      <a href="/admin/reservas" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
-        <span class="text-3xl shrink-0">📅</span>
-        <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Reservas</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Apartado de platos del día</p></div>
-      </a>
+        <a href="/admin/cocina" class="access-card">
+          <div class="access-icon access-icon-emerald">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z"/>
+              <path d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1.001A3.75 3.75 0 0012 18z"/>
+            </svg>
+          </div>
+          <div class="access-content">
+            <h3>Cocina</h3>
+            <p>Tickets y pedidos activos</p>
+          </div>
+          <svg class="access-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </a>
 
-      {isAdmin && (
-        <>
-          <a href="/admin/clientes" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
-            <span class="text-3xl shrink-0">👥</span>
-            <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Créditos</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Clientes con cuenta corriente</p></div>
-          </a>
-          <a href="/admin/reportes" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
-            <span class="text-3xl shrink-0">📊</span>
-            <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Reportes</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Ventas y contabilidad</p></div>
-          </a>
-          <a href="/admin/usuarios" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
-            <span class="text-3xl shrink-0">🔑</span>
-            <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Usuarios</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Gestionar cuentas y roles</p></div>
-          </a>
-          <a href="/admin/stock" class="group rounded-2xl p-5 border transition-all duration-300 flex items-start gap-4" style="background-color:#fff; border-color:#e0dcd4;" onmouseover="this.style.borderColor='#c9a227';this.style.boxShadow='0 4px 24px rgba(201,162,39,0.1)'" onmouseout="this.style.borderColor='#e0dcd4';this.style.boxShadow='none'">
-            <span class="text-3xl shrink-0">📦</span>
-            <div><h3 class="font-semibold text-[#1a1a1a] group-hover:text-[#c9a227] transition-colors">Stock</h3><p class="text-[#6b6b6b] text-xs mt-0.5">Proveedores y control de inventario</p></div>
-          </a>
-        </>
-      )}
-    </div>
+        <a href="/admin/pedidos" class="access-card">
+          <div class="access-icon access-icon-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
+            </svg>
+          </div>
+          <div class="access-content">
+            <h3>Pedidos</h3>
+            <p>Gestion de pedidos activos</p>
+          </div>
+          <svg class="access-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </a>
+
+        <a href="/admin/productos" class="access-card">
+          <div class="access-icon access-icon-purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/>
+              <path d="M6 6h.008v.008H6V6z"/>
+            </svg>
+          </div>
+          <div class="access-content">
+            <h3>Productos</h3>
+            <p>CRUD de productos y precios</p>
+          </div>
+          <svg class="access-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </a>
+
+        <a href="/admin/reservas" class="access-card">
+          <div class="access-icon access-icon-orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+            </svg>
+          </div>
+          <div class="access-content">
+            <h3>Reservas</h3>
+            <p>Reservaciones y calendario</p>
+          </div>
+          <svg class="access-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </a>
+
+        {isAdmin && (
+          <>
+            <a href="/admin/reportes" class="access-card">
+              <div class="access-icon access-icon-gold">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+                </svg>
+              </div>
+              <div class="access-content">
+                <h3>Reportes</h3>
+                <p>Ventas, indicadores y contabilidad</p>
+              </div>
+              <svg class="access-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+              </svg>
+            </a>
+
+            <a href="/admin/usuarios" class="access-card">
+              <div class="access-icon access-icon-blue">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+                </svg>
+              </div>
+              <div class="access-content">
+                <h3>Usuarios</h3>
+                <p>Cuentas y permisos</p>
+              </div>
+              <svg class="access-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+              </svg>
+            </a>
+
+            <a href="/admin/stock" class="access-card">
+              <div class="access-icon access-icon-emerald">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
+                </svg>
+              </div>
+              <div class="access-content">
+                <h3>Stock</h3>
+                <p>Proveedores e inventario</p>
+              </div>
+              <svg class="access-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+              </svg>
+            </a>
+          </>
+        )}
+      </div>
+    </section>
   </div>
 </AdminLayout>
 
-<style is:global>
-  .font-display { font-family: 'Playfair Display', Georgia, serif; }
+<style>
+  .dashboard {
+    padding: 32px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  @media (min-width: 640px) { .dashboard { padding: 40px 32px; } }
+  @media (min-width: 1024px) { .dashboard { padding: 48px 40px; } }
+
+  /* Header */
+  .dash-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 36px;
+  }
+  @media (min-width: 640px) {
+    .dash-header { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+  }
+  .dash-greeting {
+    font-size: 0.875rem;
+    color: var(--admin-text-dim);
+    margin: 0;
+    font-weight: 400;
+  }
+  .dash-title {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--admin-text);
+    margin: 4px 0 0;
+    line-height: 1.1;
+  }
+  @media (min-width: 640px) { .dash-title { font-size: 2.5rem; } }
+  .dash-header-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .dash-role-badge {
+    display: inline-flex;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: var(--admin-gold-dim);
+    color: var(--admin-gold);
+    border: 1px solid rgba(201,169,110,0.12);
+  }
+  .dash-date {
+    font-size: 0.75rem;
+    color: var(--admin-text-dim);
+    text-transform: capitalize;
+  }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  @media (min-width: 640px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+
+  .stat-card {
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    top: -20px; right: -20px;
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--admin-gold-dim), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.35s;
+  }
+  .stat-card:hover {
+    border-color: var(--admin-border-hover);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    transform: translateY(-2px);
+  }
+  .stat-card:hover::after { opacity: 1; }
+
+  .stat-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--admin-text-muted);
+  }
+  .stat-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stat-icon svg { width: 20px; height: 20px; }
+  .stat-icon-gold { background: var(--admin-gold-dim); color: var(--admin-gold); }
+  .stat-icon-emerald { background: var(--admin-emerald-dim); color: var(--admin-emerald); }
+  .stat-icon-wine { background: var(--admin-wine-dim); color: var(--admin-wine); }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--admin-text);
+    margin: 0 0 12px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .stat-value-gold { color: var(--admin-gold); }
+  .stat-unit { font-size: 1rem; font-weight: 400; color: var(--admin-text-dim); }
+
+  .stat-bar {
+    height: 4px;
+    background: var(--admin-surface-3);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .stat-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .stat-footer {
+    font-size: 0.6875rem;
+    color: var(--admin-text-dim);
+    margin: 0;
+  }
+
+  /* Quick Access */
+  .section-heading {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--admin-text);
+    margin: 0 0 20px;
+  }
+
+  .access-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  @media (min-width: 640px) { .access-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .access-grid { grid-template-columns: repeat(3, 1fr); } }
+
+  .access-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 20px;
+    border-radius: 14px;
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  .access-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--admin-gold-dim), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .access-card:hover {
+    border-color: var(--admin-border-hover);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    transform: translateX(4px);
+  }
+  .access-card:hover::before { opacity: 1; }
+  .access-card:hover .access-arrow { opacity: 1; transform: translateX(0); }
+
+  .access-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .access-icon svg { width: 22px; height: 22px; }
+  .access-icon-gold { background: var(--admin-gold-dim); color: var(--admin-gold); }
+  .access-icon-emerald { background: var(--admin-emerald-dim); color: var(--admin-emerald); }
+  .access-icon-blue { background: rgba(96,165,250,0.1); color: #60a5fa; }
+  .access-icon-purple { background: rgba(167,139,250,0.1); color: #a78bfa; }
+  .access-icon-orange { background: rgba(251,146,60,0.1); color: #fb923c; }
+  .access-icon-wine { background: var(--admin-wine-dim); color: var(--admin-wine); }
+
+  .access-content { flex: 1; min-width: 0; }
+  .access-content h3 {
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--admin-text);
+    margin: 0 0 2px;
+  }
+  .access-content p {
+    font-size: 0.75rem;
+    color: var(--admin-text-dim);
+    margin: 0;
+  }
+
+  .access-arrow {
+    width: 18px; height: 18px;
+    color: var(--admin-text-dim);
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: all 0.3s;
+    flex-shrink: 0;
+  }
 </style>

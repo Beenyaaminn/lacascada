@@ -6,19 +6,39 @@ const piso = Astro.url.searchParams.get('piso') || '0';
 const mesa = Astro.url.searchParams.get('mesa') || '0';
 const mesaInfo = piso !== '0' ? `Piso ${piso} - Mesa ${mesa}` : 'Selecciona tu mesa';
 
-const categorias = await sql`SELECT * FROM categorias ORDER BY orden ASC`;
-const productos = await sql`
-  SELECT p.*, c.nombre as categoria_nombre
-  FROM productos p
-  JOIN categorias c ON c.id = p.categoria_id
-  WHERE p.disponible_dia = TRUE
-    AND (p.maneja_stock = FALSE OR p.stock_actual > 0)
-  ORDER BY c.orden ASC, p.nombre ASC
-`;
-const acompanamientos = await sql`SELECT * FROM acompanamientos ORDER BY es_extra ASC, nombre ASC`;
-const productosAcomp = await sql`SELECT * FROM productos_acompanamientos`;
+let categorias: any[] = [];
+let productos: any[] = [];
+let acompanamientos: any[] = [];
+let productosAcomp: any[] = [];
+let menuError = false;
+
+try {
+  [categorias, productos, acompanamientos, productosAcomp] = await Promise.all([
+    sql`SELECT * FROM categorias ORDER BY orden ASC`,
+    sql`
+      SELECT p.*, c.nombre as categoria_nombre
+      FROM productos p
+      JOIN categorias c ON c.id = p.categoria_id
+      WHERE p.disponible_dia = TRUE
+        AND (p.maneja_stock = FALSE OR p.stock_actual > 0)
+      ORDER BY c.orden ASC, p.nombre ASC
+    `,
+    sql`SELECT * FROM acompanamientos ORDER BY es_extra ASC, nombre ASC`,
+    sql`SELECT * FROM productos_acompanamientos`,
+  ]);
+} catch (e) {
+  menuError = true;
+}
 ---
 <Layout title={`Menú Digital - ${mesaInfo}`} description="Carta digital de La Cascada. Realiza tu pedido desde la mesa.">
+  {menuError ? (
+    <main style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: var(--color-background); padding: 2rem; text-align: center;">
+      <div>
+        <h1 style="font-family: var(--font-display); font-size: 1.5rem; color: var(--color-primary); margin-bottom: 0.5rem;">Menú temporalmente no disponible</h1>
+        <p style="color: var(--color-text-muted); font-size: 0.875rem;">Estamos teniendo problemas técnicos. Por favor intenta en unos minutos o avisa al garzón.</p>
+      </div>
+    </main>
+  ) : (
   <main
     id="menu-app"
     data-piso={piso}
@@ -26,6 +46,7 @@ const productosAcomp = await sql`SELECT * FROM productos_acompanamientos`;
     data-menu={JSON.stringify({ categorias, productos, acompanamientos, productos_acompanamientos: productosAcomp }).replace(/"/g, '&quot;')}
     style="min-height: 100vh; background-color: var(--color-background);"
   ></main>
+  )}
 
   <script>
     import { mount } from 'svelte';
@@ -33,15 +54,19 @@ const productosAcomp = await sql`SELECT * FROM productos_acompanamientos`;
 
     const el = document.getElementById('menu-app');
     if (el) {
-      const menuData = JSON.parse(el?.dataset?.menu?.replace(/&quot;/g, '"') || 'null');
-      mount(MenuApp, {
-        target: el,
-        props: {
-          piso: parseInt(el.dataset.piso || '0'),
-          mesa: parseInt(el.dataset.mesa || '0'),
-          menuData,
-        },
-      });
+      try {
+        const menuData = JSON.parse(el?.dataset?.menu?.replace(/&quot;/g, '"') || 'null');
+        mount(MenuApp, {
+          target: el,
+          props: {
+            piso: parseInt(el.dataset.piso || '0'),
+            mesa: parseInt(el.dataset.mesa || '0'),
+            menuData,
+          },
+        });
+      } catch (e) {
+        el.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:2rem;"><div><h1 style="font-size:1.25rem;color:#205C66;margin-bottom:0.5rem;">Error al cargar el menú</h1><p style="color:#52737A;font-size:0.875rem;">Recarga la página o avisa al garzón.</p></div></div>';
+      }
     }
   </script>
 </Layout>

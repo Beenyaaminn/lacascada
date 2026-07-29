@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import type { Mesa, Categoria, Producto, Acompanamiento, ProductoAcompanamiento } from '../lib/types';
   import { GRUPOS_MENU, METODOS_PAGO, MAX_CANTIDAD_POR_PRODUCTO } from '../lib/constants';
+  import { fetchTimeout } from '../lib/fetch-utils';
 
   function generateId(): string {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -389,6 +390,16 @@
 
   async function realizarPago() {
     if (pedidosInfo.length === 0) return;
+
+    // Validación: en efectivo el monto debe cubrir el total
+    if (metodoPago === 'efectivo') {
+      const total = getTotalFinal();
+      if (!montoPagado || montoPagado < total) {
+        alert(`El monto con que paga ($${(montoPagado || 0).toLocaleString('es-CL')}) debe ser igual o mayor al total ($${total.toLocaleString('es-CL')})`);
+        return;
+      }
+    }
+
     saving = true;
     try {
       await fetch('/api/admin/mesas', {
@@ -407,15 +418,16 @@
       }
 
       for (const p of aPagar) {
-        const res = await fetch('/api/pagos', {
+        const res = await fetchTimeout('/api/pagos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             pedido_id: p.pedidoId,
             metodo_pago: metodoPago,
             descuento: descuento,
+            efectivo_con_cuanto: metodoPago === 'efectivo' ? montoPagado : 0,
           }),
-        });
+        }, 15000);
         if (res.ok) {
           const data = await res.json();
           pedidosInfo = pedidosInfo.map(pi => pi.pedidoId === p.pedidoId
@@ -834,7 +846,7 @@
                   <button
                     class="text-xs px-3 py-1.5 rounded-full border transition-colors
                       {pagoComensalIdx === -1 ? 'border-brand-500 bg-brand-50 text-brand-700 font-semibold' : 'border-gray-200 text-gray-600 hover:border-gray-300'}"
-                    onclick={() => { pagoComensalIdx = -1; descuento = 0; propina = 0 }}
+                    onclick={() => { pagoComensalIdx = -1; descuento = 0 }}
                   >Todos ({formatCLP(getSubtotalPendiente())})</button>
                   {#if comensalesList.some(c => c.items.length > 0)}
                     {#each comensalesList as c (c.id)}
@@ -842,7 +854,7 @@
                         <button
                           class="text-xs px-3 py-1.5 rounded-full border transition-colors
                             {pagoComensalIdx === c.id - 1 ? 'border-brand-500 bg-brand-50 text-brand-700 font-semibold' : 'border-gray-200 text-gray-600 hover:border-gray-300'}"
-                          onclick={() => { pagoComensalIdx = c.id - 1; descuento = 0; propina = 0 }}
+                          onclick={() => { pagoComensalIdx = c.id - 1; descuento = 0 }}
                         >{c.label} ({formatCLP(getComensalTotal(c.id - 1))})</button>
                       {/if}
                     {/each}
@@ -851,7 +863,7 @@
                       <button
                         class="text-xs px-3 py-1.5 rounded-full border transition-colors
                           {pagoComensalIdx === p.pedidoId ? 'border-brand-500 bg-brand-50 text-brand-700 font-semibold' : 'border-gray-200 text-gray-600 hover:border-gray-300'}"
-                        onclick={() => { pagoComensalIdx = p.pedidoId; descuento = 0; propina = 0 }}
+                        onclick={() => { pagoComensalIdx = p.pedidoId; descuento = 0 }}
                       >Pedido #{p.pedidoId}</button>
                     {/each}
                   {/if}
@@ -908,9 +920,12 @@
                 </div>
               </div>
 
-              <button class="btn-primary w-full py-3 disabled:opacity-50" disabled={saving || getTotalFinal() <= 0} onclick={realizarPago}>
+              <button class="btn-primary w-full py-3 disabled:opacity-50" disabled={saving || getTotalFinal() <= 0 || (metodoPago === 'efectivo' && montoPagado < getTotalFinal())} onclick={realizarPago}>
                 {saving ? 'Procesando...' : pagoComensalIdx === -1 ? 'Pagar Todo' : `Pagar ${comensalesList[pagoComensalIdx]?.label || ''}`}
               </button>
+              {#if metodoPago === 'efectivo' && montoPagado > 0 && montoPagado < getTotalFinal()}
+                <p class="text-xs text-red-500 font-semibold text-center">El monto ingresado es menor al total a pagar</p>
+              {/if}
               <button class="w-full py-2 rounded-lg border border-gray-300 text-gray-600 font-medium text-sm hover:bg-gray-100 transition-colors" onclick={volverAEditar}>
                 ← Volver a editar pedido
               </button>
