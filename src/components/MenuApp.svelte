@@ -273,7 +273,7 @@
   <header class="sticky top-0 z-30 border-b" style="background-color: rgba(248,250,249,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-color: #D8E4E2;">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 flex-wrap">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background-color: #205C66;">LC</div>
+        <img src="/lacascadapro.png" alt="La Cascada" class="w-8 h-8 rounded-full shrink-0" />
         <div>
           <h1 class="font-display text-base text-[#205C66] font-semibold leading-none">La Cascada</h1>
           <p class="text-[11px] text-[#52737A] mt-0.5">Piso {piso} · Mesa {mesa}</p>
