@@ -25,7 +25,7 @@ async function migrate() {
   // ======== ENUM TYPES ========
   console.log('[1/5] Creando tipos ENUM...');
   await sql`DO $$ BEGIN
-    CREATE TYPE rol_usuario AS ENUM ('admin', 'garzon');
+    CREATE TYPE rol_usuario AS ENUM ('admin', 'garzon', 'cliente');
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`;
   await sql`DO $$ BEGIN
@@ -33,7 +33,7 @@ async function migrate() {
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`;
   await sql`DO $$ BEGIN
-    CREATE TYPE tipo_pedido AS ENUM ('mesa', 'delivery', 'retiro');
+    CREATE TYPE tipo_pedido AS ENUM ('mesa', 'delivery', 'retiro', 'reserva');
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`;
   await sql`DO $$ BEGIN
@@ -45,9 +45,13 @@ async function migrate() {
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`;
   await sql`DO $$ BEGIN
-    CREATE TYPE estado_reserva AS ENUM ('pendiente', 'entregada', 'cancelada');
+    CREATE TYPE estado_reserva AS ENUM ('pendiente', 'entregada', 'cancelada', 'confirmada');
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`;
+  // En BD ya existentes el CREATE TYPE es no-op: agregar valores nuevos
+  await sql`ALTER TYPE rol_usuario ADD VALUE IF NOT EXISTS 'cliente'`;
+  await sql`ALTER TYPE tipo_pedido ADD VALUE IF NOT EXISTS 'reserva'`;
+  await sql`ALTER TYPE estado_reserva ADD VALUE IF NOT EXISTS 'confirmada'`;
   console.log('  ENUMs listos.');
 
   // ======== TABLAS ========
@@ -181,7 +185,8 @@ async function migrate() {
   await sql`CREATE TABLE IF NOT EXISTS reservas_platos (
     id SERIAL PRIMARY KEY,
     nombre_cliente VARCHAR(200) NOT NULL,
-    producto_id INTEGER NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
+    producto_id INTEGER REFERENCES productos(id) ON DELETE SET NULL,
+    mesa_id INTEGER REFERENCES mesas(id) ON DELETE SET NULL,
     cantidad INTEGER NOT NULL DEFAULT 1 CHECK (cantidad > 0),
     fecha DATE NOT NULL DEFAULT CURRENT_DATE,
     hora TIME,
@@ -258,6 +263,41 @@ async function migrate() {
     UNIQUE (mesa_id)
   )`;
 
+  // Columnas agregadas post-lanzamiento (van aquí porque referencian
+  // tablas creadas más arriba; idempotentes para BD ya existentes)
+  await sql`DO $$ BEGIN
+    ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS costo_envio INTEGER NOT NULL DEFAULT 0;
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END $$`;
+  await sql`DO $$ BEGIN
+    ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS comentarios VARCHAR(300);
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END $$`;
+  await sql`DO $$ BEGIN
+    ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS cliente_credito_id INTEGER REFERENCES clientes_credito(id);
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END $$`;
+  await sql`DO $$ BEGIN
+    ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS caja_id INTEGER REFERENCES cajas(id);
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END $$`;
+  await sql`DO $$ BEGIN
+    ALTER TABLE reservas_platos ADD COLUMN IF NOT EXISTS mesa_id INTEGER REFERENCES mesas(id) ON DELETE SET NULL;
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END $$`;
+  await sql`DO $$ BEGIN
+    ALTER TABLE cajas ADD COLUMN IF NOT EXISTS efectivo_esperado INTEGER;
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END $$`;
+  // Stock nunca negativo (idempotente)
+  await sql`UPDATE productos SET stock_actual = 0 WHERE stock_actual < 0`;
+  await sql`DO $$ BEGIN
+    ALTER TABLE productos ADD CONSTRAINT stock_no_negativo CHECK (stock_actual >= 0);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`;
+  // reservas_platos.producto_id es nullable (reservas de mesa sin producto)
+  await sql`ALTER TABLE reservas_platos ALTER COLUMN producto_id DROP NOT NULL`;
+
   console.log('  Tablas creadas.');
 
   // ======== INDICES ========
@@ -274,6 +314,10 @@ async function migrate() {
   await sql`CREATE INDEX IF NOT EXISTS idx_abonos_cliente ON abonos(cliente_credito_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_reservas_producto ON reservas_platos(producto_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_reservas_fecha ON reservas_platos(fecha DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_pedidos_mesa_estado ON pedidos(mesa_id, estado)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_detalle_pedido ON detalle_pedidos(pedido_id)`;
+  // Solo UNA caja abierta a la vez (evita race conditions)
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS uq_caja_abierta ON cajas(estado) WHERE estado = 'abierta'`;
   console.log('  Indices creados.');
 
   // ======== TRIGGERS ========
@@ -316,28 +360,25 @@ async function migrate() {
       FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`;
-
-  await sql`CREATE OR REPLACE FUNCTION restar_stock_producto()
-  RETURNS TRIGGER AS $func$
-  DECLARE
-    v_maneja_stock BOOLEAN;
-    v_cantidad INTEGER;
-  BEGIN
-    SELECT maneja_stock INTO v_maneja_stock FROM productos WHERE id = NEW.producto_id;
-    v_cantidad := NEW.cantidad;
-    IF v_maneja_stock THEN
-      UPDATE productos SET stock_actual = GREATEST(stock_actual - v_cantidad, 0)
-      WHERE id = NEW.producto_id;
-    END IF;
-    RETURN NEW;
-  END;
-  $func$ LANGUAGE plpgsql`;
-
   await sql`DO $$ BEGIN
-    CREATE TRIGGER tg_restar_stock AFTER INSERT ON detalle_pedidos
-      FOR EACH ROW EXECUTE FUNCTION restar_stock_producto();
+    CREATE TRIGGER tg_turnos_updated_at BEFORE UPDATE ON turnos
+      FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`;
+  await sql`DO $$ BEGIN
+    CREATE TRIGGER tg_cajas_updated_at BEFORE UPDATE ON cajas
+      FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`;
+  await sql`DO $$ BEGIN
+    CREATE TRIGGER tg_proveedores_updated_at BEFORE UPDATE ON proveedores
+      FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`;
+
+  // NOTA: no se crean triggers de stock. El stock se descuenta y restaura
+  // atómicamente en la aplicación (src/lib/pricing.ts). Un trigger de BD
+  // causaría doble descuento (ver db/fixes-migration.cjs).
   console.log('  Triggers creados.');
 
   // ======== SEED DATA ========

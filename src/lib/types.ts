@@ -1,9 +1,9 @@
 export type RolUsuario = 'admin' | 'garzon';
 export type EstadoMesa = 'libre' | 'ocupada' | 'esperando_pago';
-export type TipoPedido = 'mesa' | 'delivery' | 'retiro';
+export type TipoPedido = 'mesa' | 'delivery' | 'retiro' | 'reserva';
 export type EstadoPedido = 'pendiente' | 'en_preparacion' | 'entregado' | 'pagado' | 'cancelado';
 export type MetodoPago = 'efectivo' | 'debito' | 'credito' | 'a_credito';
-export type EstadoReserva = 'pendiente' | 'entregada' | 'cancelada';
+export type EstadoReserva = 'pendiente' | 'confirmada' | 'entregada' | 'cancelada';
 
 export interface Usuario {
   id: number;
@@ -84,6 +84,10 @@ export interface Pedido {
   direccion?: string | null;
   telefono?: string | null;
   efectivo_con_cuanto?: number;
+  costo_envio?: number;
+  comentarios?: string | null;
+  caja_id?: number | null;
+  cliente_credito_id?: number | null;
 }
 
 export interface DetallePedido {
@@ -120,7 +124,8 @@ export interface Abono {
 export interface ReservaPlato {
   id: number;
   nombre_cliente: string;
-  producto_id: number;
+  producto_id: number | null;
+  mesa_id?: number | null;
   cantidad: number;
   fecha: string;
   hora?: string | null;

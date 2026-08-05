@@ -1,14 +1,21 @@
 -- ============================================================
 -- ESQUEMA DE BASE DE DATOS - RESTAURANTE LA CASCADA
 -- ============================================================
+-- Sincronizado con la BD en vivo tras auditoría QA (2026-08).
+--
+-- IMPORTANTE - STOCK: el stock se descuenta y restaura de forma
+-- atómica en la aplicación (src/lib/pricing.ts y endpoints).
+-- NO crear triggers de stock en la BD: causarían doble descuento
+-- (ver db/fixes-migration.cjs, que eliminó tg_restar_stock).
+-- ============================================================
 
 -- Tipos ENUM
-CREATE TYPE rol_usuario AS ENUM ('admin', 'garzon');
+CREATE TYPE rol_usuario AS ENUM ('admin', 'garzon', 'cliente');
 CREATE TYPE estado_mesa AS ENUM ('libre', 'ocupada', 'esperando_pago');
 CREATE TYPE tipo_pedido AS ENUM ('mesa', 'delivery', 'retiro', 'reserva');
 CREATE TYPE estado_pedido AS ENUM ('pendiente', 'en_preparacion', 'entregado', 'pagado', 'cancelado');
 CREATE TYPE metodo_pago AS ENUM ('efectivo', 'debito', 'credito', 'a_credito');
-CREATE TYPE estado_reserva AS ENUM ('pendiente', 'entregada', 'cancelada');
+CREATE TYPE estado_reserva AS ENUM ('pendiente', 'entregada', 'cancelada', 'confirmada');
 
 -- ============================================================
 -- TABLA: usuarios
@@ -67,7 +74,8 @@ CREATE TABLE productos (
   disponible_dia  BOOLEAN NOT NULL DEFAULT TRUE,
   imagen_url      VARCHAR(500),
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT stock_no_negativo CHECK (stock_actual >= 0)
 );
 
 -- ============================================================
@@ -108,6 +116,10 @@ CREATE TABLE pedidos (
   direccion         TEXT,
   telefono          VARCHAR(50),
   efectivo_con_cuanto INTEGER DEFAULT 0,
+  costo_envio       INTEGER NOT NULL DEFAULT 0,
+  comentarios       VARCHAR(300),
+  cliente_credito_id INTEGER,  -- FK agregada más abajo (referencia adelantada)
+  caja_id           INTEGER,   -- FK agregada más abajo (referencia adelantada)
   fecha_hora        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -153,11 +165,14 @@ CREATE TABLE abonos (
 
 -- ============================================================
 -- TABLA: reservas_platos
+-- producto_id es nullable: las reservas actuales son de mesa y la
+-- app las inserta sin producto (ver src/pages/api/admin/reservas.ts)
 -- ============================================================
 CREATE TABLE reservas_platos (
   id              SERIAL PRIMARY KEY,
   nombre_cliente  VARCHAR(200) NOT NULL,
-  producto_id     INTEGER NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
+  producto_id     INTEGER REFERENCES productos(id) ON DELETE SET NULL,
+  mesa_id         INTEGER REFERENCES mesas(id) ON DELETE SET NULL,
   cantidad        INTEGER NOT NULL DEFAULT 1 CHECK (cantidad > 0),
   fecha           DATE NOT NULL DEFAULT CURRENT_DATE,
   hora            TIME,
@@ -192,6 +207,7 @@ CREATE TABLE cajas (
   usuario          VARCHAR(200),
   efectivo_inicial INTEGER NOT NULL DEFAULT 0,
   efectivo_final   INTEGER,
+  efectivo_esperado INTEGER,
   comentarios      TEXT,
   estado           VARCHAR(10) NOT NULL DEFAULT 'abierta' CHECK (estado IN ('abierta', 'cerrada')),
   abierta_desde    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -253,6 +269,17 @@ CREATE TABLE proveedores (
 );
 
 -- ============================================================
+-- FKs de pedidos con referencia adelantada
+-- ============================================================
+ALTER TABLE pedidos
+  ADD CONSTRAINT pedidos_cliente_credito_id_fkey
+  FOREIGN KEY (cliente_credito_id) REFERENCES clientes_credito(id);
+
+ALTER TABLE pedidos
+  ADD CONSTRAINT pedidos_caja_id_fkey
+  FOREIGN KEY (caja_id) REFERENCES cajas(id);
+
+-- ============================================================
 -- ÍNDICES
 -- ============================================================
 CREATE INDEX idx_productos_categoria ON productos(categoria_id);
@@ -262,7 +289,9 @@ CREATE INDEX idx_pedidos_estado ON pedidos(estado);
 CREATE INDEX idx_pedidos_fecha ON pedidos(fecha_hora DESC);
 CREATE INDEX idx_pedidos_tipo ON pedidos(tipo_pedido);
 CREATE INDEX idx_pedidos_telefono ON pedidos(telefono);
+CREATE INDEX idx_pedidos_mesa_estado ON pedidos(mesa_id, estado);
 CREATE INDEX idx_detalle_pedidos_pedido ON detalle_pedidos(pedido_id);
+CREATE INDEX idx_detalle_pedido ON detalle_pedidos(pedido_id);
 CREATE INDEX idx_clientes_credito_rut ON clientes_credito(rut_o_telefono);
 CREATE INDEX idx_abonos_cliente ON abonos(cliente_credito_id);
 CREATE INDEX idx_reservas_producto ON reservas_platos(producto_id);
@@ -275,6 +304,9 @@ CREATE INDEX idx_auditoria_accion ON auditoria(accion);
 CREATE INDEX idx_auditoria_fecha ON auditoria(created_at DESC);
 CREATE INDEX idx_login_attempts_email ON login_attempts(email);
 CREATE INDEX idx_proveedores_activo ON proveedores(activo);
+
+-- Solo UNA caja abierta a la vez (evita race conditions)
+CREATE UNIQUE INDEX uq_caja_abierta ON cajas(estado) WHERE estado = 'abierta';
 
 -- ============================================================
 -- FUNCIÓN: actualizar updated_at automáticamente
@@ -314,74 +346,3 @@ CREATE TRIGGER tg_cajas_updated_at BEFORE UPDATE ON cajas
 
 CREATE TRIGGER tg_proveedores_updated_at BEFORE UPDATE ON proveedores
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- ============================================================
--- FUNCIÓN: Restar stock de productos al confirmar pedido
--- ============================================================
-CREATE OR REPLACE FUNCTION restar_stock_producto()
-RETURNS TRIGGER AS $$
-DECLARE
-  v_maneja_stock BOOLEAN;
-  v_cantidad INTEGER;
-BEGIN
-  SELECT maneja_stock INTO v_maneja_stock FROM productos WHERE id = NEW.producto_id;
-  v_cantidad := NEW.cantidad;
-
-  IF v_maneja_stock THEN
-    UPDATE productos
-    SET stock_actual = GREATEST(stock_actual - v_cantidad, 0)
-    WHERE id = NEW.producto_id;
-  END IF;
-
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER tg_restar_stock AFTER INSERT ON detalle_pedidos
-  FOR EACH ROW EXECUTE FUNCTION restar_stock_producto();
-
--- ============================================================
--- FUNCIÓN: Restaurar stock al cancelar o eliminar pedido
--- ============================================================
-CREATE OR REPLACE FUNCTION restaurar_stock_producto()
-RETURNS TRIGGER AS $$
-DECLARE
-  v_maneja_stock BOOLEAN;
-  v_cantidad INTEGER;
-BEGIN
-  SELECT maneja_stock INTO v_maneja_stock FROM productos WHERE id = OLD.producto_id;
-  v_cantidad := OLD.cantidad;
-
-  IF v_maneja_stock THEN
-    UPDATE productos
-    SET stock_actual = stock_actual + v_cantidad
-    WHERE id = OLD.producto_id;
-  END IF;
-
-  RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER tg_restaurar_stock_delete AFTER DELETE ON detalle_pedidos
-  FOR EACH ROW EXECUTE FUNCTION restaurar_stock_producto();
-
-CREATE TRIGGER tg_restaurar_stock_cancel AFTER UPDATE ON pedidos
-  FOR EACH ROW
-  WHEN (OLD.estado != 'cancelado' AND NEW.estado = 'cancelado')
-  EXECUTE FUNCTION restaurar_stock_cancelar_pedido();
-
--- ============================================================
--- FUNCIÓN: Restaurar stock de todo un pedido cancelado
--- ============================================================
-CREATE OR REPLACE FUNCTION restaurar_stock_cancelar_pedido()
-RETURNS TRIGGER AS $$
-BEGIN
-  UPDATE productos
-  SET stock_actual = stock_actual + dp.cantidad
-  FROM detalle_pedidos dp
-  WHERE dp.pedido_id = NEW.id
-    AND dp.producto_id = productos.id
-    AND productos.maneja_stock = TRUE;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
