@@ -37,6 +37,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     const mesaId = mesaResult[0].id;
 
+    // Guard de respaldo: sin caja abierta no se crean pedidos de mesa
+    // (el bloqueo principal está en /api/admin/mesas/bloquear, al abrir la mesa)
+    const cajaAbierta = await sql`SELECT id FROM cajas WHERE estado = 'abierta' LIMIT 1`;
+    if (cajaAbierta.length === 0) {
+      return new Response(JSON.stringify({ error: 'No hay caja abierta. Abra un turno de caja antes de cobrar.' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+    }
+
     // Precios calculados 100% server-side (nunca confiar en el cliente)
     let calculado;
     try {
