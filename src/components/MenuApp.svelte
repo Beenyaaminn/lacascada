@@ -317,10 +317,10 @@
       <div class="flex flex-col items-center justify-center py-32 gap-3"><div class="w-10 h-10 border-2 border-[#205C66]/30 border-t-[#205C66] rounded-full animate-spin"></div><p class="text-[#52737A] text-sm">Cargando menú...</p></div>
     {:else}
       <!-- Hero -->
-      <div class="pt-8 pb-6">
+      <div class="pt-8 pb-6 text-center">
         <p class="text-[#52737A] text-xs tracking-[0.2em] uppercase mb-2">Carta Digital</p>
         <h2 class="font-display text-3xl md:text-4xl text-[#205C66] font-bold leading-tight">Nuestro Menú</h2>
-        <p class="text-[#52737A] text-sm mt-2 max-w-lg leading-relaxed">Descubrí nuestros platos preparados con ingredientes frescos. Seleccioná una categoría y armá tu pedido.</p>
+        <p class="text-[#52737A] text-sm mt-2 max-w-lg mx-auto leading-relaxed">Descubrí nuestros platos preparados con ingredientes frescos. Seleccioná una categoría y armá tu pedido.</p>
       </div>
 
       <!-- Categorías -->
