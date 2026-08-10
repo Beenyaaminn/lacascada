@@ -15,25 +15,25 @@ dotenv.config({ path: resolve(__dirname, '..', '.env') });
 const sql = neon(process.env.DATABASE_URL);
 
 const COMPLETOS = [
-  { nombre: 'Completo Chacarero', desc: 'Poroto verde, ají verde, tomate y mayo Dominó', precio: 4650, ingredientes: 'Pan, vienesa, poroto verde, ají verde, tomate, mayo Dominó' },
-  { nombre: 'Completo Alemán', desc: 'Tomate, chucrut y mayo Dominó', precio: 4550, ingredientes: 'Pan, vienesa, tomate, chucrut, mayo Dominó' },
-  { nombre: 'Completo Antiguo', desc: 'Palta, americana y mayo Dominó', precio: 4650, ingredientes: 'Pan, vienesa, palta, americana, mayo Dominó' },
-  { nombre: 'Completo Dominó', desc: 'Americana, salsa verde, tomate y mayo Dominó', precio: 4550, ingredientes: 'Pan, vienesa, americana, salsa verde, tomate, mayo Dominó' },
+  { nombre: 'Completo Chacarero', desc: 'Poroto verde, ají verde, tomate y mayo', precio: 4650, ingredientes: 'Pan, vienesa, poroto verde, ají verde, tomate, mayo' },
+  { nombre: 'Completo Alemán', desc: 'Tomate, chucrut y mayo', precio: 4550, ingredientes: 'Pan, vienesa, tomate, chucrut, mayo' },
+  { nombre: 'Completo Antiguo', desc: 'Palta, americana y mayo', precio: 4650, ingredientes: 'Pan, vienesa, palta, americana, mayo' },
+  { nombre: 'Completo Dominó', desc: 'Americana, salsa verde, tomate y mayo', precio: 4550, ingredientes: 'Pan, vienesa, americana, salsa verde, tomate, mayo' },
   { nombre: 'Completo Luco', desc: 'Queso', precio: 4650, ingredientes: 'Pan, vienesa, queso' },
-  { nombre: 'Completo Italiano', desc: 'Palta, tomate y mayo Dominó', precio: 4650, ingredientes: 'Pan, vienesa, palta, tomate, mayo Dominó' },
-  { nombre: 'Completo Dinámico', desc: 'Palta, americana, salsa verde, tomate y mayo Dominó', precio: 4950, ingredientes: 'Pan, vienesa, palta, americana, salsa verde, tomate, mayo Dominó' },
+  { nombre: 'Completo Italiano', desc: 'Palta, tomate y mayo', precio: 4650, ingredientes: 'Pan, vienesa, palta, tomate, mayo' },
+  { nombre: 'Completo Dinámico', desc: 'Palta, americana, salsa verde, tomate y mayo', precio: 4950, ingredientes: 'Pan, vienesa, palta, americana, salsa verde, tomate, mayo' },
   { nombre: 'Completo Brasileño', desc: 'Queso y palta', precio: 5350, ingredientes: 'Pan, vienesa, queso, palta' },
   { nombre: 'Completo Rodeo Spicy', desc: 'Queso a la plancha y tocino con salsa BBQ spicy', precio: 5750, ingredientes: 'Pan, vienesa, queso a la plancha, tocino, salsa BBQ spicy' },
 ];
 
 // As de Dominó: precio único (proteína base: carne picada)
 const ASES = [
-  { nombre: 'As Alemán', desc: 'Tomate, chucrut y mayo Dominó', precio: 5250, ingredientes: 'Pan, carne picada, tomate, chucrut, mayo Dominó' },
-  { nombre: 'As Antiguo', desc: 'Palta, americana y mayo Dominó', precio: 5350, ingredientes: 'Pan, carne picada, palta, americana, mayo Dominó' },
-  { nombre: 'As Dominó', desc: 'Americana, salsa verde, tomate y mayo Dominó', precio: 5250, ingredientes: 'Pan, carne picada, americana, salsa verde, tomate, mayo Dominó' },
+  { nombre: 'As Alemán', desc: 'Tomate, chucrut y mayo', precio: 5250, ingredientes: 'Pan, carne picada, tomate, chucrut, mayo' },
+  { nombre: 'As Antiguo', desc: 'Palta, americana y mayo', precio: 5350, ingredientes: 'Pan, carne picada, palta, americana, mayo' },
+  { nombre: 'As Dominó', desc: 'Americana, salsa verde, tomate y mayo', precio: 5250, ingredientes: 'Pan, carne picada, americana, salsa verde, tomate, mayo' },
   { nombre: 'As Luco', desc: 'Queso', precio: 5350, ingredientes: 'Pan, carne picada, queso' },
-  { nombre: 'As Italiano', desc: 'Palta, tomate y mayo Dominó', precio: 5350, ingredientes: 'Pan, carne picada, palta, tomate, mayo Dominó' },
-  { nombre: 'As Dinámico', desc: 'Palta, americana, salsa verde, tomate y mayo Dominó', precio: 5550, ingredientes: 'Pan, carne picada, palta, americana, salsa verde, tomate, mayo Dominó' },
+  { nombre: 'As Italiano', desc: 'Palta, tomate y mayo', precio: 5350, ingredientes: 'Pan, carne picada, palta, tomate, mayo' },
+  { nombre: 'As Dinámico', desc: 'Palta, americana, salsa verde, tomate y mayo', precio: 5550, ingredientes: 'Pan, carne picada, palta, americana, salsa verde, tomate, mayo' },
   { nombre: 'As Brasileño', desc: 'Queso y palta', precio: 5850, ingredientes: 'Pan, carne picada, queso, palta' },
   { nombre: 'As Rodeo Spicy', desc: 'Queso a la plancha y tocino con salsa BBQ spicy', precio: 6450, ingredientes: 'Pan, carne picada, queso a la plancha, tocino, salsa BBQ spicy' },
 ];
@@ -43,14 +43,14 @@ const PROTEINAS = ['Pollo', 'Churrasco', 'Champiñones Salteados', 'Mechada'];
 
 const SANDWICHES = [
   {
-    base: 'Sándwich Alemán', desc: 'Tomate, chucrut y mayo Dominó',
+    base: 'Sándwich Alemán', desc: 'Tomate, chucrut y mayo',
     precios: { Pollo: 7850, Churrasco: 8850, 'Champiñones Salteados': 8850, Mechada: 9650 },
-    toppings: 'tomate, chucrut, mayo Dominó',
+    toppings: 'tomate, chucrut, mayo',
   },
   {
-    base: 'Sándwich Dominó', desc: 'Americana, salsa verde, tomate y mayo Dominó',
+    base: 'Sándwich Dominó', desc: 'Americana, salsa verde, tomate y mayo',
     precios: { Pollo: 7850, Churrasco: 8850, 'Champiñones Salteados': 8850, Mechada: 9650 },
-    toppings: 'americana, salsa verde, tomate, mayo Dominó',
+    toppings: 'americana, salsa verde, tomate, mayo',
   },
   {
     base: 'Sándwich Luco', desc: 'Queso',
