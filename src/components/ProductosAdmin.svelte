@@ -2,11 +2,15 @@
   import { onMount } from 'svelte';
   import { type Producto, type Categoria } from '../lib/types';
 
+  type CategoriaConTotal = Categoria & { total_productos?: number };
+
   let productos: Producto[] = $state([]);
-  let categorias: Categoria[] = $state([]);
+  let categorias: CategoriaConTotal[] = $state([]);
   let loading: boolean = $state(true);
   let showModal: boolean = $state(false);
   let editingId: number | null = $state(null);
+  let nuevaCategoria: string = $state('');
+  let savingCategoria: boolean = $state(false);
 
   let form = $state({
     categoria_id: 1,
@@ -31,7 +35,7 @@
     try {
       const [prodRes, catRes] = await Promise.all([
         fetch('/api/admin/productos'),
-        fetch('/api/menu'),
+        fetch('/api/admin/categorias'),
       ]);
 
       const prodData = await prodRes.json();
@@ -48,8 +52,63 @@
 
   function openCreate() {
     editingId = null;
-    form = { categoria_id: 1, nombre: '', descripcion: '', precio: 0, ingredientes: '', maneja_stock: false, stock_actual: 0, disponible_dia: true };
+    form = { categoria_id: categorias[0]?.id ?? 1, nombre: '', descripcion: '', precio: 0, ingredientes: '', maneja_stock: false, stock_actual: 0, disponible_dia: true };
     showModal = true;
+  }
+
+  async function handleCreateCategoria() {
+    if (savingCategoria) return;
+    const nombre = nuevaCategoria.trim();
+    if (!nombre) {
+      error = 'Ingresa un nombre para la categoría';
+      return;
+    }
+    error = '';
+    message = '';
+    savingCategoria = true;
+
+    try {
+      const res = await fetch('/api/admin/categorias', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        error = err.error || 'Error al crear categoría';
+        return;
+      }
+
+      nuevaCategoria = '';
+      message = 'Categoría creada';
+      loadData();
+      setTimeout(() => { message = ''; }, 3000);
+    } catch (e) {
+      error = 'Error de conexión';
+    } finally {
+      savingCategoria = false;
+    }
+  }
+
+  async function handleDeleteCategoria(cat: CategoriaConTotal) {
+    if (!confirm(`¿Eliminar la categoría "${cat.nombre}"?`)) return;
+    error = '';
+    message = '';
+
+    try {
+      const res = await fetch(`/api/admin/categorias?id=${cat.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json();
+        error = err.error || 'Error al eliminar categoría';
+        return;
+      }
+      message = 'Categoría eliminada';
+      loadData();
+      setTimeout(() => { message = ''; }, 3000);
+    } catch (e) {
+      error = 'Error de conexión';
+    }
   }
 
   function openEdit(p: Producto) {
@@ -158,6 +217,47 @@
   {#if loading}
     <div class="text-center py-12 text-gray-500">Cargando...</div>
   {:else}
+    <!-- Gestión de categorías -->
+    <div class="card p-4 mb-6">
+      <h3 class="text-base font-bold text-gray-900 mb-3">Categorías</h3>
+
+      <form class="flex gap-2 mb-4" on:submit|preventDefault={handleCreateCategoria}>
+        <input
+          class="input-field flex-1"
+          bind:value={nuevaCategoria}
+          placeholder="Nombre de la nueva categoría"
+        />
+        <button type="submit" class="btn-primary whitespace-nowrap" disabled={savingCategoria}>
+          {savingCategoria ? 'Creando...' : '+ Crear categoría'}
+        </button>
+      </form>
+
+      <ul class="divide-y divide-gray-100">
+        {#each categorias as cat (cat.id)}
+          <li class="flex items-center justify-between py-2">
+            <div class="flex items-center gap-3">
+              <span class="font-medium text-gray-900 text-sm">{cat.nombre}</span>
+              <span class="text-xs text-gray-400">orden {cat.orden}</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                {cat.total_productos ?? 0} producto(s)
+              </span>
+            </div>
+            <button
+              class="text-red-600 hover:text-red-800 text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={(cat.total_productos ?? 0) > 0}
+              title={(cat.total_productos ?? 0) > 0 ? 'No se puede eliminar: tiene productos asociados' : 'Eliminar categoría'}
+              on:click={() => handleDeleteCategoria(cat)}
+            >
+              Eliminar
+            </button>
+          </li>
+        {/each}
+        {#if categorias.length === 0}
+          <li class="py-3 text-sm text-gray-500">No hay categorías. Crea la primera arriba.</li>
+        {/if}
+      </ul>
+    </div>
+
     <div class="card overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
