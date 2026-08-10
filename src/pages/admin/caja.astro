@@ -5,8 +5,8 @@ import { getSessionFromCookie } from '../../lib/auth';
 const cookieHeader = Astro.request.headers.get('cookie');
 const session = getSessionFromCookie(cookieHeader);
 
-if (!session || (session.rol !== 'admin' && session.rol !== 'garzon')) {
-  return Astro.redirect('/login');
+if (!session || session.rol !== 'admin') {
+  return Astro.redirect(session ? '/admin' : '/login');
 }
 ---
 <AdminLayout title="Caja - La Cascada" currentPage="/admin/caja">

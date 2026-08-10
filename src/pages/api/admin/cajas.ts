@@ -12,6 +12,13 @@ const checkAuth = (request: Request) => {
   return session;
 };
 
+// Abrir y cerrar caja es exclusivo del admin (los garzones solo consultan)
+const checkAdmin = (request: Request) => {
+  const session = getSessionFromCookie(request.headers.get('cookie'));
+  if (!session || session.rol !== 'admin') return null;
+  return session;
+};
+
 export const GET: APIRoute = async ({ request }) => {
   const session = checkAuth(request);
   if (!session) {
@@ -51,9 +58,9 @@ export const GET: APIRoute = async ({ request }) => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  const session = checkAuth(request);
+  const session = checkAdmin(request);
   if (!session) {
-    return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: 'Solo el administrador puede abrir caja' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
   }
 
   try {
@@ -92,9 +99,9 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 export const PUT: APIRoute = async ({ request }) => {
-  const session = checkAuth(request);
+  const session = checkAdmin(request);
   if (!session) {
-    return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: 'Solo el administrador puede cerrar caja' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
   }
 
   try {
