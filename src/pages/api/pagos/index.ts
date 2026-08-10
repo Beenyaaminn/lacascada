@@ -83,6 +83,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     const efFinal = metodo_pago === 'efectivo' ? Number(efectivo_con_cuanto) : 0;
 
+    // Debe haber una caja abierta: todo cobro queda atribuido a un turno
+    // (sin esto el pago quedaba con caja_id NULL y no aparecía en cierres/reportes de caja)
+    const cajaAbierta = await sql`SELECT id FROM cajas WHERE estado = 'abierta' ORDER BY abierta_desde DESC LIMIT 1`;
+    if (cajaAbierta.length === 0) {
+      return new Response(JSON.stringify({ error: 'No hay caja abierta. Abra un turno de caja antes de cobrar.' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+    }
+    const cajaId = cajaAbierta[0].id;
+
     // 1) Crédito: incremento atómico del saldo con guard de límite
     if (metodo_pago === 'a_credito' && clienteCreditoId) {
       const credito = await sql`
@@ -99,9 +107,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     // 2) Marcar pedido como pagado (guard anti doble-pago) y atribuir a la caja abierta
-    const cajaAbierta = await sql`SELECT id FROM cajas WHERE estado = 'abierta' ORDER BY abierta_desde DESC LIMIT 1`;
-    const cajaId = cajaAbierta.length > 0 ? cajaAbierta[0].id : null;
-
     const updated = await sql`
       UPDATE pedidos SET
         metodo_pago = ${metodo_pago}::metodo_pago,
