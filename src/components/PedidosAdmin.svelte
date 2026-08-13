@@ -294,6 +294,12 @@
                       Cobrar
                     </button>
                   {/if}
+                  {#if pedido.estado === 'pagado' || pedido.metodo_pago}
+                    <button class="action-btn action-ticket" onclick={() => window.open(`/admin/voucher?pedido_id=${pedido.id}`, '_blank')}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6M9 8h6M5 3h14a1 1 0 011 1v16l-2-1.5L16 20l-2-1.5L12 20l-2-1.5L8 20l-2-1.5L4 20V4a1 1 0 011-1z"/></svg>
+                      Ticket
+                    </button>
+                  {/if}
                 </div>
               </div>
             </div>
@@ -533,6 +539,8 @@
   .action-done:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
   .action-cobrar { background: linear-gradient(135deg, #f59e0b, #d97706); color: #0a0a0f; }
   .action-cobrar:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(245,158,11,0.3); }
+  .action-ticket { background: var(--admin-surface-2); color: var(--admin-text-muted); border: 1px solid var(--admin-border); }
+  .action-ticket:hover { background: var(--admin-surface-3); color: var(--admin-text); transform: translateY(-1px); }
 
   /* Modal */
   .modal-overlay {
