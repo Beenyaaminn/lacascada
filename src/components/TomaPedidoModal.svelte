@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { Mesa, Categoria, Producto, Acompanamiento, ProductoAcompanamiento } from '../lib/types';
-  import { GRUPOS_MENU, METODOS_PAGO, MAX_CANTIDAD_POR_PRODUCTO } from '../lib/constants';
+  import { METODOS_PAGO, MAX_CANTIDAD_POR_PRODUCTO } from '../lib/constants';
   import { fetchTimeout } from '../lib/fetch-utils';
 
   function generateId(): string {
@@ -29,7 +29,7 @@
   let acompanamientos: Acompanamiento[] = $state([]);
   let productosAcomp: ProductoAcompanamiento[] = $state([]);
   let comensalesList: ComensalOrden[] = $state([]);
-  let activeGrupo: string = $state('completos_ases');
+  let activeGrupo: string = $state('');
   let activeComensal: number = $state(0);
   let loading: boolean = $state(true);
   let saving: boolean = $state(false);
@@ -70,7 +70,11 @@
     metodoPagoAplicado: string;
   }
 
-  const grupos = GRUPOS_MENU;
+  // Las categorías del menú se generan dinámicamente desde la BD,
+  // así reflejan automáticamente cualquier cambio en el admin.
+  let grupos = $derived(
+    categorias.map((c) => ({ id: String(c.id), label: c.nombre, catId: c.id }))
+  );
 
   const metodosPago = METODOS_PAGO;
 
@@ -86,6 +90,9 @@
       const pData = await pRes.json();
       garzones = gData.garzones || [];
       categorias = mData.categorias || [];
+      if (!grupos.some(g => g.id === activeGrupo)) {
+        activeGrupo = grupos[0]?.id ?? '';
+      }
       productos = mData.productos || [];
       acompanamientos = mData.acompanamientos || [];
       productosAcomp = mData.productos_acompanamientos || [];
@@ -153,8 +160,7 @@
   function getProductosGrupo(grupoId: string): Producto[] {
     const grupo = grupos.find(g => g.id === grupoId);
     if (!grupo) return [];
-    const catIds = categorias.filter(c => grupo.cats.includes(c.nombre)).map(c => c.id);
-    return productos.filter(p => catIds.includes(p.categoria_id));
+    return productos.filter(p => p.categoria_id === grupo.catId);
   }
 
   function getAcompForProducto(id: number): Acompanamiento[] {
