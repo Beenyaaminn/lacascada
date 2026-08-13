@@ -72,7 +72,7 @@ const p = voucherData;
 ---
 <AdminLayout title={`Voucher #${pedidoId} - La Cascada`}>
   {tieneVoucher ? (
-    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;">
+    <div style="display:flex;justify-content:center;padding:2rem 1rem 0;">
       <div class="bg-white shadow-lg rounded-lg p-6 max-w-[72mm] w-full font-mono text-xs" id="voucher-print">
         <div class="text-center mb-3">
           <p class="font-bold text-sm">LA CASCADA</p>
@@ -111,7 +111,7 @@ const p = voucherData;
   ) : (
     <p class="text-center text-gray-500 py-8">Voucher no encontrado</p>
   )}
-  <div class="text-center pb-8">
+  <div class="text-center pt-6 pb-8">
     {tieneVoucher ? <button onclick="window.print()" class="btn-primary">Imprimir Voucher</button> : null}
     <a href="/admin/pedidos" class="btn-secondary ml-2 inline-block no-underline">Volver a Pedidos</a>
   </div>
