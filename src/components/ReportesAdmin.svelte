@@ -24,6 +24,23 @@
   let deliveryTop: any[] = $state([]);
   let loadingDelivery: boolean = $state(false);
 
+  // Desglose por día (calendario)
+  let fechaSeleccionada: string = $state(new Date().toISOString().slice(0, 10));
+  let diaData: any = $state(null);
+  let loadingDia: boolean = $state(false);
+
+  async function loadDia() {
+    loadingDia = true;
+    try {
+      const res = await fetch(`/api/admin/reportes/dia?fecha=${fechaSeleccionada}`);
+      diaData = await res.json();
+    } catch (e) {
+      diaData = null;
+    } finally {
+      loadingDia = false;
+    }
+  }
+
   const tabs = [
     { id: 'ventas', label: 'Resumen de ventas', icon: '💰' },
     { id: 'detalles', label: 'Detalles de pago', icon: '🧾' },
@@ -37,6 +54,7 @@
     const tabParam = params.get('tab');
     if (tabParam && tabs.some(t => t.id === tabParam)) activeTab = tabParam;
     await loadData();
+    loadDia();
   });
 
   async function loadData() {
@@ -244,6 +262,130 @@ ${ventasPorCajera.length > 0 ? `
             <div class="card p-3 text-center"><p class="text-xs text-gray-500">A Crédito</p><p class="text-lg font-bold text-gray-900">{formatCLP(d.a_credito)}</p></div>
           </div>
           <p class="text-xs text-gray-500">{d.cantidad_pedidos} pedidos &bull; {formatCLP(d.total_descuentos)} en descuentos</p>
+        {/if}
+      </div>
+
+      <!-- Desglose por día (calendario) -->
+      <div class="mb-6">
+        <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+          <h3 class="text-base font-semibold text-gray-800">Desglose por Día</h3>
+          <input
+            type="date"
+            class="input-field text-sm w-auto"
+            bind:value={fechaSeleccionada}
+            onchange={loadDia}
+            max={new Date().toISOString().slice(0, 10)}
+          />
+        </div>
+
+        {#if loadingDia}
+          <div class="card p-4 text-center text-gray-500 text-sm">Cargando día...</div>
+        {:else if !diaData || !diaData.resumen || diaData.resumen.cantidad_pedidos === 0}
+          <div class="card p-4 text-center text-gray-500 text-sm">Sin ventas registradas el {formatFechaLarga(fechaSeleccionada)}</div>
+        {:else}
+          {@const r = diaData.resumen}
+
+          <!-- Cierres / aperturas de caja del día -->
+          {#each diaData.cajas as caja}
+            <div class="card p-3 mb-2 border-l-4 {caja.estado === 'abierta' ? 'border-l-amber-400' : 'border-l-green-500'}">
+              <div class="flex justify-between flex-wrap gap-2 text-sm">
+                <div>
+                  <p class="font-semibold text-gray-900">{caja.nombre} · {caja.usuario}</p>
+                  <p class="text-xs text-gray-500">
+                    Apertura {formatHora(caja.abierta_desde)} con {formatCLP(caja.efectivo_inicial)}
+                    {#if caja.cerrada_desde} · Cierre {formatHora(caja.cerrada_desde)}{:else} · <span class="text-amber-600 font-medium">Caja abierta</span>{/if}
+                  </p>
+                </div>
+                {#if caja.efectivo_final !== null}
+                  <div class="text-right">
+                    <p class="text-xs text-gray-500">Efectivo final contado</p>
+                    <p class="font-bold text-gray-900">{formatCLP(caja.efectivo_final)}</p>
+                    {#if caja.efectivo_esperado !== null}
+                      {@const dif = caja.efectivo_final - caja.efectivo_esperado}
+                      <p class="text-xs font-medium {dif === 0 ? 'text-green-600' : 'text-red-600'}">
+                        {dif === 0 ? 'Cuadrado' : `Diferencia: ${formatCLP(dif)}`}
+                      </p>
+                    {/if}
+                  </div>
+                {/if}
+              </div>
+            </div>
+          {/each}
+
+          <!-- Totales por método de pago -->
+          <div class="grid grid-cols-2 md:grid-cols-6 gap-2 mb-2">
+            <div class="card p-3 text-center"><p class="text-xs text-gray-500">Total Día</p><p class="text-lg font-bold text-brand-700">{formatCLP(r.total_ventas)}</p></div>
+            <div class="card p-3 text-center"><p class="text-xs text-gray-500">Efectivo</p><p class="text-lg font-bold text-gray-900">{formatCLP(r.efectivo)}</p></div>
+            <div class="card p-3 text-center"><p class="text-xs text-gray-500">Débito</p><p class="text-lg font-bold text-gray-900">{formatCLP(r.debito)}</p></div>
+            <div class="card p-3 text-center"><p class="text-xs text-gray-500">Crédito</p><p class="text-lg font-bold text-gray-900">{formatCLP(r.credito)}</p></div>
+            <div class="card p-3 text-center"><p class="text-xs text-gray-500">Fiado</p><p class="text-lg font-bold text-gray-900">{formatCLP(r.a_credito)}</p></div>
+            <div class="card p-3 text-center"><p class="text-xs text-gray-500">Pedidos</p><p class="text-lg font-bold text-gray-900">{r.cantidad_pedidos}</p></div>
+          </div>
+          {#if r.total_descuentos > 0}
+            <p class="text-xs text-gray-500 mb-2">Descuentos aplicados: {formatCLP(r.total_descuentos)}</p>
+          {/if}
+
+          <!-- Platos vendidos -->
+          {#if diaData.productosDia.length > 0}
+            <div class="card overflow-hidden overflow-x-auto mb-2">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="text-left p-2 font-medium text-gray-600">Plato / Producto</th>
+                    <th class="text-right p-2 font-medium text-gray-600">Cantidad</th>
+                    <th class="text-right p-2 font-medium text-gray-600">Recaudado</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  {#each diaData.productosDia as prod}
+                    <tr class="hover:bg-gray-50">
+                      <td class="p-2">{prod.nombre}</td>
+                      <td class="p-2 text-right">{prod.cantidad}</td>
+                      <td class="p-2 text-right font-medium">{formatCLP(prod.recaudado)}</td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          {/if}
+
+          <!-- Pedidos del día -->
+          <details class="card overflow-hidden">
+            <summary class="p-3 text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-50">
+              Ver los {diaData.pedidosDia.length} pedidos del día
+            </summary>
+            <div class="overflow-x-auto border-t">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="text-left p-2 font-medium text-gray-600">Hora</th>
+                    <th class="text-left p-2 font-medium text-gray-600">Pedido</th>
+                    <th class="text-left p-2 font-medium text-gray-600">Método</th>
+                    <th class="text-right p-2 font-medium text-gray-600">Total</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  {#each diaData.pedidosDia as pd}
+                    <tr class="hover:bg-gray-50">
+                      <td class="p-2 text-gray-500">{formatHora(pd.fecha_hora)}</td>
+                      <td class="p-2">
+                        #{pd.id} ·
+                        {#if pd.tipo_pedido === 'mesa' && pd.numero_mesa}
+                          Mesa {pd.numero_mesa}{pd.tomada_por ? ` (${pd.tomada_por})` : ''}
+                        {:else if pd.tipo_pedido === 'delivery'}
+                          Delivery{pd.nombre_cliente ? ` · ${pd.nombre_cliente}` : ''}
+                        {:else}
+                          {pd.tipo_pedido}{pd.nombre_cliente ? ` · ${pd.nombre_cliente}` : ''}
+                        {/if}
+                      </td>
+                      <td class="p-2">{formatMetodoLabel(pd.metodo_pago)}</td>
+                      <td class="p-2 text-right font-medium">{formatCLP(pd.total)}</td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          </details>
         {/if}
       </div>
 
