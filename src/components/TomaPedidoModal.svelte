@@ -37,6 +37,25 @@
   let descuento: number = $state(0);
   let metodoPago: string = $state('efectivo');
   let montoPagado: number = $state(0);
+  let clientesCredito: any[] = $state([]);
+  let clienteCreditoId: number | null = $state(null);
+  let loadingClientes: boolean = $state(false);
+
+  async function onMetodoPagoChange(metodo: string) {
+    metodoPago = metodo;
+    if (metodo === 'a_credito' && clientesCredito.length === 0 && !loadingClientes) {
+      loadingClientes = true;
+      try {
+        const res = await fetch('/api/admin/clientes');
+        const data = await res.json();
+        clientesCredito = (data.clientes || []).filter((c: any) => c.activo);
+      } catch {
+        clientesCredito = [];
+      } finally {
+        loadingClientes = false;
+      }
+    }
+  }
   let pedidosInfo: PedidoInfo[] = $state([]);
   let pagoComensalIdx: number = $state(-1);
   let itemsOriginalesIds: Set<string> = new Set();
@@ -406,6 +425,12 @@
       }
     }
 
+    // Validación: crédito requiere cliente seleccionado
+    if (metodoPago === 'a_credito' && !clienteCreditoId) {
+      alert('Debe seleccionar un cliente para pago a crédito');
+      return;
+    }
+
     saving = true;
     try {
       await fetch('/api/admin/mesas', {
@@ -432,6 +457,7 @@
             metodo_pago: metodoPago,
             descuento: descuento,
             efectivo_con_cuanto: metodoPago === 'efectivo' ? montoPagado : 0,
+            cliente_credito_id: metodoPago === 'a_credito' ? clienteCreditoId : null,
           }),
         }, 15000);
         if (res.ok) {
@@ -921,12 +947,34 @@
                 <label class="block text-xs font-semibold text-gray-600 mb-1">Método de Pago</label>
                 <div class="grid grid-cols-2 gap-1.5">
                   {#each metodosPago as m}
-                    <button class="text-xs px-2 py-2 rounded-lg border transition-colors {metodoPago === m.id ? 'border-brand-500 bg-brand-50 text-brand-700 font-semibold' : 'border-gray-200 text-gray-600 hover:border-gray-300'}" onclick={() => { metodoPago = m.id }}>{m.label}</button>
+                    <button class="text-xs px-2 py-2 rounded-lg border transition-colors {metodoPago === m.id ? 'border-brand-500 bg-brand-50 text-brand-700 font-semibold' : 'border-gray-200 text-gray-600 hover:border-gray-300'}" onclick={() => onMetodoPagoChange(m.id)}>{m.label}</button>
                   {/each}
                 </div>
               </div>
 
-              <button class="btn-primary w-full py-3 disabled:opacity-50" disabled={saving || getTotalFinal() <= 0 || (metodoPago === 'efectivo' && montoPagado < getTotalFinal())} onclick={realizarPago}>
+              <!-- Cliente de crédito -->
+              {#if metodoPago === 'a_credito'}
+                <div>
+                  <label class="block text-xs font-semibold text-gray-600 mb-1">Cliente (crédito)</label>
+                  {#if loadingClientes}
+                    <p class="text-xs text-gray-400 py-1">Cargando clientes...</p>
+                  {:else if clientesCredito.length === 0}
+                    <p class="text-xs text-red-500 py-1">No hay clientes de crédito registrados. Créalos en el apartado Créditos.</p>
+                  {:else}
+                    <select class="input-field text-sm" bind:value={clienteCreditoId}>
+                      <option value={null}>Seleccionar cliente...</option>
+                      {#each clientesCredito as c}
+                        <option value={c.id}>{c.nombre} — disponible: {formatCLP(c.limite_credito - c.saldo_deudor)}</option>
+                      {/each}
+                    </select>
+                    {#if !clienteCreditoId}
+                      <p class="text-xs text-amber-600 font-semibold mt-1">Debe seleccionar un cliente para pago a crédito</p>
+                    {/if}
+                  {/if}
+                </div>
+              {/if}
+
+              <button class="btn-primary w-full py-3 disabled:opacity-50" disabled={saving || getTotalFinal() <= 0 || (metodoPago === 'efectivo' && montoPagado < getTotalFinal()) || (metodoPago === 'a_credito' && !clienteCreditoId)} onclick={realizarPago}>
                 {saving ? 'Procesando...' : pagoComensalIdx === -1 ? 'Pagar Todo' : `Pagar ${comensalesList[pagoComensalIdx]?.label || ''}`}
               </button>
               {#if metodoPago === 'efectivo' && montoPagado > 0 && montoPagado < getTotalFinal()}
