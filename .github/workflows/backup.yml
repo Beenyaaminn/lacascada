@@ -1,0 +1,52 @@
+name: Backup diario BD
+
+# Respaldo diario de Neon (PostgreSQL) vía pg_dump.
+# - Se ejecuta todos los días ~04:07 hora Chile (08:07 UTC).
+# - También se puede correr manual: Actions → "Backup diario BD" → Run workflow.
+# - El archivo queda guardado como Artifact del run (90 días de retención).
+# - Si configuras los secretos GMAIL_USER, GMAIL_APP_PASSWORD y BACKUP_EMAIL_TO,
+#   además se envía el respaldo adjunto por correo.
+
+on:
+  schedule:
+    - cron: '7 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar cliente PostgreSQL
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      - name: Generar respaldo
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          FECHA=$(date -u +%Y-%m-%d)
+          pg_dump "$DATABASE_URL" -Fc -f "backup-lacascada-${FECHA}.dump"
+          ls -lh backup-lacascada-*.dump
+
+      - name: Guardar como artifact (90 días)
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-lacascada-${{ github.run_id }}
+          path: backup-lacascada-*.dump
+          retention-days: 90
+
+      - name: Enviar por correo (opcional, si hay secretos de Gmail)
+        if: env.GMAIL_USER != '' && env.BACKUP_EMAIL_TO != ''
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          BACKUP_EMAIL_TO: ${{ secrets.BACKUP_EMAIL_TO }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.GMAIL_USER }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: "Backup La Cascada - ${{ github.run_id }}"
+          body: "Respaldo diario de la base de datos de La Cascada, generado automáticamente."
+          to: ${{ secrets.BACKUP_EMAIL_TO }}
+          from: ${{ secrets.GMAIL_USER }}
+          attachments: backup-lacascada-*.dump
