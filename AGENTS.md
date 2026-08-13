@@ -30,3 +30,23 @@
 - Dev: `npm run dev`
 - Migración (idempotente): `node db/migrate.js`
 - Deploy: push a `main` → Netlify despliega automático.
+
+## Respaldos y restauración
+
+- **Backup automático diario**: GitHub Actions (`.github/workflows/backup.yml`)
+  corre `pg_dump -Fc` todos los días ~04:07 hora Chile. El archivo queda
+  90 días como artifact del run y se envía adjunto por correo
+  (secretos `DATABASE_URL`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`,
+  `BACKUP_EMAIL_TO`). El dump usa **pg_dump 18** por ruta absoluta
+  (`/usr/lib/postgresql/18/bin/pg_dump`) porque el servidor Neon es PG 18.
+- **Restaurar solo una tabla** (ej. `productos`):
+  `pg_restore -d "$DATABASE_URL" --data-only --table=productos --clean backup-FECHA.dump`
+- **Restaurar la BD completa** (destructivo, pedir confirmación):
+  `pg_restore -d "$DATABASE_URL" --clean --if-exists backup-FECHA.dump`
+- Los respaldos NO son SQL plano: son formato custom de pg_dump
+  (`-Fc`, binario comprimido), se restauran solo con `pg_restore`.
+
+## Keep-alive
+
+- `netlify/functions/keepalive.mjs` consulta la BD cada 5 minutos para
+  evitar el arranque en frío de Neon (scale-to-zero).
