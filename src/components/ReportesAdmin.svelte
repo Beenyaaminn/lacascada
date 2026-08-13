@@ -27,8 +27,6 @@
   const tabs = [
     { id: 'ventas', label: 'Resumen de ventas', icon: '💰' },
     { id: 'detalles', label: 'Detalles de pago', icon: '🧾' },
-    { id: 'indicadores', label: 'Indicadores', icon: '📈' },
-    { id: 'jerarquias', label: 'Venta Jerarquías', icon: '🏢' },
     { id: 'delivery', label: 'Reportes delivery', icon: '🛵' },
   ];
 
@@ -433,10 +431,6 @@ ${ventasPorCajera.length > 0 ? `
       {/each}
     {/if}
 
-  {:else if activeTab === 'indicadores'}
-    <div class="text-center py-16 text-gray-400"><p class="text-lg font-medium">Indicadores</p><p class="text-sm mt-1">Próximamente</p></div>
-  {:else if activeTab === 'jerarquias'}
-    <div class="text-center py-16 text-gray-400"><p class="text-lg font-medium">Venta Jerarquías</p><p class="text-sm mt-1">Próximamente</p></div>
   {:else if activeTab === 'delivery'}
     {#if loadingDelivery}
       <div class="text-center py-12 text-gray-500">Cargando reportes delivery...</div>
