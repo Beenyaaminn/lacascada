@@ -1,0 +1,64 @@
+name: Restaurar BD desde respaldo
+
+# Restauración manual desde el último backup exitoso (artifact del
+# workflow "Backup diario BD"). Uso: Actions → "Restaurar BD desde
+# respaldo" → Run workflow → elegir modo.
+#
+# - productos: restaura productos + productos_acompanamientos +
+#   detalle_pedidos (los datos ligados a la carta).
+# - completo: restaura TODA la base (destructivo, solo emergencias).
+
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'Modo de restauración'
+        required: true
+        type: choice
+        options:
+          - productos
+          - completo
+        default: productos
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar cliente PostgreSQL 18 (misma versión que Neon)
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-18
+
+      - name: Descargar último respaldo exitoso
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_ID=$(gh run list --workflow=backup.yml --status=success --limit=1 --json databaseId -q '.[0].databaseId')
+          echo "Usando backup del run: $RUN_ID"
+          gh run download "$RUN_ID" --repo ${{ github.repository }}
+          ls -lh **/backup-lacascada-*.dump
+
+      - name: Restaurar tablas de productos
+        if: inputs.modo == 'productos'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          DUMP=$(find . -name 'backup-lacascada-*.dump' | head -1)
+          PSQL="/usr/lib/postgresql/18/bin/psql"
+          $PSQL "$DATABASE_URL" -c "TRUNCATE productos, productos_acompanamientos, detalle_pedidos RESTART IDENTITY CASCADE"
+          for t in productos productos_acompanamientos detalle_pedidos; do
+            /usr/lib/postgresql/18/bin/pg_restore -d "$DATABASE_URL" --data-only --table=$t "$DUMP"
+          done
+          $PSQL "$DATABASE_URL" -c "SELECT (SELECT count(*) FROM productos) AS productos, (SELECT count(*) FROM detalle_pedidos) AS detalles, (SELECT count(*) FROM productos_acompanamientos) AS acomps"
+
+      - name: Restaurar BD completa
+        if: inputs.modo == 'completo'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          DUMP=$(find . -name 'backup-lacascada-*.dump' | head -1)
+          /usr/lib/postgresql/18/bin/pg_restore -d "$DATABASE_URL" --clean --if-exists "$DUMP" || true
+          /usr/lib/postgresql/18/bin/psql "$DATABASE_URL" -c "SELECT count(*) AS productos FROM productos"
