@@ -753,12 +753,12 @@
                 {#if c.items.length > 0}
                   {@const idx = c.id - 1}
                   {@const pagado = comensalPagado(idx)}
-                  <div class="border border-gray-100 rounded-xl p-3 {pagado ? 'bg-green-50/50 border-green-200' : ''}">
+                  <div class="border border-gray-200 rounded-xl p-3 {pagado ? 'bg-green-50/50 border-green-200' : ''}">
                     <div class="flex items-center justify-between mb-2">
                       <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full {pagado ? 'bg-green-500' : 'bg-amber-400'}"></span>
                         <span class="text-sm font-semibold text-gray-900">{c.label}</span>
-                        <span class="text-xs text-gray-400">({getComensalItemsCount(idx)} items)</span>
+                        <span class="text-xs text-gray-500">({getComensalItemsCount(idx)} items)</span>
                       </div>
                       <div class="flex items-center gap-2">
                         <span class="font-bold text-gray-900 text-sm">{formatCLP(getComensalTotal(idx))}</span>
@@ -772,8 +772,8 @@
                     <div class="space-y-1">
                       {#each c.items as item (item.id)}
                         <div class="flex justify-between text-xs pl-4">
-                          <span class="text-gray-500">{item.cantidad}x {item.producto.nombre}{#if item.acompanamiento && item.acompanamiento !== 'Sin acompañamiento'} <span class="text-gray-400">({item.acompanamiento})</span>{/if}</span>
-                          <span class="text-gray-600">{formatCLP(item.subtotal || item.producto.precio * item.cantidad)}</span>
+                          <span class="text-gray-700">{item.cantidad}x {item.producto.nombre}{#if item.acompanamiento && item.acompanamiento !== 'Sin acompañamiento'} <span class="text-gray-500">({item.acompanamiento})</span>{/if}</span>
+                          <span class="text-gray-800 font-medium">{formatCLP(item.subtotal || item.producto.precio * item.cantidad)}</span>
                         </div>
                       {/each}
                     </div>
