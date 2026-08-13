@@ -36,7 +36,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RUN_ID=$(gh run list --workflow=backup.yml --status=success --limit=1 --json databaseId -q '.[0].databaseId')
+          RUN_ID=$(gh run list --workflow=backup.yml --status=success --limit=1 --repo ${{ github.repository }} --json databaseId -q '.[0].databaseId')
           echo "Usando backup del run: $RUN_ID"
           gh run download "$RUN_ID" --repo ${{ github.repository }}
           ls -lh **/backup-lacascada-*.dump
