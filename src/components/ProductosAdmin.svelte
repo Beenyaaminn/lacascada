@@ -26,6 +26,27 @@
   let message: string = $state('');
   let error: string = $state('');
 
+  let busqueda: string = $state('');
+  let filtroCategoria: number | '' = $state('');
+
+  function normalizar(s: string): string {
+    return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+
+  let productosFiltrados = $derived(
+    productos.filter((p) => {
+      if (filtroCategoria !== '' && p.categoria_id !== filtroCategoria) return false;
+      const q = normalizar(busqueda.trim());
+      if (!q) return true;
+      return (
+        normalizar(p.nombre).includes(q) ||
+        normalizar(p.categoria_nombre || '').includes(q) ||
+        normalizar(p.ingredientes || '').includes(q) ||
+        String(p.precio).includes(q)
+      );
+    })
+  );
+
   onMount(() => {
     loadData();
   });
@@ -259,6 +280,19 @@
     </div>
 
     <div class="card overflow-hidden">
+      <div class="flex flex-col sm:flex-row gap-3 p-4 border-b bg-gray-50">
+        <input
+          class="input-field flex-1"
+          bind:value={busqueda}
+          placeholder="Buscar por nombre, categoría, ingredientes o precio..."
+        />
+        <select class="input-field sm:w-56" bind:value={filtroCategoria}>
+          <option value="">Todas las categorías</option>
+          {#each categorias as cat}
+            <option value={cat.id}>{cat.nombre}</option>
+          {/each}
+        </select>
+      </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead class="bg-gray-50 border-b">
@@ -272,7 +306,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
-            {#each productos as p (p.id)}
+            {#each productosFiltrados as p (p.id)}
               <tr class="hover:bg-gray-50">
                 <td class="p-3">
                   <p class="font-medium text-gray-900">{p.nombre}</p>
@@ -308,6 +342,13 @@
                 </td>
               </tr>
             {/each}
+            {#if productosFiltrados.length === 0}
+              <tr>
+                <td colspan="6" class="p-6 text-center text-sm text-gray-500">
+                  No se encontraron productos con ese filtro.
+                </td>
+              </tr>
+            {/if}
           </tbody>
         </table>
       </div>
