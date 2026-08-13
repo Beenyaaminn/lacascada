@@ -29,7 +29,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           FECHA=$(date -u +%Y-%m-%d)
-          pg_dump "$DATABASE_URL" -Fc -f "backup-lacascada-${FECHA}.dump"
+          /usr/lib/postgresql/18/bin/pg_dump "$DATABASE_URL" -Fc -f "backup-lacascada-${FECHA}.dump"
           ls -lh backup-lacascada-*.dump
 
       - name: Guardar como artifact (90 días)
