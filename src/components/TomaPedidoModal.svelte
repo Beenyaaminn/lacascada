@@ -433,11 +433,11 @@
 
     saving = true;
     try {
-      await fetch('/api/admin/mesas', {
+      await fetchTimeout('/api/admin/mesas', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: mesa.id, estado: 'esperando_pago' }),
-      });
+      }, 15000);
 
       let aPagar;
       if (pagoComensalIdx === -1) {
@@ -479,7 +479,7 @@
       pagoComensalIdx = -1;
     } catch (e) {
       console.error('Error:', e);
-      alert('Error de conexión');
+      alert('Error de conexión o tiempo de espera agotado. Antes de reintentar, verifica en el listado de Pedidos si el pago se llegó a registrar, para no cobrar dos veces.');
     } finally {
       saving = false;
     }
