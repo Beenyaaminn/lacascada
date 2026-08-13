@@ -52,7 +52,7 @@ jobs:
           for t in productos productos_acompanamientos detalle_pedidos; do
             /usr/lib/postgresql/18/bin/pg_restore -d "$DATABASE_URL" --data-only --table=$t "$DUMP"
           done
-          $PSQL "$DATABASE_URL" -c "SELECT (SELECT count(*) FROM productos) AS productos, (SELECT count(*) FROM detalle_pedidos) AS detalles, (SELECT count(*) FROM productos_acompanamientos) AS acomps"
+          $PSQL "$DATABASE_URL" -c "SELECT (SELECT count(*) FROM public.productos) AS productos, (SELECT count(*) FROM public.detalle_pedidos) AS detalles, (SELECT count(*) FROM public.productos_acompanamientos) AS acomps"
 
       - name: Restaurar BD completa
         if: inputs.modo == 'completo'
@@ -61,4 +61,4 @@ jobs:
         run: |
           DUMP=$(find . -name 'backup-lacascada-*.dump' | head -1)
           /usr/lib/postgresql/18/bin/pg_restore -d "$DATABASE_URL" --clean --if-exists "$DUMP" || true
-          /usr/lib/postgresql/18/bin/psql "$DATABASE_URL" -c "SELECT count(*) AS productos FROM productos"
+          /usr/lib/postgresql/18/bin/psql "$DATABASE_URL" -c "SELECT count(*) AS productos FROM public.productos"
