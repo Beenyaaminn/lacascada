@@ -83,6 +83,7 @@
     comensalIdx: number;
     pedidoId: number;
     pagado: boolean;
+    label?: string;
     voucher?: any;
     descuentoAplicado: number;
     montoPagadoAplicado: number;
@@ -155,13 +156,14 @@
                 subtotal: d.subtotal || d.producto_precio * d.cantidad,
               };
             });
-            return { id: i + 1, label: `Pedido #${p.id}`, items, comentarios: '' };
+            return { id: i + 1, label: p.nombre_cliente || `Pedido #${p.id}`, items, comentarios: '' };
           });
 
           pedidosInfo = pedidosMesa.map((p: any, i: number) => ({
             comensalIdx: i,
             pedidoId: p.id,
             pagado: p.estado === 'pagado',
+            label: p.nombre_cliente || `Pedido #${p.id}`,
           }));
           step = 'orden';
         } else {
@@ -382,6 +384,7 @@
                 subtotal: i.subtotal || i.producto.precio * i.cantidad,
               })),
               total: itemsNuevos.reduce((s, i) => s + (i.subtotal || i.producto.precio * i.cantidad), 0),
+              nombre_cliente: comensalesList[idx].label,
               comentarios: comensalesList[idx].comentarios?.trim() || null,
             }),
           }).then(r => r.json())
@@ -393,6 +396,7 @@
           comensalIdx: comensalesConItemsNuevos[i].idx,
           pedidoId: r.pedido_id,
           pagado: false,
+          label: comensalesList[comensalesConItemsNuevos[i].idx]?.label,
         }))
         .filter(p => p.pedidoId);
 
@@ -824,7 +828,7 @@
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                       <span class="w-2 h-2 rounded-full {p.pagado ? 'bg-green-500' : 'bg-amber-400'}"></span>
-                      <span class="text-sm font-semibold text-gray-900">Pedido #{p.pedidoId}</span>
+                      <span class="text-sm font-semibold text-gray-900">{p.label || `Pedido #${p.pedidoId}`}</span>
                     </div>
                     <div class="flex items-center gap-2">
                       {#if p.pagado}
@@ -896,7 +900,7 @@
                         class="text-xs px-3 py-1.5 rounded-full border transition-colors
                           {pagoComensalIdx === p.pedidoId ? 'border-brand-500 bg-brand-50 text-brand-700 font-semibold' : 'border-gray-200 text-gray-600 hover:border-gray-300'}"
                         onclick={() => { pagoComensalIdx = p.pedidoId; descuento = 0 }}
-                      >Pedido #{p.pedidoId}</button>
+                      >{p.label || `Pedido #${p.pedidoId}`}</button>
                     {/each}
                   {/if}
                 </div>
