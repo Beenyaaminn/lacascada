@@ -47,7 +47,16 @@
     beepListo();
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     for (const p of nuevos) {
-      const donde = p.numero_mesa ? `Mesa ${p.numero_mesa} (Piso ${p.mesa_piso})` : (p.nombre_cliente || 'Pedido');
+      let donde: string;
+      if (p.tipo_pedido === 'delivery') {
+        donde = `Delivery — ${p.nombre_cliente || 'Cliente'}`;
+      } else if (p.tipo_pedido === 'retiro') {
+        donde = `Retiro — ${p.nombre_cliente || 'Cliente'}`;
+      } else if (p.numero_mesa) {
+        donde = `Mesa ${p.numero_mesa} (Piso ${p.mesa_piso})`;
+      } else {
+        donde = p.nombre_cliente || 'Pedido';
+      }
       new Notification('🍽️ Pedido listo para servir', { body: `${donde} — Pedido #${p.id}`, tag: `listo-${p.id}` });
     }
   }
