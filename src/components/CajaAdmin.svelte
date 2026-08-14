@@ -74,6 +74,122 @@
 
   function formatCLP(n: number): string { return '$' + n.toLocaleString('es-CL'); }
 
+  function esc(s: string): string {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function metodoLabel(m: string): string {
+    const map: Record<string, string> = { efectivo: 'Efectivo', debito: 'Débito', credito: 'Crédito', a_credito: 'A crédito (fiado)' };
+    return map[m] || m || '—';
+  }
+
+  function horaLocal(f: string): string {
+    try { return new Date(f).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }); } catch { return f; }
+  }
+
+  let printingReporte: boolean = $state(false);
+
+  async function imprimirReporteDia() {
+    if (printingReporte) return;
+    printingReporte = true;
+    try {
+      const now = new Date();
+      const fecha = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const res = await fetch(`/api/admin/reportes/dia?fecha=${fecha}`);
+      const d = await res.json();
+      if (!res.ok || !d.resumen) {
+        alert(d.error || 'No se pudo cargar el reporte del día');
+        return;
+      }
+      const r = d.resumen;
+
+      // Ranking de garzones por mesas atendidas (pedidos tipo mesa)
+      const porGarzon: Record<string, { mesas: Set<number>; pedidos: number; total: number }> = {};
+      for (const p of d.pedidosDia) {
+        if (p.tipo_pedido !== 'mesa') continue;
+        const g = p.tomada_por || p.nombre_cliente || 'Autoservicio';
+        if (!porGarzon[g]) porGarzon[g] = { mesas: new Set(), pedidos: 0, total: 0 };
+        if (p.numero_mesa) porGarzon[g].mesas.add(p.numero_mesa);
+        porGarzon[g].pedidos++;
+        porGarzon[g].total += p.total;
+      }
+      const ranking = Object.entries(porGarzon)
+        .map(([nombre, v]) => ({ nombre, mesas: v.mesas.size, pedidos: v.pedidos, total: v.total }))
+        .sort((a, b) => b.mesas - a.mesas || b.total - a.total);
+      const top = ranking[0] || null;
+
+      const fechaLarga = now.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+      const platosRows = d.productosDia.map((p: any) =>
+        `<tr><td>${esc(p.nombre)}</td><td class="r">${p.cantidad}</td><td class="r">${formatCLP(p.recaudado)}</td></tr>`
+      ).join('');
+
+      const garzonRows = ranking.map(g =>
+        `<tr><td>${esc(g.nombre)}</td><td class="r">${g.mesas}</td><td class="r">${g.pedidos}</td><td class="r">${formatCLP(g.total)}</td></tr>`
+      ).join('');
+
+      const pedidosRows = d.pedidosDia.map((p: any) => {
+        const donde = p.tipo_pedido === 'mesa' && p.numero_mesa
+          ? `Mesa ${p.numero_mesa}${p.tomada_por ? ' · ' + esc(p.tomada_por) : ''}`
+          : esc(p.nombre_cliente || p.tipo_pedido);
+        return `<tr><td>${horaLocal(p.fecha_hora)}</td><td>#${p.id} ${donde}</td><td>${metodoLabel(p.metodo_pago)}</td><td class="r">${formatCLP(p.total)}</td></tr>`;
+      }).join('');
+
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte del Día La Cascada</title>
+<style>
+  @page { size: 80mm auto; margin: 0; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Courier New',monospace;font-size:10px;padding:6px 8px;max-width:72mm;margin:0 auto;color:#000}
+  .center{text-align:center}.bold{font-weight:bold}.divider{border-top:1px dashed #000;margin:5px 0}
+  .r{text-align:right}table{width:100%;border-collapse:collapse;font-size:9px}
+  th{background:#f0f0f0;text-align:left;padding:2px 3px;font-size:8px;text-transform:uppercase;color:#333}
+  td{padding:2px 3px;border-bottom:1px solid #ddd}
+  .sec{font-size:9px;font-weight:bold;margin:4px 0 2px}
+  @media print{body{padding:4px 6px}}
+</style></head><body>
+<div class="center bold" style="font-size:13px">LA CASCADA</div>
+<div class="center" style="font-size:9px">Reporte del día &bull; ${fechaLarga}</div>
+<div class="divider"></div>
+<div class="sec">RESUMEN DE VENTAS</div>
+<div>Pedidos: <span class="r bold" style="float:right">${r.cantidad_pedidos}</span></div>
+<div>Efectivo: <span class="r" style="float:right">${formatCLP(r.efectivo)}</span></div>
+<div>Débito: <span class="r" style="float:right">${formatCLP(r.debito)}</span></div>
+<div>Crédito: <span class="r" style="float:right">${formatCLP(r.credito)}</span></div>
+<div>Fiado: <span class="r" style="float:right">${formatCLP(r.a_credito)}</span></div>
+<div>Descuentos: <span class="r" style="float:right">${formatCLP(r.total_descuentos)}</span></div>
+<div class="bold" style="font-size:11px">TOTAL: <span class="r" style="float:right">${formatCLP(r.total_ventas)}</span></div>
+<div class="divider"></div>
+${cajaActiva ? `
+<div class="sec">CAJA</div>
+<div>Apertura: ${horaLocal(cajaActiva.abierta_desde)} &bull; Inicial: ${formatCLP(cajaActiva.efectivo_inicial)}</div>
+${cajaActiva.efectivo_esperado != null ? `<div>Efectivo esperado: <span class="r bold" style="float:right">${formatCLP(cajaActiva.efectivo_esperado)}</span></div>` : ''}
+<div class="divider"></div>
+` : ''}
+${ranking.length > 0 ? `
+<div class="sec">ATENCIÓN POR GARZÓN</div>
+<table><thead><tr><th>Garzón</th><th class="r">Mesas</th><th class="r">Pedidos</th><th class="r">Vendido</th></tr></thead><tbody>${garzonRows}</tbody></table>
+${top ? `<div style="margin-top:2px">Más mesas atendió: <span class="bold">${esc(top.nombre)}</span> (${top.mesas} mesa${top.mesas === 1 ? '' : 's'})</div>` : ''}
+<div class="divider"></div>
+` : ''}
+<div class="sec">PLATOS CONSUMIDOS</div>
+<table><thead><tr><th>Plato</th><th class="r">Cant.</th><th class="r">Total</th></tr></thead><tbody>${platosRows}</tbody></table>
+<div class="divider"></div>
+<div class="sec">PEDIDOS DEL DÍA</div>
+<table><thead><tr><th>Hora</th><th>Pedido</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${pedidosRows}</tbody></table>
+<div class="divider"></div>
+<div class="center" style="font-size:8px">La Cascada &bull; Cierre de caja</div>
+<script>window.onload=function(){window.print()}<\/script>
+</body></html>`;
+
+      const w = window.open('', '_blank', 'width=320,height=600');
+      if (w) { w.document.write(html); w.document.close(); }
+    } catch (e) {
+      alert('Error de conexión al generar el reporte');
+    } finally {
+      printingReporte = false;
+    }
+  }
+
   let resetTexto: string = $state('');
   let resetting: boolean = $state(false);
   let resetError: string = $state('');
@@ -154,6 +270,15 @@
       {#if error}
         <div class="bg-red-50 text-red-700 text-sm p-3 rounded-lg">{error}</div>
       {/if}
+
+      <button
+        class="w-full py-2.5 rounded-lg border border-brand-300 text-brand-700 font-semibold text-sm hover:bg-brand-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+        disabled={printingReporte}
+        onclick={imprimirReporteDia}
+      >
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+        {printingReporte ? 'Generando...' : 'Imprimir reporte del día'}
+      </button>
 
       <button class="btn-danger w-full py-3 disabled:opacity-50" disabled={loading} onclick={cerrarCaja}>
         {loading ? 'Cerrando...' : 'Cerrar Caja'}
