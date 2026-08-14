@@ -14,6 +14,7 @@
   let now: Date = $state(new Date());
   let timerInterval: ReturnType<typeof setInterval> | null = null;
   let soundEnabled: boolean = $state(true);
+  let autoPrint: boolean = $state(false);
   let prevIds: Set<number> = new Set();
   let nuevosIds: Set<number> = $state(new Set<number>());
 
@@ -57,13 +58,22 @@
         })
       );
 
-      if (recienLlegados.size > 0 && prevIds.size > 0 && soundEnabled) {
+      const esPrimeraCarga = prevIds.size === 0;
+
+      if (recienLlegados.size > 0 && !esPrimeraCarga && soundEnabled) {
         playNewOrderSound();
       }
 
       prevIds = idsActuales;
       nuevosIds = recienLlegados;
       pedidos = pedidosConDetalles;
+
+      // Auto-imprimir comanda de los pedidos recién llegados
+      if (recienLlegados.size > 0 && !esPrimeraCarga && autoPrint) {
+        for (const p of pedidosConDetalles) {
+          if (recienLlegados.has(p.id)) imprimirComanda(p);
+        }
+      }
 
       if (highlightTimeout) clearTimeout(highlightTimeout);
       highlightTimeout = setTimeout(() => { nuevosIds = new Set(); }, 3000);
@@ -135,6 +145,66 @@
   function countByEstado(estado: string): number {
     return pedidos.filter(p => p.estado === estado).length;
   }
+
+  function esc(s: string): string {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // Imprime vía iframe oculto: evita el bloqueo de popups del navegador
+  function printHtml(html: string) {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+    const win = iframe.contentWindow;
+    if (!win) return;
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.onload = () => {
+      win.focus();
+      win.print();
+      setTimeout(() => iframe.remove(), 60000);
+    };
+  }
+
+  function imprimirComanda(p: PedidoExt) {
+    const tipo = getTipoPedido(p);
+    const donde = tipo === 'delivery'
+      ? `DELIVERY - ${p.nombre_cliente || 'Cliente'}`
+      : `Piso ${p.mesa_piso} - Mesa ${p.mesa_numero}`;
+    const items = (p.detalles || []).map(d => {
+      const acomp = d.acompanamiento && d.acompanamiento !== 'Sin acompanamiento' ? `<div class="side">+ ${esc(d.acompanamiento)}</div>` : '';
+      return `<div class="item"><span class="qty">${d.cantidad}x</span> ${esc(d.producto_nombre || '#' + d.producto_id)}</div>${acomp}`;
+    }).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comanda #${p.id}</title>
+<style>
+  @page { size: 80mm auto; margin: 0; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Courier New',monospace;font-size:11px;padding:6px 8px;max-width:72mm;color:#000}
+  .center{text-align:center}.bold{font-weight:bold}.divider{border-top:1px dashed #000;margin:5px 0}
+  .item{font-size:13px;margin:2px 0}.qty{font-weight:bold}
+  .side{font-size:10px;color:#333;margin-left:26px}
+  .comment{font-size:10px;font-style:italic;margin-top:4px;border-top:1px dashed #000;padding-top:4px}
+</style></head><body>
+<div class="center bold" style="font-size:14px">COMANDA COCINA</div>
+<div class="center" style="font-size:10px">La Cascada</div>
+<div class="divider"></div>
+<div class="bold" style="font-size:13px">PEDIDO #${p.id}</div>
+<div>${esc(donde)}</div>
+<div>${new Date(p.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}${p.tomada_por ? ' · ' + esc(p.tomada_por) : ''}</div>
+<div class="divider"></div>
+${items}
+${p.comentarios ? `<div class="comment">Nota: ${esc(p.comentarios)}</div>` : ''}
+<div class="divider"></div>
+</body></html>`;
+    printHtml(html);
+  }
 </script>
 
 <div class="kitchen">
@@ -166,6 +236,10 @@
         <span class="stat-num stat-cooking">{countByEstado('en_preparacion')}</span>
         <span class="stat-label">Preparando</span>
       </div>
+      <button class="sound-btn" class:sound-on={autoPrint} title={autoPrint ? 'Auto-imprimir comandas: activado' : 'Auto-imprimir comandas: desactivado'} onclick={() => { autoPrint = !autoPrint }}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+        {#if autoPrint}<span class="auto-badge">AUTO</span>{/if}
+      </button>
       <button class="sound-btn" class:sound-on={soundEnabled} onclick={() => { soundEnabled = !soundEnabled }}>
         {#if soundEnabled}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"/></svg>
@@ -307,6 +381,9 @@
                     LISTO
                   </button>
                 {/if}
+                <button class="action-btn action-print" title="Imprimir comanda" onclick={() => imprimirComanda(pedido)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                </button>
                 <button class="action-btn action-cancel" onclick={() => avanzarEstado(pedido.id, 'cancelado')}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
@@ -805,4 +882,16 @@
     padding: 7px 8px;
   }
   .action-cancel:hover { background: rgba(239, 68, 68, 0.2); }
+  .action-print {
+    background: var(--admin-surface-2);
+    color: var(--admin-text-muted);
+    border: 1px solid var(--admin-border);
+    padding: 7px 8px;
+  }
+  .action-print:hover { color: var(--admin-text); background: var(--admin-surface-3); }
+  .auto-badge {
+    font-size: 0.5rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+  }
 </style>

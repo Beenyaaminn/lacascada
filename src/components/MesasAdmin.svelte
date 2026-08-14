@@ -6,6 +6,7 @@
   let mesas: Mesa[] = $state([]);
   let reservas: any[] = $state([]);
   let deliveryOrders: any[] = $state([]);
+  let pedidosListosPorMesa: Map<number, number> = $state(new Map());
   let activePiso: number = $state(1);
   let activeTab: string = $state('mesas');
   let loading: boolean = $state(true);
@@ -76,11 +77,12 @@
     operationInFlight = true;
     updating = true;
     try {
-      const [mesasRes, reservasRes, deliveryRes, retiroRes] = await Promise.all([
+      const [mesasRes, reservasRes, deliveryRes, retiroRes, listosRes] = await Promise.all([
         fetch('/api/admin/mesas?_t=' + Date.now(), { cache: 'no-store' }),
         fetch('/api/admin/reservas?_t=' + Date.now(), { cache: 'no-store' }),
         fetch('/api/admin/pedidos?tipo=delivery&_t=' + Date.now(), { cache: 'no-store' }),
         fetch('/api/admin/pedidos?tipo=retiro&_t=' + Date.now(), { cache: 'no-store' }),
+        fetch('/api/admin/pedidos?estado=entregado&_t=' + Date.now(), { cache: 'no-store' }),
       ]);
       const mesasData = await mesasRes.json();
       mesas = mesasData.mesas || [];
@@ -104,6 +106,14 @@
       const deliveryData = await deliveryRes.json();
       const retiroData = await retiroRes.json();
       deliveryOrders = [...(deliveryData.pedidos || []), ...(retiroData.pedidos || [])].sort((a: any, b: any) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime());
+
+      // Pedidos marcados como listos por cocina, agrupados por mesa
+      const listosData = await listosRes.json();
+      const mapa = new Map<number, number>();
+      for (const p of listosData.pedidos || []) {
+        if (p.mesa_id) mapa.set(p.mesa_id, (mapa.get(p.mesa_id) || 0) + 1);
+      }
+      pedidosListosPorMesa = mapa;
       lastUpdate = new Date();
     } catch (e) {
       console.error('Error cargando datos:', e);
@@ -624,6 +634,15 @@
               <span class="w-2 h-2 rounded-full {getEstadoColor(mesa.estado)}"></span>
               <span class="text-xs text-gray-500">{getEstadoLabel(mesa.estado)}</span>
             </div>
+
+            <!-- Aviso: pedido listo en cocina -->
+            {#if (pedidosListosPorMesa.get(mesa.id) || 0) > 0}
+              <div class="mb-1 px-2 py-1 rounded-full bg-green-100 border border-green-300 animate-pulse">
+                <span class="text-xs font-bold text-green-700">
+                  🍽️ {pedidosListosPorMesa.get(mesa.id)} pedido{(pedidosListosPorMesa.get(mesa.id) || 0) > 1 ? 's' : ''} listo{(pedidosListosPorMesa.get(mesa.id) || 0) > 1 ? 's' : ''}
+                </span>
+              </div>
+            {/if}
 
             <!-- Garzón + Timer (solo ocupada) -->
             {#if mesa.estado === 'ocupada'}
