@@ -21,6 +21,37 @@
   let modalMesa: Mesa | null = $state(null);
   let clockOffset: number = $state(0);
 
+  // Notificaciones de "pedido listo" (funcionan con la pestaña minimizada)
+  let prevListosIds: Set<number> = new Set();
+  let notifAudioCtx: AudioContext | null = null;
+
+  function beepListo() {
+    try {
+      if (!notifAudioCtx) notifAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (notifAudioCtx.state === 'suspended') notifAudioCtx.resume();
+      [660, 880, 660].forEach((freq, i) => {
+        setTimeout(() => {
+          if (!notifAudioCtx) return;
+          const osc = notifAudioCtx.createOscillator();
+          const gain = notifAudioCtx.createGain();
+          osc.connect(gain); gain.connect(notifAudioCtx.destination);
+          osc.frequency.value = freq; gain.gain.value = 0.1;
+          osc.start(); osc.stop(notifAudioCtx.currentTime + 0.12);
+        }, i * 150);
+      });
+    } catch { /* no soportado */ }
+  }
+
+  function notificarListos(nuevos: any[]) {
+    if (nuevos.length === 0) return;
+    beepListo();
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    for (const p of nuevos) {
+      const donde = p.numero_mesa ? `Mesa ${p.numero_mesa} (Piso ${p.mesa_piso})` : (p.nombre_cliente || 'Pedido');
+      new Notification('🍽️ Pedido listo para servir', { body: `${donde} — Pedido #${p.id}`, tag: `listo-${p.id}` });
+    }
+  }
+
   let showCobroDelivery: boolean = $state(false);
   let cobroDeliveryPedido: any | null = $state(null);
   let cobroDeliveryDetalles: any[] = $state([]);
@@ -59,9 +90,16 @@
   let pedidoReservaGuardando: boolean = $state(false);
 
   onMount(() => {
+    // Pedir permiso de notificaciones (para avisar pedidos listos aunque
+    // la pestaña esté minimizada)
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
     loadData();
+    // El polling corre también en segundo plano para que las
+    // notificaciones lleguen con la pestaña minimizada
     pollingInterval = setInterval(() => {
-      if (document.visibilityState === 'visible') loadData();
+      loadData();
     }, 30000);
     timerInterval = setInterval(() => {
       now = new Date();
@@ -109,8 +147,16 @@
 
       // Pedidos marcados como listos por cocina, agrupados por mesa
       const listosData = await listosRes.json();
+      const listos = listosData.pedidos || [];
+      const idsListos = new Set<number>(listos.map((p: any) => p.id));
+      const recienListos = listos.filter((p: any) => !prevListosIds.has(p.id));
+      // Notificar solo pedidos que se marcaron listos ahora (no en la 1ra carga)
+      if (prevListosIds.size > 0 && recienListos.length > 0) {
+        notificarListos(recienListos);
+      }
+      prevListosIds = idsListos;
       const mapa = new Map<number, number>();
-      for (const p of listosData.pedidos || []) {
+      for (const p of listos) {
         if (p.mesa_id) mapa.set(p.mesa_id, (mapa.get(p.mesa_id) || 0) + 1);
       }
       pedidosListosPorMesa = mapa;
