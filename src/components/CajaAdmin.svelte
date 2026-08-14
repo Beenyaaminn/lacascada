@@ -73,6 +73,30 @@
   }
 
   function formatCLP(n: number): string { return '$' + n.toLocaleString('es-CL'); }
+
+  let resetTexto: string = $state('');
+  let resetting: boolean = $state(false);
+  let resetError: string = $state('');
+
+  async function reiniciarOperacion() {
+    if (resetTexto !== 'REINICIAR' || resetting) return;
+    resetting = true; resetError = '';
+    try {
+      const res = await fetch('/api/admin/reset-operacion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: 'REINICIAR' }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('Operación reiniciada. Ventas, pedidos, cajas y saldos parten desde cero.');
+        window.location.href = '/admin';
+      } else {
+        resetError = data.error || 'Error al reiniciar';
+      }
+    } catch (e) { resetError = 'Error de conexión'; }
+    finally { resetting = false; }
+  }
 </script>
 
 <div class="p-4 sm:p-6 max-w-lg mx-auto">
@@ -187,4 +211,25 @@
       </div>
     </div>
   {/if}
+
+  <!-- Zona de peligro: reiniciar operación desde cero -->
+  <div class="card p-5 mt-8 border border-red-200">
+    <h3 class="text-sm font-bold text-red-700 mb-1">Zona de peligro</h3>
+    <p class="text-xs text-gray-500 mb-3">
+      Borra todas las ventas, pedidos, cajas, turnos, reservas y saldos de fiado para empezar desde cero.
+      <strong>No</strong> elimina usuarios, productos, categorías ni mesas. Esta acción no se puede deshacer.
+    </p>
+    <label class="block text-xs font-semibold text-gray-600 mb-1">Escribe REINICIAR para confirmar</label>
+    <input class="input-field text-sm mb-2" bind:value={resetTexto} placeholder="REINICIAR" />
+    {#if resetError}
+      <div class="bg-red-50 text-red-700 text-sm p-2 rounded-lg mb-2">{resetError}</div>
+    {/if}
+    <button
+      class="btn-danger w-full py-2.5 disabled:opacity-40"
+      disabled={resetTexto !== 'REINICIAR' || resetting}
+      onclick={reiniciarOperacion}
+    >
+      {resetting ? 'Reiniciando...' : 'Reiniciar operación desde cero'}
+    </button>
+  </div>
 </div>
