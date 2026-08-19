@@ -251,7 +251,7 @@
                 </div>
                 <div class="pedido-detail">
                   {#if pedido.tipo_pedido === 'mesa' && pedido.mesa_numero}
-                    <span class="detail-mesa">Piso {pedido.mesa_piso} &middot; Mesa {pedido.mesa_numero}</span>
+                    <span class="detail-mesa">{pedido.mesa_piso === 3 ? `PUB · Silla ${pedido.mesa_numero}` : `Piso ${pedido.mesa_piso} · Mesa ${pedido.mesa_numero}`}</span>
                     {#if pedido.tomada_por}
                       <span class="detail-person detail-garzon">{pedido.tomada_por}</span>
                     {:else if pedido.nombre_cliente}
@@ -330,7 +330,7 @@
           <p class="summary-detail">Delivery &middot; {selectedPedido.nombre_cliente || 'Cliente'}</p>
           {#if selectedPedido.direccion}<p class="summary-extra">{selectedPedido.direccion}</p>{/if}
         {:else if selectedPedido.mesa_numero}
-          <p class="summary-detail">Piso {selectedPedido.mesa_piso} &middot; Mesa {selectedPedido.mesa_numero}</p>
+          <p class="summary-detail">{selectedPedido.mesa_piso === 3 ? `PUB · Silla ${selectedPedido.mesa_numero}` : `Piso ${selectedPedido.mesa_piso} · Mesa ${selectedPedido.mesa_numero}`}</p>
         {/if}
         {#if selectedPedido.detalles && selectedPedido.detalles.length > 0}
           <div class="summary-items">

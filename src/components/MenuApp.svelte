@@ -112,7 +112,7 @@
         ocuparMesa();
         await cargarMenuSiNecesario();
       } else {
-        step = 'mesa'; mesaError = `La Mesa ${mesaQR} del Piso ${pisoQR} no existe.`; piso = pisoQR; await cargarMesasDisponibles(pisoQR);
+        step = 'mesa'; mesaError = `${asientoLabel(pisoQR, mesaQR)} de ${zonaLabel(pisoQR)} no existe.`; piso = pisoQR; await cargarMesasDisponibles(pisoQR);
       }
     } catch { step = 'mesa'; mesaError = 'Error al verificar.'; await cargarMesasDisponibles(pisoQR); }
     finally { cargandoMesas = false; }
@@ -156,7 +156,7 @@
       const res = await fetch(`/api/mesas/disponibles?_t=${Date.now()}`, { cache: 'no-store' });
       const d = await res.json(); const actual = (d.mesas || []).find((t: any) => t.id === m.id);
       if (actual && actual.estado === 'libre') { mesa = m.numero_mesa; piso = m.piso; step = 'menu'; cargarMenuSiNecesario(); }
-      else { mesaError = `Mesa ${m.numero_mesa} ya está ocupada.`; await cargarMesasDisponibles(piso); }
+      else { mesaError = `${asientoLabel(m.piso, m.numero_mesa)} ya está ocupada.`; await cargarMesasDisponibles(piso); }
     } catch { mesaError = 'Error al verificar.'; }
     finally { cargandoMesas = false; }
   }
@@ -199,7 +199,7 @@
   async function submitOrder() {
     if (cartItems.length === 0) return; orderError = '';
 
-    let msg = `*La Cascada - Pedido en Mesa*\n🍽️ *Autoatención* - Piso ${piso} Mesa ${mesa}\n\n`;
+    let msg = `*La Cascada - Pedido en Mesa*\n🍽️ *Autoatención* - ${zonaLabel(piso)} ${asientoLabel(piso, mesa)}\n\n`;
     if (nombreComensal.trim()) msg += `*Cliente:* ${nombreComensal.trim()}\n\n`;
     msg += `*Pedido:*\n`;
     for (const i of cartItems) {
@@ -213,6 +213,12 @@
   }
 
   function formatCLP(n: number) { return '$' + n.toLocaleString('es-CL'); }
+
+  // Zona PUB = piso 3 (sillas en vez de mesas)
+  const ZONAS = [{ id: 1, label: 'Piso 1' }, { id: 2, label: 'Piso 2' }, { id: 3, label: 'PUB' }];
+  function zonaLabel(p: number) { return p === 3 ? 'PUB' : `Piso ${p}`; }
+  function asientoLabel(p: number, n: number) { return p === 3 ? `Silla ${n}` : `Mesa ${n}`; }
+  function asientoCorto(p: number, n: number) { return p === 3 ? `S${n}` : `M${n}`; }
 </script>
 
 <!-- ============ SELECCIÓN DE MESA ============ -->
@@ -240,23 +246,23 @@
       {:else}
         {#if mesaError}<div class="bg-red-500/10 border border-red-400/30 rounded-xl p-4 text-sm mb-6 text-center" style="color: #B33A3A;">{mesaError}</div>{/if}
 
-        <p class="text-sm text-center mb-2 tracking-wide uppercase" style="color: #52737A;">Seleccioná tu mesa</p>
+        <p class="text-sm text-center mb-2 tracking-wide uppercase" style="color: #52737A;">{piso === 3 ? 'Seleccioná tu silla' : 'Seleccioná tu mesa'}</p>
         <div class="flex gap-3 mb-6">
-          {#each [1, 2] as p}
-            <button class="flex-1 py-3 rounded-xl font-medium text-sm tracking-wide transition-all border {piso === p ? 'bg-[#205C66]/10 border-[#205C66]/50 text-[#205C66]' : 'border-[#D8E4E2] text-[#52737A] hover:border-[#205C66] hover:text-[#1A373A]'}" onclick={() => { piso = p; cargarMesasDisponibles(p); }}>Piso {p}</button>
+          {#each ZONAS as z}
+            <button class="flex-1 py-3 rounded-xl font-medium text-sm tracking-wide transition-all border {piso === z.id ? 'bg-[#205C66]/10 border-[#205C66]/50 text-[#205C66]' : 'border-[#D8E4E2] text-[#52737A] hover:border-[#205C66] hover:text-[#1A373A]'}" onclick={() => { piso = z.id; cargarMesasDisponibles(z.id); }}>{z.label}</button>
           {/each}
         </div>
 
         {#if cargandoMesas}
           <div class="flex justify-center py-8"><div class="w-6 h-6 border-2 border-[#205C6633] border-t-[#205C66] rounded-full animate-spin"></div></div>
         {:else if mesasDisponibles.length === 0}
-          <div class="text-center py-8"><p class="text-lg" style="color: #8AA6AA;">Sin mesas disponibles</p><p class="text-sm mt-2" style="color: #52737A;">Todas las mesas del Piso {piso} están ocupadas</p></div>
+          <div class="text-center py-8"><p class="text-lg" style="color: #8AA6AA;">{piso === 3 ? 'Sin sillas disponibles' : 'Sin mesas disponibles'}</p><p class="text-sm mt-2" style="color: #52737A;">{piso === 3 ? 'Todas las sillas del PUB están ocupadas' : `Todas las mesas del Piso ${piso} están ocupadas`}</p></div>
         {:else}
           <div class="grid grid-cols-4 sm:grid-cols-5 gap-3">
             {#each mesasDisponibles as m (m.id)}
               <button class="aspect-square rounded-xl border border-[#D8E4E2] hover:border-[#205C66]/50 hover:bg-[#205C66]/10 transition-all flex flex-col items-center justify-center gap-1 group" onclick={() => seleccionarMesa(m)}>
-                <span class="text-lg opacity-30 group-hover:opacity-60 transition-opacity">🍽️</span>
-                <span class="group-hover:text-[#205C66] font-semibold text-sm transition-colors" style="color: #1A373A;">M{m.numero_mesa}</span>
+                <span class="text-lg opacity-30 group-hover:opacity-60 transition-opacity">{m.piso === 3 ? '🍸' : '🍽️'}</span>
+                <span class="group-hover:text-[#205C66] font-semibold text-sm transition-colors" style="color: #1A373A;">{asientoCorto(m.piso, m.numero_mesa)}</span>
               </button>
             {/each}
           </div>
@@ -276,7 +282,7 @@
         <img src="/lacascadapro.png" alt="La Cascada" class="w-8 h-8 rounded-full shrink-0" />
         <div>
           <h1 class="font-display text-base text-[#205C66] font-semibold leading-none">La Cascada</h1>
-          <p class="text-[11px] text-[#52737A] mt-0.5">Piso {piso} · Mesa {mesa}</p>
+          <p class="text-[11px] text-[#52737A] mt-0.5">{zonaLabel(piso)} · {asientoLabel(piso, mesa)}</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -433,7 +439,7 @@
   <div class="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-50 animate-slide-up">
     <div class="rounded-2xl p-5 shadow-2xl flex items-center gap-3 text-white" style="background-color:#205C66;">
       <span class="text-2xl">✅</span>
-      <div><p class="font-bold">¡Pedido enviado!</p><p class="text-xs text-white/50">Piso {piso} · Mesa {mesa} — Enviado por WhatsApp</p></div>
+      <div><p class="font-bold">¡Pedido enviado!</p><p class="text-xs text-white/50">{zonaLabel(piso)} · {asientoLabel(piso, mesa)} — Enviado por WhatsApp</p></div>
     </div>
   </div>
 {/if}

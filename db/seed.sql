@@ -7,13 +7,16 @@ INSERT INTO usuarios (nombre, email, password_hash, rol)
 VALUES ('Administrador', 'admin@lacascada.cl', '$2b$10$ImkoI26qD7EQFqf6L/mvG.VgBzREi9ky0JQlZqLHl6vXYwZgcHZ4S', 'admin'),
        ('Garzón Principal', 'garzon@lacascada.cl', '$2b$10$XRdoE5Pr0QUz4yOwYtabnO/qfL9LXPFnipisMPD6T0I51M9vLMawm', 'garzon');
 
--- Mesas: Piso 1 (7 mesas) + Piso 2 (10 mesas)
+-- Mesas: Piso 1 (7 mesas) + Piso 2 (10 mesas) + PUB/piso 3 (9 sillas)
 INSERT INTO mesas (numero_mesa, piso, estado) VALUES
   (1, 1, 'libre'), (2, 1, 'libre'), (3, 1, 'libre'), (4, 1, 'libre'),
   (5, 1, 'libre'), (6, 1, 'libre'), (7, 1, 'libre'),
   (1, 2, 'libre'), (2, 2, 'libre'), (3, 2, 'libre'), (4, 2, 'libre'),
   (5, 2, 'libre'), (6, 2, 'libre'), (7, 2, 'libre'), (8, 2, 'libre'),
-  (9, 2, 'libre'), (10, 2, 'libre');
+  (9, 2, 'libre'), (10, 2, 'libre'),
+  (1, 3, 'libre'), (2, 3, 'libre'), (3, 3, 'libre'), (4, 3, 'libre'),
+  (5, 3, 'libre'), (6, 3, 'libre'), (7, 3, 'libre'), (8, 3, 'libre'),
+  (9, 3, 'libre');
 
 -- Categorías principales de la carta
 INSERT INTO categorias (nombre, orden) VALUES

@@ -31,7 +31,7 @@ if (pedidoId > 0) {
       if (p.tipo_pedido === 'delivery') {
         mesaInfo = `Delivery - ${p.nombre_cliente || 'Cliente'}`;
       } else if (p.numero_mesa) {
-        mesaInfo = `Piso ${p.piso} - Mesa ${p.numero_mesa}`;
+        mesaInfo = p.piso === 3 ? `PUB - Silla ${p.numero_mesa}` : `Piso ${p.piso} - Mesa ${p.numero_mesa}`;
       } else {
         mesaInfo = p.tipo_pedido || '';
       }

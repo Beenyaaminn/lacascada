@@ -565,7 +565,7 @@
   <div class="line"><span>Dir:</span><span>Rioseco #267, Lebu</span></div>
   <div class="divider"></div>
   <div class="line"><span>Fecha:</span><span>${fecha}</span></div>
-  <div class="line"><span>Mesa:</span><span>Mesa ${String(mesa.numero_mesa).padStart(2, '0')} - Piso ${mesa.piso}</span></div>
+  <div class="line"><span>{mesa.piso === 3 ? 'Silla:' : 'Mesa:'}</span><span>${mesa.piso === 3 ? `Silla ${mesa.numero_mesa} - PUB` : `Mesa ${String(mesa.numero_mesa).padStart(2, '0')} - Piso ${mesa.piso}`}</span></div>
   <div class="line"><span>Garzón:</span><span>${esc(garzones.find(g => String(g.id) === garzonId)?.nombre || '')}</span></div>
   <div class="line"><span>Comensales:</span><span>${comensales}</span></div>
   <div class="divider"></div>
@@ -592,7 +592,7 @@
   }
 
   function formatMesa(): string {
-    return `Mesa ${String(mesa.numero_mesa).padStart(2, '0')}`;
+    return mesa.piso === 3 ? `Silla ${mesa.numero_mesa} - PUB` : `Mesa ${String(mesa.numero_mesa).padStart(2, '0')}`;
   }
 
   function formatCLP(n: number): string {

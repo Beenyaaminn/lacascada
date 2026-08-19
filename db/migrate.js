@@ -70,7 +70,7 @@ async function migrate() {
   await sql`CREATE TABLE IF NOT EXISTS mesas (
     id SERIAL PRIMARY KEY,
     numero_mesa INTEGER NOT NULL,
-    piso INTEGER NOT NULL CHECK (piso IN (1, 2)),
+    piso INTEGER NOT NULL CHECK (piso IN (1, 2, 3)),
     estado estado_mesa NOT NULL DEFAULT 'libre',
     tomada_por VARCHAR(200),
     tomada_desde TIMESTAMPTZ,
@@ -407,6 +407,15 @@ async function migrate() {
   } else {
     console.log('  Mesas ya existen, saltando.');
   }
+
+  // Zona PUB (piso 3): ampliar CHECK y asegurar 9 sillas (idempotente)
+  await sql`ALTER TABLE mesas DROP CONSTRAINT IF EXISTS mesas_piso_check`;
+  await sql`ALTER TABLE mesas ADD CONSTRAINT mesas_piso_check CHECK (piso IN (1, 2, 3))`;
+  for (let num = 1; num <= 9; num++) {
+    await sql`INSERT INTO mesas (numero_mesa, piso, estado) VALUES (${num}, 3, 'libre')
+      ON CONFLICT (numero_mesa, piso) DO NOTHING`;
+  }
+  console.log('  Zona PUB lista (9 sillas, piso 3).');
 
   // Categorias
   const existingCategorias = await sql`SELECT COUNT(*) as cnt FROM categorias`;

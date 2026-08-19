@@ -32,12 +32,12 @@ CREATE TABLE usuarios (
 
 -- ============================================================
 -- TABLA: mesas
--- Piso 1: 7 mesas | Piso 2: 10 mesas
+-- Piso 1: 7 mesas | Piso 2: 10 mesas | Piso 3 (PUB): 9 sillas
 -- ============================================================
 CREATE TABLE mesas (
   id          SERIAL PRIMARY KEY,
   numero_mesa INTEGER NOT NULL,
-  piso        INTEGER NOT NULL CHECK (piso IN (1, 2)),
+  piso        INTEGER NOT NULL CHECK (piso IN (1, 2, 3)),
   estado      estado_mesa NOT NULL DEFAULT 'libre',
   tomada_por  VARCHAR(200),
   tomada_desde TIMESTAMPTZ,

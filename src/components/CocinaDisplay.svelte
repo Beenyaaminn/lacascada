@@ -176,6 +176,8 @@
     const tipo = getTipoPedido(p);
     const donde = tipo === 'delivery'
       ? `DELIVERY - ${p.nombre_cliente || 'Cliente'}`
+      : p.mesa_piso === 3
+      ? `PUB - Silla ${p.mesa_numero}`
       : `Piso ${p.mesa_piso} - Mesa ${p.mesa_numero}`;
     const items = (p.detalles || []).map(d => {
       const acomp = d.acompanamiento && d.acompanamiento !== 'Sin acompanamiento' ? `<div class="side">+ ${esc(d.acompanamiento)}</div>` : '';
@@ -323,12 +325,12 @@ ${p.comentarios ? `<div class="comment">Nota: ${esc(p.comentarios)}</div>` : ''}
                 <p class="info-type">{tipo === 'garzon' ? 'Atendido por garzon' : 'Autoservicio'}</p>
                 <div class="table-display">
                   <div class="table-num">
-                    <span class="table-label">Piso</span>
-                    <span class="table-value">{pedido.mesa_piso}</span>
+                    <span class="table-label">{pedido.mesa_piso === 3 ? 'Zona' : 'Piso'}</span>
+                    <span class="table-value">{pedido.mesa_piso === 3 ? 'PUB' : pedido.mesa_piso}</span>
                   </div>
                   <span class="table-dot">·</span>
                   <div class="table-num">
-                    <span class="table-label">Mesa</span>
+                    <span class="table-label">{pedido.mesa_piso === 3 ? 'Silla' : 'Mesa'}</span>
                     <span class="table-value table-value-big">{pedido.mesa_numero}</span>
                   </div>
                 </div>

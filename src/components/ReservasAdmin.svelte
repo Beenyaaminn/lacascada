@@ -212,7 +212,7 @@
           {#each mesasDisponibles as m (m.id)}
             <button class="aspect-square rounded-xl border-2 border-gray-200 hover:border-brand-500 hover:bg-brand-50 transition-all flex flex-col items-center justify-center gap-1" onclick={() => confirmarAsignacion(m)}>
               <span class="text-lg">🍽️</span>
-              <span class="text-xs font-semibold text-gray-700">P{m.piso} M{m.numero_mesa}</span>
+              <span class="text-xs font-semibold text-gray-700">{m.piso === 3 ? `PUB S${m.numero_mesa}` : `P${m.piso} M${m.numero_mesa}`}</span>
             </button>
           {/each}
         </div>

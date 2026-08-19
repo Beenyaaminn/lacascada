@@ -4,7 +4,7 @@ import { sql } from '../../lib/db';
 
 const piso = Astro.url.searchParams.get('piso') || '0';
 const mesa = Astro.url.searchParams.get('mesa') || '0';
-const mesaInfo = piso !== '0' ? `Piso ${piso} - Mesa ${mesa}` : 'Selecciona tu mesa';
+const mesaInfo = piso !== '0' ? (piso === '3' ? `PUB - Silla ${mesa}` : `Piso ${piso} - Mesa ${mesa}`) : 'Selecciona tu mesa';
 
 let categorias: any[] = [];
 let productos: any[] = [];

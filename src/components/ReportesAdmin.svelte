@@ -560,7 +560,7 @@ ${ventasPorCajera.length > 0 ? `
                     <td class="p-2 text-xs text-gray-500">{formatHora(p.fecha_hora)}</td>
                     <td class="p-2 font-mono font-bold text-gray-900">#{p.pedido_id}</td>
                     <td class="p-2 text-xs text-gray-500">{p.cajera || '—'}</td>
-                    <td class="p-2 font-medium">{p.numero_mesa ? `P${p.mesa_piso} M${p.numero_mesa}` : '—'}</td>
+                    <td class="p-2 font-medium">{p.numero_mesa ? (p.mesa_piso === 3 ? `PUB S${p.numero_mesa}` : `P${p.mesa_piso} M${p.numero_mesa}`) : '—'}</td>
                     <td class="p-2"><span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{formatMetodoLabel(p.metodo_pago)}</span></td>
                     <td class="p-2 text-right font-medium">{formatCLP(p.total)}</td>
                     <td class="p-2 text-right text-red-500">{p.descuento > 0 ? formatCLP(p.descuento) : '—'}</td>

@@ -272,8 +272,8 @@
     return mesas.filter(m => m.estado === estado).length;
   }
 
-  function formatMesa(num: number): string {
-    return `Mesa ${String(num).padStart(2, '0')}`;
+  function formatMesa(num: number, piso?: number): string {
+    return piso === 3 ? `Silla ${num}` : `Mesa ${String(num).padStart(2, '0')}`;
   }
 
   async function cambiarEstadoDelivery(pedidoId: number, estado: string) {
@@ -620,7 +620,7 @@
     {#if activeTab === 'mesas'}
       <!-- Piso Tabs -->
       <div class="flex gap-2 mb-5">
-        {#each [1, 2] as piso}
+        {#each [1, 2, 3] as piso}
           <button
             class="px-5 py-2 rounded-full text-sm font-medium transition-colors
               {activePiso === piso
@@ -628,7 +628,7 @@
                 : 'bg-white text-gray-700 border border-gray-200 hover:border-brand-300'}"
             onclick={() => { activePiso = piso }}
           >
-            Piso {piso}
+            {piso === 3 ? 'PUB' : `Piso ${piso}`}
           </button>
         {/each}
       </div>
@@ -682,7 +682,7 @@
             </div>
 
             <!-- Mesa Name -->
-            <p class="font-bold text-gray-900 text-sm mb-0.5">{formatMesa(mesa.numero_mesa)}</p>
+            <p class="font-bold text-gray-900 text-sm mb-0.5">{formatMesa(mesa.numero_mesa, mesa.piso)}</p>
 
             <!-- Estado dot + label -->
             <div class="flex items-center justify-center gap-1.5 mb-1">
@@ -1016,7 +1016,7 @@
             {#each mesasLibres as m (m.id)}
               <button class="aspect-square rounded-xl border-2 border-gray-200 hover:border-brand-500 hover:bg-brand-50 transition-all flex flex-col items-center justify-center gap-1" onclick={() => confirmarAsignacionReserva(m)}>
                 <span class="text-lg">🍽️</span>
-                <span class="text-xs font-semibold text-gray-700">P{m.piso} M{m.numero_mesa}</span>
+                <span class="text-xs font-semibold text-gray-700">{m.piso === 3 ? `PUB S${m.numero_mesa}` : `P${m.piso} M${m.numero_mesa}`}</span>
               </button>
             {/each}
           </div>
