@@ -671,14 +671,20 @@
               onclick={(e) => { e.stopPropagation(); cambiarEstado(mesa); }}
               title="Cambiar estado"
             >↻</button>
-            <!-- Fork & Knife Icon -->
+            <!-- Icono: silla (PUB) o cubiertos (mesas) -->
             <div class="mb-2 flex justify-center">
-              <svg class="w-9 h-9 transition-colors duration-300 {mesa.estado === 'libre' ? 'text-gray-300' : mesa.estado === 'ocupada' ? 'text-red-500' : 'text-amber-500'}" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <!-- Fork -->
-                <path d="M5 0v8c0 2 1.5 3.5 3.5 3.5v12H10v-12C12 11.5 13.5 10 13.5 8V0H12v7.5c0 .3-.2.5-.5.5s-.5-.2-.5-.5V0H9.5v7.5c0 .3-.2.5-.5.5s-.5-.2-.5-.5V0H7v7.5c0 .3-.2.5-.5.5s-.5-.2-.5-.5V0H5z" transform="translate(0,0)"/>
-                <!-- Knife -->
-                <path d="M15 0v14c0 2.5 2 3.5 3 4.5v5h1v-5c1-1 3-2 3-4.5V0h-1.5v13.5c0 .8-.5 1.5-1.5 2V0h-1.5v15.5c-1-.5-1.5-1.2-1.5-2V0H15z" transform="translate(1,0)"/>
-              </svg>
+              {#if mesa.piso === 3}
+                <svg class="w-9 h-9 transition-colors duration-300 {mesa.estado === 'libre' ? 'text-gray-300' : mesa.estado === 'ocupada' ? 'text-red-500' : 'text-amber-500'}" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M4 18v3h3v-3h10v3h3v-6H4v3zm15-8h3v3h-3v-3zM2 10h3v3H2v-3zm15 3H7V5c0-1.1.9-2 2-2h6c1.1 0 2 .9 2 2v8z"/>
+                </svg>
+              {:else}
+                <svg class="w-9 h-9 transition-colors duration-300 {mesa.estado === 'libre' ? 'text-gray-300' : mesa.estado === 'ocupada' ? 'text-red-500' : 'text-amber-500'}" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Fork -->
+                  <path d="M5 0v8c0 2 1.5 3.5 3.5 3.5v12H10v-12C12 11.5 13.5 10 13.5 8V0H12v7.5c0 .3-.2.5-.5.5s-.5-.2-.5-.5V0H9.5v7.5c0 .3-.2.5-.5.5s-.5-.2-.5-.5V0H7v7.5c0 .3-.2.5-.5.5s-.5-.2-.5-.5V0H5z" transform="translate(0,0)"/>
+                  <!-- Knife -->
+                  <path d="M15 0v14c0 2.5 2 3.5 3 4.5v5h1v-5c1-1 3-2 3-4.5V0h-1.5v13.5c0 .8-.5 1.5-1.5 2V0h-1.5v15.5c-1-.5-1.5-1.2-1.5-2V0H15z" transform="translate(1,0)"/>
+                </svg>
+              {/if}
             </div>
 
             <!-- Mesa Name -->
